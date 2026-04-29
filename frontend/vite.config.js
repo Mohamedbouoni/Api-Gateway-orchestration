@@ -7,12 +7,12 @@ export default defineConfig({
   server: {
     proxy: {
       "/api": {
-        target: "http://kong-gateway:8000",
+        target: "http://waf:8080",
         changeOrigin: true,
         rewrite: (path) => path,
       },
       "/ai": {
-        target: "http://kong-gateway:8000",
+        target: "http://waf:8080",
         changeOrigin: true,
         rewrite: (path) => path,
       },
