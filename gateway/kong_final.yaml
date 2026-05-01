@@ -17,7 +17,7 @@ services:
           - https
 
   - name: fastapi
-    url: http://fastapi_backend:3000/
+    url: http://fastapi.ai-application.svc.cluster.local:3000/
     connect_timeout: 60000
     read_timeout: 60000
     write_timeout: 60000
@@ -31,7 +31,7 @@ services:
           - http
 
   - name: frontend
-    url: http://frontend:5173/
+    url: http://frontend.ai-gateway.svc.cluster.local:5173/
     connect_timeout: 60000
     read_timeout: 60000
     write_timeout: 60000
@@ -68,7 +68,7 @@ plugins:
   - name: http-log
     enabled: true
     config:
-      http_endpoint: "http://kong-logger:9999/logs"
+      http_endpoint: "http://kong-logger.ai-application.svc.cluster.local:9999/logs"
       method: POST
       content_type: "application/json"
       keepalive: 60000

@@ -1,0 +1,176 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# opa.yaml  —  Layer 3: Policy Decision Point
+#
+# Open Policy Agent evaluates Rego rules to decide:
+#   "Is this tenant allowed to send this sensitivity level to this AI service?"
+#
+# 2 replicas: policy evaluation is stateless and CPU-bound, safe to scale.
+# ─────────────────────────────────────────────────────────────────────────────
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: opa-config
+  namespace: ai-application
+  labels:
+    app: opa
+    project: enterprise-ai-gateway
+data:
+  # OPA startup command args are set in Deployment spec
+  # This ConfigMap carries the Rego policy file
+  orchestrator.rego: |
+    package orchestrator
+
+    default allow = true
+
+    allow = false {
+      count(block) > 0
+    }
+
+    policies := input.policies {
+      input.policies != null
+    } else := data.policies.items {
+      data.policies != null
+      data.policies.items != null
+    } else := data.policies {
+      is_array(data.policies)
+    } else := []
+
+    block[pol.id] {
+      pol := policies[_]
+      policy_matches(pol, input.context)
+      should_block(pol, input.context)
+    }
+
+    sensitivity_ok(sn, ctx) { sn == null }
+    sensitivity_ok(sn, ctx) { sn == ctx.sensitivity }
+
+    tenant_ok(tn, ctx) { tn == null }
+    tenant_ok(tn, ctx) { tn == ctx.tenant }
+
+    policy_matches(pol, ctx) {
+      sn := object.get(pol.condition, "sensitivity", null)
+      tn := object.get(pol.condition, "tenant", null)
+      sensitivity_ok(sn, ctx)
+      tenant_ok(tn, ctx)
+    }
+
+    should_block(pol, ctx) { pol.effect == "deny_all" }
+    should_block(pol, ctx) { pol.effect == "deny_cloud"; ctx.service_type == "cloud" }
+    should_block(pol, ctx) { pol.effect == "allow_onprem_only"; ctx.service_type != "on-prem" }
+
+  policies.json: |
+    {
+      "policies": {
+        "version": "1.0.0",
+        "hash": "bootstrap",
+        "items": [
+          {
+            "id": "block-all-cloud-high",
+            "description": "Cloud services are forbidden for high sensitivity data",
+            "effect": "deny_cloud",
+            "condition": { "sensitivity": "HIGH", "tenant": null }
+          },
+          {
+            "id": "high-sensitivity-onprem",
+            "description": "High sensitivity data must stay on-prem for finance tenant",
+            "effect": "allow_onprem_only",
+            "condition": { "sensitivity": "HIGH", "tenant": "finance" }
+          },
+          {
+            "id": "deny-cloud-restricted",
+            "description": "Deny cloud for restricted segments",
+            "effect": "deny_cloud",
+            "condition": { "sensitivity": null, "tenant": "restricted-segment" }
+          }
+        ]
+      }
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: opa
+  namespace: ai-application
+  labels:
+    app: opa
+    project: enterprise-ai-gateway
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: opa
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0  # never have zero OPA pods during updates
+  template:
+    metadata:
+      labels:
+        app: opa
+    spec:
+      containers:
+        - name: opa
+          image: openpolicyagent/opa:0.65.0
+          args:
+            - "run"
+            - "--server"
+            - "--addr=0.0.0.0:8181"
+            - "--log-level=info"
+            - "/policies/orchestrator.rego"
+            - "/data/policies.json"
+          ports:
+            - containerPort: 8181
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "50m"
+            limits:
+              memory: "128Mi"
+              cpu: "200m"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8181
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /health?plugins
+              port: 8181
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          volumeMounts:
+            - name: policies
+              mountPath: /policies
+            - name: data
+              mountPath: /data
+      volumes:
+        - name: policies
+          configMap:
+            name: opa-config
+            items:
+              - key: orchestrator.rego
+                path: orchestrator.rego
+        - name: data
+          configMap:
+            name: opa-config
+            items:
+              - key: policies.json
+                path: policies.json
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: opa
+  namespace: ai-application
+  labels:
+    app: opa
+    project: enterprise-ai-gateway
+spec:
+  selector:
+    app: opa
+  ports:
+    - port: 8181
+      targetPort: 8181
+  type: ClusterIP

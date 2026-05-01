@@ -1,0 +1,154 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# fastapi.yaml  —  Layer 3: AI Orchestration Backend
+#
+# The brain of the platform. Handles:
+#   - JWT validation
+#   - Intent classification → AI model routing
+#   - PII detection (spaCy NLP)
+#   - OPA policy evaluation
+#   - Token quota enforcement (Redis)
+#   - Prompt injection scanning
+#   - SSE streaming to frontend
+#
+# 3 replicas minimum. HPA scales to 10 under load.
+# ─────────────────────────────────────────────────────────────────────────────
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fastapi-config
+  namespace: ai-application
+  labels:
+    app: fastapi
+    project: enterprise-ai-gateway
+data:
+  PORT: "3000"
+  KEYCLOAK_URL: "http://keycloak.ai-application.svc.cluster.local:8080"
+  KEYCLOAK_REALM: "newRealm"
+  CORS_ORIGIN: "http://localhost,http://localhost:5173,http://localhost:8000"
+  REDIS_URL: "redis://redis.ai-data.svc.cluster.local:6379/0"
+  OPA_ENABLED: "true"
+  OPA_URL: "http://opa.ai-application.svc.cluster.local:8181"
+  OPA_POLICY_PATH: "/v1/data/orchestrator"
+  OPA_DATA_PATH: "/v1/data/policies"
+  OPA_TIMEOUT_SECONDS: "2.0"
+  OPA_STRICT_SYNC: "true"
+  OPA_ALLOW_LOCAL_FALLBACK: "true"
+  KONG_ADMIN_URL: "http://kong-cp.ai-gateway.svc.cluster.local:8001"
+  ENVIRONMENT: "production"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fastapi
+  namespace: ai-application
+  labels:
+    app: fastapi
+    project: enterprise-ai-gateway
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: fastapi
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 2       # can temporarily have 5 pods during update
+      maxUnavailable: 0 # never drop below 3 pods
+  template:
+    metadata:
+      labels:
+        app: fastapi
+    spec:
+      containers:
+        - name: fastapi
+          image: api-gateways-backend:latest
+          imagePullPolicy: Never  # use local Docker image (dev mode)
+          ports:
+            - containerPort: 3000
+          envFrom:
+            - configMapRef:
+                name: fastapi-config
+          env:
+            - name: PLATFORM_DB_URL
+              valueFrom:
+                secretKeyRef:
+                  name: platform-db-secret
+                  key: DATABASE_URL
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
+          livenessProbe:
+            tcpSocket:
+              port: 3000
+            initialDelaySeconds: 40
+            periodSeconds: 20
+            failureThreshold: 3
+          readinessProbe:
+            tcpSocket:
+              port: 3000
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            failureThreshold: 3
+---
+# Service: Kong DP reaches FastAPI via this internal DNS name
+apiVersion: v1
+kind: Service
+metadata:
+  name: fastapi
+  namespace: ai-application
+  labels:
+    app: fastapi
+    project: enterprise-ai-gateway
+spec:
+  selector:
+    app: fastapi
+  ports:
+    - port: 3000
+      targetPort: 3000
+  type: ClusterIP
+---
+# HorizontalPodAutoscaler: scales FastAPI pods based on CPU load
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: fastapi-hpa
+  namespace: ai-application
+  labels:
+    project: enterprise-ai-gateway
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: fastapi
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70   # scale up when average CPU > 70%
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80   # scale up when average memory > 80%
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 60   # wait 60s before scaling up again
+      policies:
+        - type: Pods
+          value: 2
+          periodSeconds: 60            # add at most 2 pods per minute
+    scaleDown:
+      stabilizationWindowSeconds: 300  # wait 5 min before scaling down
+      policies:
+        - type: Pods
+          value: 1
+          periodSeconds: 120           # remove at most 1 pod per 2 minutes

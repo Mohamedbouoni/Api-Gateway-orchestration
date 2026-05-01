@@ -1,0 +1,27 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: kong-deck-sync
+  namespace: ai-gateway
+  labels:
+    app: deck
+    project: enterprise-ai-gateway
+spec:
+  ttlSecondsAfterFinished: 120 # Auto-delete job after 2 mins to allow re-runs
+  template:
+    spec:
+      containers:
+        - name: deck
+          image: kong/deck
+          command: ["deck", "gateway", "sync", "/gateway/kong_final.yaml"]
+          env:
+            - name: DECK_KONG_ADDR
+              value: "http://kong-cp.ai-gateway.svc.cluster.local:8001"
+          volumeMounts:
+            - name: config-volume
+              mountPath: /gateway
+      restartPolicy: OnFailure
+      volumes:
+        - name: config-volume
+          configMap:
+            name: kong-deck-config

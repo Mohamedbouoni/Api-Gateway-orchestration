@@ -1,0 +1,285 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# network-policies.yaml  —  Zero-Trust Network Security
+#
+# These policies implement the "blast radius containment" principle:
+#   - If a pod in namespace A is compromised, it CANNOT reach pods in namespace B
+#   - Every connection must be explicitly allowed — default is DENY ALL
+#
+# Think of these as Kubernetes-level firewalls between namespaces.
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ── RULE 1: ai-data namespace — DENY ALL by default ──────────────────────────
+# The database namespace rejects ALL traffic unless explicitly allowed below.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: ai-data
+  labels:
+    project: enterprise-ai-gateway
+spec:
+  podSelector: {}         # applies to ALL pods in this namespace
+  policyTypes:
+    - Ingress
+    - Egress
+---
+# ── RULE 2: FastAPI can reach Platform DB ────────────────────────────────────
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-fastapi-to-platform-db
+  namespace: ai-data
+  labels:
+    project: enterprise-ai-gateway
+spec:
+  podSelector:
+    matchLabels:
+      app: platform-db
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ai-application
+          podSelector:
+            matchLabels:
+              app: fastapi
+      ports:
+        - port: 5432
+---
+# ── RULE 3: kong-logger can reach Platform DB ────────────────────────────────
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-kong-logger-to-platform-db
+  namespace: ai-data
+  labels:
+    project: enterprise-ai-gateway
+spec:
+  podSelector:
+    matchLabels:
+      app: platform-db
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ai-application
+          podSelector:
+            matchLabels:
+              app: kong-logger
+      ports:
+        - port: 5432
+---
+# ── RULE 4: Kong CP can reach Kong DB ────────────────────────────────────────
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-kong-cp-to-kong-db
+  namespace: ai-data
+  labels:
+    project: enterprise-ai-gateway
+spec:
+  podSelector:
+    matchLabels:
+      app: kong-db
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ai-gateway
+          podSelector:
+            matchLabels:
+              app: kong-cp
+      ports:
+        - port: 5432
+---
+# ── RULE 5: Keycloak can reach Keycloak DB ───────────────────────────────────
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-keycloak-to-keycloak-db
+  namespace: ai-data
+  labels:
+    project: enterprise-ai-gateway
+spec:
+  podSelector:
+    matchLabels:
+      app: keycloak-db
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ai-application
+          podSelector:
+            matchLabels:
+              app: keycloak
+      ports:
+        - port: 5432
+---
+# ── RULE 6: FastAPI can reach Redis ──────────────────────────────────────────
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-fastapi-to-redis
+  namespace: ai-data
+  labels:
+    project: enterprise-ai-gateway
+spec:
+  podSelector:
+    matchLabels:
+      app: redis
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ai-application
+          podSelector:
+            matchLabels:
+              app: fastapi
+      ports:
+        - port: 6379
+---
+# ── RULE 7: ai-application namespace — deny all, then allow selectively ──────
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: ai-application
+  labels:
+    project: enterprise-ai-gateway
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+---
+# ── RULE 8: Kong DP can reach FastAPI ────────────────────────────────────────
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-kong-dp-to-fastapi
+  namespace: ai-application
+  labels:
+    project: enterprise-ai-gateway
+spec:
+  podSelector:
+    matchLabels:
+      app: fastapi
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ai-gateway
+          podSelector:
+            matchLabels:
+              app: kong-dp
+      ports:
+        - port: 3000
+---
+# ── RULE 9: FastAPI can reach OPA ────────────────────────────────────────────
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-fastapi-to-opa
+  namespace: ai-application
+  labels:
+    project: enterprise-ai-gateway
+spec:
+  podSelector:
+    matchLabels:
+      app: opa
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: fastapi
+      ports:
+        - port: 8181
+---
+# ── RULE 10: Kong DP can send logs to kong-logger ────────────────────────────
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-kong-dp-to-logger
+  namespace: ai-application
+  labels:
+    project: enterprise-ai-gateway
+spec:
+  podSelector:
+    matchLabels:
+      app: kong-logger
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ai-gateway
+          podSelector:
+            matchLabels:
+              app: kong-dp
+      ports:
+        - port: 9999
+---
+# ── RULE 11: Prometheus can scrape FastAPI metrics ───────────────────────────
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-prometheus-to-fastapi
+  namespace: ai-application
+  labels:
+    project: enterprise-ai-gateway
+spec:
+  podSelector:
+    matchLabels:
+      app: fastapi
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ai-monitoring
+          podSelector:
+            matchLabels:
+              app: prometheus
+      ports:
+        - port: 3000
+---
+# ── RULE 12: Prometheus can scrape Kong DP status metrics ────────────────────
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-prometheus-to-kong-dp
+  namespace: ai-gateway
+  labels:
+    project: enterprise-ai-gateway
+spec:
+  podSelector:
+    matchLabels:
+      app: kong-dp
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ai-monitoring
+          podSelector:
+            matchLabels:
+              app: prometheus
+      ports:
+        - port: 8100

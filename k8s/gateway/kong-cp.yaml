@@ -1,0 +1,165 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# kong-cp.yaml  —  Layer 2: Kong Control Plane
+#
+# The Control Plane:
+#   - Owns all gateway configuration (routes, services, plugins)
+#   - Exposes Admin API on port 8001 (INTERNAL ONLY — never exposed publicly)
+#   - Pushes config to Data Plane pods over mTLS encrypted tunnel (port 8005)
+#   - Connects to kong-db for persistent config storage
+#
+# Single replica — this is the single source of truth for gateway config.
+# ─────────────────────────────────────────────────────────────────────────────
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kong-cp-config
+  namespace: ai-gateway
+  labels:
+    app: kong-cp
+    project: enterprise-ai-gateway
+data:
+  KONG_ROLE: "control_plane"
+  KONG_DATABASE: "postgres"
+  KONG_PG_HOST: "postgres-kong.ai-data.svc.cluster.local"
+  KONG_PG_PORT: "5432"
+  KONG_PG_DATABASE: "kong"
+  KONG_PG_USER: "kong"
+  KONG_CLUSTER_LISTEN: "0.0.0.0:8005"
+  KONG_CLUSTER_TELEMETRY_LISTEN: "0.0.0.0:8006"
+  KONG_ADMIN_LISTEN: "0.0.0.0:8001"
+  KONG_ADMIN_GUI_LISTEN: "0.0.0.0:8002"
+  KONG_PROXY_LISTEN: "off"  # CP does NOT handle proxy traffic
+  KONG_PLUGINS: "bundled,simple-validator,tenant-restriction"
+  KONG_LOG_LEVEL: "info"
+  KONG_UNTRUSTED_LUA_SANDBOX_REQUIRES: "cjson"
+  KONG_NGINX_WORKER_PROCESSES: "2"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kong-cp
+  namespace: ai-gateway
+  labels:
+    app: kong-cp
+    project: enterprise-ai-gateway
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kong-cp
+  strategy:
+    type: Recreate  # configuration source of truth, not load balanced
+  template:
+    metadata:
+      labels:
+        app: kong-cp
+    spec:
+      initContainers:
+        # Run migrations before the CP starts
+        - name: kong-migrations
+          image: kong:3.9.1
+          command: ["kong", "migrations", "bootstrap"]
+          envFrom:
+            - configMapRef:
+                name: kong-cp-config
+          env:
+            - name: KONG_ROLE
+              value: "traditional"  # Override control_plane role for migrations
+            - name: KONG_PG_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: kong-db-secret
+                  key: KONG_PG_PASSWORD
+      containers:
+        - name: kong-cp
+          image: kong:3.9.1
+          ports:
+            - containerPort: 8001  # Admin API
+            - containerPort: 8002  # Admin GUI
+            - containerPort: 8005  # Cluster listen (mTLS with DP)
+            - containerPort: 8006  # Cluster telemetry
+          envFrom:
+            - configMapRef:
+                name: kong-cp-config
+          env:
+            - name: KONG_PG_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: kong-db-secret
+                  key: KONG_PG_PASSWORD
+            - name: KONG_CLUSTER_CERT
+              value: "/certs/cluster.crt"
+            - name: KONG_CLUSTER_CERT_KEY
+              value: "/certs/cluster.key"
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "200m"
+            limits:
+              memory: "1Gi"
+              cpu: "500m"
+          livenessProbe:
+            exec:
+              command: ["kong", "health"]
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            timeoutSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /status
+              port: 8001
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 5
+          volumeMounts:
+            - name: plugin-simple-validator
+              mountPath: /usr/local/share/lua/5.1/kong/plugins/simple-validator
+            - name: plugin-tenant-restriction
+              mountPath: /usr/local/share/lua/5.1/kong/plugins/tenant-restriction
+            - name: cluster-certs
+              mountPath: /certs
+      volumes:
+        - name: plugin-simple-validator
+          configMap:
+            name: kong-plugin-simple-validator
+        - name: plugin-tenant-restriction
+          configMap:
+            name: kong-plugin-tenant-restriction
+        - name: cluster-certs
+          secret:
+            secretName: kong-cluster-certs
+            defaultMode: 420
+            items:
+              - key: tls.crt
+                path: cluster.crt
+              - key: tls.key
+                path: cluster.key
+---
+# Service: Admin API accessible only from within the cluster
+# kong-dp connects to port 8005 for config sync
+# fastapi connects to port 8001 for plugin management
+apiVersion: v1
+kind: Service
+metadata:
+  name: kong-cp
+  namespace: ai-gateway
+  labels:
+    app: kong-cp
+    project: enterprise-ai-gateway
+spec:
+  selector:
+    app: kong-cp
+  ports:
+    - name: admin
+      port: 8001
+      targetPort: 8001
+    - name: admin-gui
+      port: 8002
+      targetPort: 8002
+    - name: cluster
+      port: 8005
+      targetPort: 8005
+    - name: cluster-telemetry
+      port: 8006
+      targetPort: 8006
+  type: ClusterIP  # NEVER LoadBalancer — Admin API must not be public

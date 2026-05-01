@@ -1,0 +1,133 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# postgres-platform.yaml  —  Layer 4: Platform Database
+#
+# Stores: tenant data, AI requests, security events, audit logs, policies
+# Namespace: ai-data (isolated, no ingress, not reachable from internet)
+# ─────────────────────────────────────────────────────────────────────────────
+
+# PersistentVolumeClaim: data survives pod restarts and redeployments
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: platform-db-pvc
+  namespace: ai-data
+  labels:
+    app: platform-db
+    project: enterprise-ai-gateway
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+---
+# Deployment: runs the PostgreSQL container
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: platform-db
+  namespace: ai-data
+  labels:
+    app: platform-db
+    project: enterprise-ai-gateway
+spec:
+  replicas: 1  # databases are stateful — never auto-scale horizontally
+  selector:
+    matchLabels:
+      app: platform-db
+  strategy:
+    type: Recreate  # stop old pod before starting new one (data safety)
+  template:
+    metadata:
+      labels:
+        app: platform-db
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:15
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: platform-db-secret
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: platform-db-secret
+                  key: POSTGRES_PASSWORD
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: platform-db-secret
+                  key: POSTGRES_DB
+          # Resource limits: prevent one pod from eating all cluster CPU/RAM
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          # Health checks: Kubernetes restarts the pod if the DB stops responding
+          livenessProbe:
+            exec:
+              command:
+                - pg_isready
+                - -U
+                - platform_admin
+                - -d
+                - platform_permissions
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 5
+          readinessProbe:
+            exec:
+              command:
+                - pg_isready
+                - -U
+                - platform_admin
+                - -d
+                - platform_permissions
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          # Mount init SQL scripts and persistent data
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+            - name: init-platform
+              mountPath: /docker-entrypoint-initdb.d/01-init-platform.sql
+              subPath: init-platform-db.sql
+            - name: init-usage
+              mountPath: /docker-entrypoint-initdb.d/02-init-usage.sql
+              subPath: init-platform-db-usage.sql
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: platform-db-pvc
+        - name: init-platform
+          configMap:
+            name: platform-db-init-scripts
+        - name: init-usage
+          configMap:
+            name: platform-db-usage-scripts
+---
+# Service: internal DNS name for the database
+# Other pods connect via: platform-db.ai-data.svc.cluster.local:5432
+apiVersion: v1
+kind: Service
+metadata:
+  name: platform-db
+  namespace: ai-data
+  labels:
+    app: platform-db
+    project: enterprise-ai-gateway
+spec:
+  selector:
+    app: platform-db
+  ports:
+    - port: 5432
+      targetPort: 5432
+  type: ClusterIP  # internal only — never exposed outside the cluster

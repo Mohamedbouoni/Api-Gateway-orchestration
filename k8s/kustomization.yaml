@@ -1,0 +1,25 @@
+resources:
+  # ── Step 1: Create namespaces first ──────────────────────────────────────
+  - namespaces.yaml
+
+  # ── Step 2: Secrets (passwords must exist before pods start) ─────────────
+  - secrets/secrets.yaml
+
+  # ── Step 3: Data layer (databases must be healthy before app starts) ──────
+  - data/postgres-platform.yaml
+  - data/databases.yaml
+
+  # ── Step 4: Application layer ─────────────────────────────────────────────
+  - application/opa.yaml
+  - application/fastapi.yaml
+  - application/keycloak-and-logger.yaml
+
+  # ── Step 5: Gateway layer ─────────────────────────────────────────────────
+  - gateway/kong-cp.yaml
+  - gateway/kong-dp.yaml
+
+  # ── Step 6: Frontend and Monitoring ──────────────────────────────────────
+  - frontend-and-monitoring.yaml
+
+  # ── Step 7: Network Policies (applied after everything is created) ────────
+  - network-policies.yaml

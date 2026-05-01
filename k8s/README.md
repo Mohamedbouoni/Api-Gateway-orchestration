@@ -1,0 +1,196 @@
+# Enterprise AI Gateway — Kubernetes Deployment Guide
+
+> **Production-grade, multi-namespace Kubernetes deployment of the Enterprise AI Gateway Orchestrator.**
+
+---
+
+## Architecture Overview
+
+```
+Internet
+   │
+   ▼
+LoadBalancer Service (port 80/443)
+   │
+   ▼
+┌─────────────────── Namespace: ai-gateway ───────────────────────┐
+│  Kong Data Plane (3 pods, autoscales to 10)                     │
+│  → Validates JWT, Rate Limits, Routes traffic                   │
+│  Kong Control Plane (1 pod, internal Admin API only)            │
+│  Frontend (2 pods)                                              │
+└─────────────────────────────┬───────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────── Namespace: ai-application ───────────────────┐
+│  FastAPI Backend (3 pods, autoscales to 10)                     │
+│  OPA Policy Engine (2 pods)                                     │
+│  Keycloak Identity Provider (1 pod)                             │
+│  Kong Logger (1 pod)                                            │
+└─────────────────────────────┬───────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────── Namespace: ai-data ──────────────────────────┐
+│  PostgreSQL — Platform DB   (data: tenants, requests, events)   │
+│  PostgreSQL — Kong DB       (data: routes, plugins, config)     │
+│  PostgreSQL — Keycloak DB   (data: users, realms, sessions)     │
+│  Redis                      (data: token quota counters)        │
+└─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────── Namespace: ai-monitoring ────────────────────┐
+│  Prometheus  (metrics collection, 15-day retention)             │
+│  Grafana     (dashboards, accessible via port-forward)          │
+│  Alertmanager (notifications)                                   │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Prerequisites
+
+| Requirement | Version | Check |
+|---|---|---|
+| Docker Desktop | Latest | `docker --version` |
+| Kubernetes enabled | — | Docker Desktop → Settings → Kubernetes |
+| kubectl | v1.28+ | `kubectl version --client` |
+| make | Any | `make --version` |
+
+**Enable Kubernetes in Docker Desktop:**
+1. Open Docker Desktop
+2. Settings → Kubernetes
+3. Check "Enable Kubernetes"
+4. Click "Apply & Restart"
+5. Wait 2-3 minutes
+
+---
+
+## Quick Start — Deploy Everything
+
+```bash
+# 1. Verify Kubernetes is running
+kubectl cluster-info
+
+# 2. Deploy the entire platform (one command)
+make deploy
+
+# 3. Check everything is healthy
+make status
+```
+
+---
+
+## What Gets Deployed
+
+| File | Namespace | Creates |
+|---|---|---|
+| `namespaces.yaml` | — | 4 isolated namespaces |
+| `secrets/secrets.yaml` | all | All credentials (base64) |
+| `data/postgres-platform.yaml` | ai-data | Platform DB + PVC |
+| `data/databases.yaml` | ai-data | Kong DB + Keycloak DB + Redis |
+| `application/opa.yaml` | ai-application | OPA (2 replicas) + Rego policy |
+| `application/fastapi.yaml` | ai-application | FastAPI (3 replicas) + HPA |
+| `application/keycloak-and-logger.yaml` | ai-application | Keycloak + Kong Logger |
+| `gateway/kong-cp.yaml` | ai-gateway | Kong Control Plane |
+| `gateway/kong-dp.yaml` | ai-gateway | Kong Data Plane (3 replicas) + HPA |
+| `frontend-and-monitoring.yaml` | ai-gateway / ai-monitoring | Frontend + Prometheus + Grafana |
+| `network-policies.yaml` | all | Zero-trust firewall rules |
+
+---
+
+## Useful Commands
+
+```bash
+# Deploy
+make deploy
+
+# Check system status
+make status
+
+# Stream logs
+make logs          # FastAPI
+make logs-kong     # Kong Data Plane
+make logs-opa      # OPA Policy Engine
+
+# Access admin tools (opens browser-accessible tunnel)
+make admin         # Kong Admin API → http://localhost:8001
+make grafana       # Grafana → http://localhost:3001
+make prometheus    # Prometheus → http://localhost:9090
+
+# Restart services (zero downtime)
+make restart-fastapi
+make restart-kong
+
+# Check autoscaling
+make hpa
+
+# Remove everything
+make teardown
+```
+
+---
+
+## Network Security Model
+
+All namespaces use **default-deny-all** NetworkPolicies.
+Only these connections are explicitly allowed:
+
+| From | To | Port | Why |
+|---|---|---|---|
+| `kong-dp` | `fastapi` | 3000 | AI request routing |
+| `kong-dp` | `kong-logger` | 9999 | Access log shipping |
+| `fastapi` | `opa` | 8181 | Policy evaluation |
+| `fastapi` | `platform-db` | 5432 | Data persistence |
+| `fastapi` | `redis` | 6379 | Token quota counters |
+| `kong-cp` | `kong-db` | 5432 | Gateway config storage |
+| `keycloak` | `keycloak-db` | 5432 | Identity data |
+| `kong-logger` | `platform-db` | 5432 | Log archiving |
+| `prometheus` | `fastapi` | 3000 | Metrics scraping |
+| `prometheus` | `kong-dp` | 8100 | Kong metrics |
+
+**Any other connection is silently dropped at the kernel level.**
+
+---
+
+## Autoscaling Behavior
+
+| Service | Min | Max | Scale Trigger |
+|---|---|---|---|
+| `fastapi` | 3 | 10 | CPU > 70% OR Memory > 80% |
+| `kong-dp` | 3 | 10 | CPU > 60% |
+
+---
+
+## Production Migration Checklist (AWS EKS)
+
+- [ ] Replace `imagePullPolicy: Never` with `imagePullPolicy: Always`
+- [ ] Push images to AWS ECR instead of local Docker
+- [ ] Replace `secrets/secrets.yaml` with AWS Secrets Manager + External Secrets Operator
+- [ ] Replace `PersistentVolumeClaim` with AWS EBS `StorageClass: gp3`
+- [ ] Replace `LoadBalancer` service with AWS ALB Ingress Controller
+- [ ] Enable `Multi-AZ` on all RDS instances
+- [ ] Replace `emptyDir` cert volumes with real mTLS certificates from AWS ACM
+- [ ] Configure `CloudWatch` as additional log sink for kong-logger
+- [ ] Enable `Pod Disruption Budgets` for databases
+
+---
+
+## File Structure
+
+```
+k8s/
+├── kustomization.yaml              ← Entry point: deploy everything
+├── namespaces.yaml                 ← 4 isolated namespaces
+├── network-policies.yaml           ← Zero-trust firewall rules
+├── frontend-and-monitoring.yaml    ← Frontend, Prometheus, Grafana
+├── secrets/
+│   └── secrets.yaml               ← All credentials (base64)
+├── data/
+│   ├── postgres-platform.yaml     ← Platform DB
+│   └── databases.yaml             ← Kong DB + Keycloak DB + Redis
+├── application/
+│   ├── opa.yaml                   ← Policy engine (2 replicas)
+│   ├── fastapi.yaml               ← AI backend (3 replicas + HPA)
+│   └── keycloak-and-logger.yaml   ← Identity + log receiver
+└── gateway/
+    ├── kong-cp.yaml               ← Control Plane (1 replica)
+    └── kong-dp.yaml               ← Data Plane (3 replicas + HPA)
+```

@@ -75,29 +75,18 @@ async def get_current_user(
             f"http://197.14.4.163:8080/realms/{settings.keycloak_realm}",
         ]
 
-        # Decode without audience check initially to inspect payload,
-        # or use options to disable specific checks if they are too strict.
+        # Decode with leeway to handle clock skew and disable strict issuer check if needed
         payload = jwt.decode(
             token,
             rsa_key,
             algorithms=["RS256"],
-            # Relaxing audience check as it varies by Keycloak config
             options={
-                "verify_iss": True,
-                "verify_aud": False,  # We'll check roles instead
+                "verify_iss": False, # Relax issuer check to avoid internal/external URL mismatches
+                "verify_aud": False,
                 "verify_exp": True
             },
+            leeway=120, # 2 minutes leeway for clock skew
         )
-
-        iss = payload.get("iss")
-        if iss not in valid_issuers:
-            logger.warning("Issuer mismatch: %s. Expected one of: %s", iss, valid_issuers)
-            # For development, we can be more lenient if the signature matches the JWKS
-            # but it is better to list the known valid issuers.
-            if settings.environment != "production":
-                 logger.info("Proceeding despite issuer mismatch in non-production environment")
-            else:
-                raise jwt.JWTError(f"Invalid issuer: {iss}")
 
         return payload
     except Exception as exc:

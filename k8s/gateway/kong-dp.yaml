@@ -1,0 +1,173 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# kong-dp.yaml  —  Layer 2: Kong Data Plane
+#
+# The Data Plane:
+#   - Handles ALL real user traffic (HTTP proxy on port 8000)
+#   - DB-less: stores NO configuration — receives everything from CP via mTLS
+#   - If the Control Plane goes offline, the DP keeps serving with last config
+#   - Scales horizontally — add more pods as traffic grows
+#
+# 3 replicas minimum. HPA scales to 10 under load.
+# ─────────────────────────────────────────────────────────────────────────────
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kong-dp-config
+  namespace: ai-gateway
+  labels:
+    app: kong-dp
+    project: enterprise-ai-gateway
+data:
+  KONG_ROLE: "data_plane"
+  KONG_DATABASE: "off"            # DB-less — config comes from Control Plane
+  KONG_CLUSTER_CONTROL_PLANE: "kong-cp.ai-gateway.svc.cluster.local:8005"
+  KONG_CLUSTER_TELEMETRY_ENDPOINT: "kong-cp.ai-gateway.svc.cluster.local:8006"
+  KONG_PROXY_LISTEN: "0.0.0.0:8000, 0.0.0.0:8443 ssl"
+  KONG_ADMIN_LISTEN: "off"        # DP never exposes Admin API
+  KONG_STATUS_LISTEN: "0.0.0.0:8100"
+  KONG_PLUGINS: "bundled,simple-validator,tenant-restriction"
+  KONG_LOG_LEVEL: "info"
+  KONG_UNTRUSTED_LUA_SANDBOX_REQUIRES: "cjson"
+  KONG_CLUSTER_CERT: "/certs/cluster.crt"
+  KONG_CLUSTER_CERT_KEY: "/certs/cluster.key"
+  KONG_LUA_SSL_TRUSTED_CERTIFICATE: "/certs/cluster.crt"
+  KONG_NGINX_WORKER_PROCESSES: "2"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kong-dp
+  namespace: ai-gateway
+  labels:
+    app: kong-dp
+    project: enterprise-ai-gateway
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: kong-dp
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 2       # temporarily allow 5 pods during rolling update
+      maxUnavailable: 0 # never drop below 3 pods (zero downtime)
+  template:
+    metadata:
+      labels:
+        app: kong-dp
+    spec:
+      containers:
+        - name: kong-dp
+          image: kong:3.9.1
+          ports:
+            - containerPort: 8000   # HTTP proxy
+            - containerPort: 8443   # HTTPS proxy
+            - containerPort: 8100   # Status API (Prometheus scrapes this)
+          envFrom:
+            - configMapRef:
+                name: kong-dp-config
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
+          livenessProbe:
+            httpGet:
+              path: /status
+              port: 8100
+            initialDelaySeconds: 20
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /status
+              port: 8100
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 5
+          volumeMounts:
+            - name: plugin-simple-validator
+              mountPath: /usr/local/share/lua/5.1/kong/plugins/simple-validator
+            - name: plugin-tenant-restriction
+              mountPath: /usr/local/share/lua/5.1/kong/plugins/tenant-restriction
+            - name: cluster-certs
+              mountPath: /certs
+      volumes:
+        - name: plugin-simple-validator
+          configMap:
+            name: kong-plugin-simple-validator
+        - name: plugin-tenant-restriction
+          configMap:
+            name: kong-plugin-tenant-restriction
+        - name: cluster-certs
+          secret:
+            secretName: kong-cluster-certs
+            defaultMode: 420
+            items:
+              - key: tls.crt
+                path: cluster.crt
+              - key: tls.key
+                path: cluster.key
+---
+# Service: The public entry point — this is what users connect to
+apiVersion: v1
+kind: Service
+metadata:
+  name: kong-dp
+  namespace: ai-gateway
+  labels:
+    app: kong-dp
+    project: enterprise-ai-gateway
+spec:
+  selector:
+    app: kong-dp
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8000
+    - name: https
+      port: 443
+      targetPort: 8443
+    - name: status
+      port: 8100
+      targetPort: 8100
+  type: LoadBalancer  # exposes a real external IP in production (or localhost in dev)
+---
+# HorizontalPodAutoscaler: scales Kong DP pods based on traffic load
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: kong-dp-hpa
+  namespace: ai-gateway
+  labels:
+    project: enterprise-ai-gateway
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: kong-dp
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 60  # gateway scales earlier than backend
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 30  # gateway scales up fast
+      policies:
+        - type: Pods
+          value: 3
+          periodSeconds: 60
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+        - type: Pods
+          value: 1
+          periodSeconds: 120
