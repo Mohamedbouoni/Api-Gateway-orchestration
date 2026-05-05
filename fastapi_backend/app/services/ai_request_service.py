@@ -590,22 +590,10 @@ class AIRequestService:
             db=db, current_user=current_user, body=body, nlp=nlp,
         )
 
-        # region agent log
-        logger.info(
-            "AGENT_DEBUG runId=pre-fix hypothesisId=H4 stage=submit_json_preflight_ok request_id=%s tenant_id=%s intent=%s service_id=%s provider_type=%s",
-            pf.request_id,
-            pf.tenant_id,
-            pf.intent_name,
-            pf.resolved_service_id,
-            getattr(pf.service, "provider_type", ""),
-        )
-        # endregion
-
         outbound_model = pf.service.model_name
         outbound_provider_url = pf.service.provider_url
 
         try:
-            start = datetime.utcnow()
             if pf.service.provider_type == "gemini":
                 provider_data = await self._call_gemini_json(
                     provider_url=outbound_provider_url,
@@ -618,24 +606,8 @@ class AIRequestService:
                     messages=pf.messages,
                     stream=False,
                 )
-            elapsed_ms = int((datetime.utcnow() - start).total_seconds() * 1000)
-            # region agent log
-            logger.info(
-                "AGENT_DEBUG runId=pre-fix hypothesisId=H5 stage=provider_call_ok request_id=%s provider_type=%s elapsed_ms=%s",
-                pf.request_id,
-                getattr(pf.service, "provider_type", ""),
-                elapsed_ms,
-            )
-            # endregion
         except Exception as exc:
             logger.exception("Provider call failed: %s", exc)
-            # region agent log
-            logger.error(
-                "AGENT_DEBUG runId=pre-fix hypothesisId=H5 stage=provider_call_failed request_id=%s error=%s",
-                pf.request_id,
-                str(exc),
-            )
-            # endregion
             try:
                 await self._update_status_in_new_session(
                     request_id=pf.request_id,
@@ -673,15 +645,6 @@ class AIRequestService:
             status="completed",
             completed_at=datetime.utcnow(),
         )
-
-        # region agent log
-        logger.info(
-            "AGENT_DEBUG runId=pre-fix hypothesisId=H6 stage=request_completed request_id=%s input_tokens=%s output_tokens=%s",
-            pf.request_id,
-            prompt_tokens,
-            eval_tokens,
-        )
-        # endregion
 
         # ── Output Guard: Full PII redaction on JSON response ──
         response_text = provider_data.get("message", {}).get("content", "")

@@ -71,7 +71,7 @@ deploy: preflight build-local-images
 # ── Preflight ─────────────────────────────────────────────────────────────────
 preflight:
 	@echo "🔎 Running Kubernetes preflight checks..."
-	@kubectl cluster-info >/dev/null
+	@kubectl cluster-info >/dev/null || (echo "Cluster unreachable (kubectl cluster-info failed)"; exit 1)
 	@test -f k8s/kustomization.yaml
 	@test -f k8s/secrets/secrets.yaml
 	@test -f backend/scripts/init-platform-db.sql

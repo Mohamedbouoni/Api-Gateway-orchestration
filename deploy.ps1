@@ -1,7 +1,12 @@
 # ─────────────────────────────────────────────────────────────────────────────
 # deploy.ps1  —  Enterprise AI Gateway Kubernetes Deployment Script
-# 
+#
 # Usage:  .\deploy.ps1
+#
+# Images are built as local :latest tags (imagePullPolicy Never in manifests).
+# That matches single-node dev clusters (Docker Desktop, Minikube). For
+# multi-node production, push images to your registry, point manifests at those
+# references, and use imagePullPolicy: IfNotPresent or Always as appropriate.
 # ─────────────────────────────────────────────────────────────────────────────
 
 Write-Host ""
