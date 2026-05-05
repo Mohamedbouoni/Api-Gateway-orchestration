@@ -85,7 +85,6 @@ async def get_current_user(
                 "verify_aud": False,
                 "verify_exp": True
             },
-            leeway=120, # 2 minutes leeway for clock skew
         )
 
         return payload
