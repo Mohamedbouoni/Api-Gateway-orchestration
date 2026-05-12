@@ -1,5 +1,5 @@
  import { useState, useEffect } from "react";
-import axios from "axios";
+import api from "../api/client";
 import useIntent from "../hooks/useIntent";
 
 const AdminPortal = ({ token, onClose }) => {
@@ -82,9 +82,9 @@ const AdminPortal = ({ token, onClose }) => {
   const fetchPolicies = async () => {
     setLoading(true);
     try {
-      const headers = { Authorization: `Bearer ${token}`, "kong-header": "true" };
+      const headers = { Authorization: `Bearer ${token}`, };
       const [policiesResp, statusResp] = await Promise.all([
-        axios.get("/api/admin/policies", { headers }),
+        api.get("/admin/policies", { headers }),
         axios
           .get("/api/admin/policies/status", { headers })
           .catch(() => ({ data: null })),
@@ -101,8 +101,8 @@ const AdminPortal = ({ token, onClose }) => {
   const fetchSecurityPatterns = async () => {
     setLoading(true);
     try {
-        const resp = await axios.get("/api/admin/security-patterns", {
-            headers: { Authorization: `Bearer ${token}`, "kong-header": "true" },
+        const resp = await api.get("/admin/security-patterns", {
+            headers: { Authorization: `Bearer ${token}`, },
         });
         setSecurityPatterns(resp.data);
     } catch (err) {
@@ -114,8 +114,8 @@ const AdminPortal = ({ token, onClose }) => {
 
   const fetchKongRoutes = async () => {
     try {
-      const resp = await axios.get("/api/admin/gateway/routes", {
-        headers: { Authorization: `Bearer ${token}`, "kong-header": "true" },
+      const resp = await api.get("/admin/gateway/routes", {
+        headers: { Authorization: `Bearer ${token}`, },
       });
       setKongRoutes(resp.data);
     } catch (err) {
@@ -125,8 +125,8 @@ const AdminPortal = ({ token, onClose }) => {
 
   const fetchKongPlugins = async () => {
     try {
-      const resp = await axios.get("/api/admin/gateway/plugins", {
-        headers: { Authorization: `Bearer ${token}`, "kong-header": "true" },
+      const resp = await api.get("/admin/gateway/plugins", {
+        headers: { Authorization: `Bearer ${token}`, },
       });
       setKongPlugins(resp.data);
     } catch (err) {
@@ -136,8 +136,8 @@ const AdminPortal = ({ token, onClose }) => {
 
   const fetchPluginCatalog = async () => {
     try {
-      const resp = await axios.get("/api/admin/gateway/plugin-catalog", {
-        headers: { Authorization: `Bearer ${token}`, "kong-header": "true" },
+      const resp = await api.get("/admin/gateway/plugin-catalog", {
+        headers: { Authorization: `Bearer ${token}`, },
       });
       setPluginCatalog(resp.data);
     } catch (err) {
@@ -147,8 +147,8 @@ const AdminPortal = ({ token, onClose }) => {
 
   const fetchRouteDiscovery = async () => {
     try {
-      const resp = await axios.get("/api/admin/gateway/route-discovery", {
-        headers: { Authorization: `Bearer ${token}`, "kong-header": "true" },
+      const resp = await api.get("/admin/gateway/route-discovery", {
+        headers: { Authorization: `Bearer ${token}`, },
       });
       setRouteDiscoveryData(resp.data);
     } catch (err) {
@@ -158,11 +158,11 @@ const AdminPortal = ({ token, onClose }) => {
 
   const handleAutoRegister = async (path, methods) => {
     try {
-      await axios.post("/api/admin/gateway/auto-register", {
+      await api.post("/admin/gateway/auto-register", {
         path,
         methods
       }, {
-        headers: { Authorization: `Bearer ${token}`, "kong-header": "true" },
+        headers: { Authorization: `Bearer ${token}`, },
       });
       // Refresh data
       fetchRouteDiscovery();
@@ -175,8 +175,8 @@ const AdminPortal = ({ token, onClose }) => {
 
   const fetchSecurityScore = async () => {
     try {
-      const resp = await axios.get("/api/admin/security/score", {
-        headers: { Authorization: `Bearer ${token}`, "kong-header": "true" },
+      const resp = await api.get("/admin/security/score", {
+        headers: { Authorization: `Bearer ${token}`, },
       });
       setSecurityScore(resp.data);
     } catch (err) {
@@ -186,8 +186,8 @@ const AdminPortal = ({ token, onClose }) => {
 
   const fetchSecurityEvents = async () => {
     try {
-      const resp = await axios.get("/api/admin/security/events", {
-        headers: { Authorization: `Bearer ${token}`, "kong-header": "true" },
+      const resp = await api.get("/admin/security/events", {
+        headers: { Authorization: `Bearer ${token}`, },
       });
       setSecurityEvents(resp.data);
     } catch (err) {
@@ -197,8 +197,8 @@ const AdminPortal = ({ token, onClose }) => {
 
   const fetchQuotasList = async () => {
     try {
-      const resp = await axios.get("/api/admin/quotas", {
-        headers: { Authorization: `Bearer ${token}`, "kong-header": "true" },
+      const resp = await api.get("/admin/quotas", {
+        headers: { Authorization: `Bearer ${token}`, },
       });
       setQuotasList(resp.data.tenants || []);
     } catch (err) {
@@ -210,7 +210,7 @@ const AdminPortal = ({ token, onClose }) => {
     if (!selectedPlugin) return;
     setLoading(true);
     try {
-      const headers = { Authorization: `Bearer ${token}`, "kong-header": "true" };
+      const headers = { Authorization: `Bearer ${token}`, };
       // Build config from form data, converting comma-separated strings to arrays
       const config = {};
       for (const field of selectedPlugin.fields) {
@@ -246,7 +246,7 @@ const AdminPortal = ({ token, onClose }) => {
         route_id: pluginScope === "route" ? pluginRouteId : null,
         enabled: true,
       };
-      await axios.post("/api/admin/gateway/plugins", payload, { headers });
+      await api.post("/admin/gateway/plugins", payload, { headers });
       setShowPluginModal(false);
       setSelectedPlugin(null);
       setPluginFormData({});
@@ -263,8 +263,8 @@ const AdminPortal = ({ token, onClose }) => {
 
   const handleTogglePlugin = async (pluginId, currentEnabled) => {
     try {
-      const headers = { Authorization: `Bearer ${token}`, "kong-header": "true" };
-      await axios.patch(`/api/admin/gateway/plugins/${pluginId}`, { enabled: !currentEnabled }, { headers });
+      const headers = { Authorization: `Bearer ${token}`, };
+      await api.patch(`/admin/gateway/plugins/${pluginId}`, { enabled: !currentEnabled }, { headers });
       fetchKongPlugins();
       fetchKongRoutes();
     } catch (err) {
@@ -275,8 +275,8 @@ const AdminPortal = ({ token, onClose }) => {
   const handleDeleteKongPlugin = async (pluginId) => {
     if (!window.confirm("Remove this plugin from Kong Gateway?")) return;
     try {
-      const headers = { Authorization: `Bearer ${token}`, "kong-header": "true" };
-      await axios.delete(`/api/admin/gateway/plugins/${pluginId}`, { headers });
+      const headers = { Authorization: `Bearer ${token}`, };
+      await api.delete(`/admin/gateway/plugins/${pluginId}`, { headers });
       fetchKongPlugins();
       fetchKongRoutes();
     } catch (err) {
@@ -286,8 +286,8 @@ const AdminPortal = ({ token, onClose }) => {
 
   const handleUpdateQuota = async (tenantId, maxTokens, resetPeriod, isActive) => {
     try {
-      const headers = { Authorization: `Bearer ${token}`, "kong-header": "true" };
-      await axios.put(`/api/admin/quotas/${tenantId}`, {
+      const headers = { Authorization: `Bearer ${token}`, };
+      await api.put(`/admin/quotas/${tenantId}`, {
         max_tokens: Number(maxTokens),
         reset_period: resetPeriod,
         is_active: isActive
@@ -301,8 +301,8 @@ const AdminPortal = ({ token, onClose }) => {
   const fetchQuotaStatus = async () => {
     setLoading(true);
     try {
-      const resp = await axios.get("/api/governance/quota-status", {
-        headers: { Authorization: `Bearer ${token}`, "kong-header": "true" },
+      const resp = await api.get("/governance/quota-status", {
+        headers: { Authorization: `Bearer ${token}`, },
       });
       setQuotaStatus(resp.data);
     } catch (err) {
@@ -315,8 +315,8 @@ const AdminPortal = ({ token, onClose }) => {
 
   const fetchDashboardMetrics = async () => {
     try {
-      const resp = await axios.get("/api/admin/metrics", {
-        headers: { Authorization: `Bearer ${token}`, "kong-header": "true" },
+      const resp = await api.get("/admin/metrics", {
+        headers: { Authorization: `Bearer ${token}`, },
       });
       setDashboardMetrics(resp.data);
     } catch (err) {
@@ -327,8 +327,8 @@ const AdminPortal = ({ token, onClose }) => {
   const fetchServices = async () => {
     setLoading(true);
     try {
-      const resp = await axios.get("/api/service-governance", {
-        headers: { Authorization: `Bearer ${token}`, "kong-header": "true" },
+      const resp = await api.get("/service-governance", {
+        headers: { Authorization: `Bearer ${token}`, },
       });
       setServices(resp.data);
     } catch (err) {
@@ -342,11 +342,10 @@ const AdminPortal = ({ token, onClose }) => {
     const newType = currentType === "cloud" ? "on-prem" : "cloud";
     setLoading(true);
     try {
-      await axios.patch(
-        `/api/service-governance/${serviceId}`,
+      await api.patch(`/service-governance/${serviceId}`,
         { service_type: newType },
         {
-          headers: { Authorization: `Bearer ${token}`, "kong-header": "true" },
+          headers: { Authorization: `Bearer ${token}`, },
         },
       );
       fetchServices();
@@ -361,25 +360,25 @@ const AdminPortal = ({ token, onClose }) => {
     e.preventDefault();
     setLoading(true);
     try {
-      const headers = { Authorization: `Bearer ${token}`, "kong-header": "true" };
+      const headers = { Authorization: `Bearer ${token}`, };
       
       if (activeTab === "mappings") {
         if (editingMapping) {
-          await axios.put(`/api/admin/intent-mappings/${editingMapping.id}`, formData, { headers });
+          await api.put(`/admin/intent-mappings/${editingMapping.id}`, formData, { headers });
         } else {
-          await axios.post("/api/admin/intent-mappings", formData, { headers });
+          await api.post("/admin/intent-mappings", formData, { headers });
         }
         fetchMappings();
       } else if (activeTab === "policies") {
         if (editingPolicy) {
-          await axios.put(`/api/admin/policies/${editingPolicy.id}`, formData, { headers });
+          await api.put(`/admin/policies/${editingPolicy.id}`, formData, { headers });
         } else {
-          await axios.post("/api/admin/policies", formData, { headers });
+          await api.post("/admin/policies", formData, { headers });
         }
         fetchPolicies();
       } else if (activeTab === "security") {
-        await axios.post("/api/admin/security-patterns", formData, { headers });
-        await axios.post("/api/admin/security-patterns/reload", {}, { headers });
+        await api.post("/admin/security-patterns", formData, { headers });
+        await api.post("/admin/security-patterns/reload", {}, { headers });
         fetchSecurityPatterns();
       }
       
@@ -397,8 +396,8 @@ const AdminPortal = ({ token, onClose }) => {
   const handleDeletePolicy = async (id) => {
     if (!window.confirm("Are you sure you want to delete this policy?")) return;
     try {
-      await axios.delete(`/api/admin/policies/${id}`, {
-        headers: { Authorization: `Bearer ${token}`, "kong-header": "true" },
+      await api.delete(`/admin/policies/${id}`, {
+        headers: { Authorization: `Bearer ${token}`, },
       });
       fetchPolicies();
     } catch (err) {
@@ -409,9 +408,9 @@ const AdminPortal = ({ token, onClose }) => {
   const handleDeletePattern = async (id) => {
     if (!window.confirm("Are you sure you want to delete this injection pattern rule?")) return;
     try {
-        const headers = { Authorization: `Bearer ${token}`, "kong-header": "true" };
-        await axios.delete(`/api/admin/security-patterns/${id}`, { headers });
-        await axios.post("/api/admin/security-patterns/reload", {}, { headers });
+        const headers = { Authorization: `Bearer ${token}`, };
+        await api.delete(`/admin/security-patterns/${id}`, { headers });
+        await api.post("/admin/security-patterns/reload", {}, { headers });
         fetchSecurityPatterns();
     } catch (err) {
         setError("Delete failed");
@@ -422,11 +421,10 @@ const AdminPortal = ({ token, onClose }) => {
 
   const handleReloadPolicies = async () => {
     try {
-      const resp = await axios.post(
-        "/api/admin/policies/reload",
+      const resp = await api.post("/admin/policies/reload",
         {},
         {
-          headers: { Authorization: `Bearer ${token}`, "kong-header": "true" },
+          headers: { Authorization: `Bearer ${token}`, },
         },
       );
       const stats = resp?.data?.stats;
@@ -458,8 +456,8 @@ const AdminPortal = ({ token, onClose }) => {
     if (!window.confirm("Are you sure you want to deactivate this mapping?"))
       return;
     try {
-      await axios.delete(`/api/admin/intent-mappings/${id}`, {
-        headers: { Authorization: `Bearer ${token}`, "kong-header": "true" },
+      await api.delete(`/admin/intent-mappings/${id}`, {
+        headers: { Authorization: `Bearer ${token}`, },
       });
       fetchMappings();
     } catch (err) {
@@ -469,11 +467,10 @@ const AdminPortal = ({ token, onClose }) => {
 
   const handleReload = async () => {
     try {
-      await axios.post(
-        "/api/admin/intent-mappings/reload",
+      await api.post("/admin/intent-mappings/reload",
         {},
         {
-          headers: { Authorization: `Bearer ${token}`, "kong-header": "true" },
+          headers: { Authorization: `Bearer ${token}`, },
         },
       );
       alert("Cache reloaded successfully!");

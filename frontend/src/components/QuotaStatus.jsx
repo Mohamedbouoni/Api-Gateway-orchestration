@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import api from "../api/client";
 
 const QuotaStatus = ({ token, trigger, pushedData }) => {
   const [status, setStatus] = useState(null);
@@ -10,10 +10,9 @@ const QuotaStatus = ({ token, trigger, pushedData }) => {
       const config = {
         headers: {
           authorization: `Bearer ${token}`,
-          "kong-header": "true",
         },
       };
-      const res = await axios.get("/api/governance/quota-status", config);
+      const res = await api.get("/governance/quota-status", config);
       setStatus(res.data);
     } catch (err) {
       console.error("Failed to fetch quota status", err);

@@ -1,4 +1,4 @@
-import axios from "axios";
+import api from "../api/client";
 import { useEffect, useState, useCallback } from "react";
 import useAuth from "./useAuth";
 
@@ -9,8 +9,8 @@ export default function useIntent() {
   const fetchIntents = useCallback(async () => {
     if (!token) return;
     try {
-      const res = await axios.get("/api/admin/intent-mappings", {
-        headers: { Authorization: `Bearer ${token}`, "kong-header": "true" },
+      const res = await api.get("/admin/intent-mappings", {
+        headers: { Authorization: `Bearer ${token}` },
       });
       setIntents(res.data);
     } catch (err) {
