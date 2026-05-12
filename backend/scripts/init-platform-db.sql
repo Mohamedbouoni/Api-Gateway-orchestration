@@ -120,9 +120,10 @@ ON CONFLICT (service_id) DO NOTHING;
 INSERT INTO intent_routing (intent_name, service_id, taxonomy_version, created_by)
 VALUES 
     ('general_chat', 'ollama-llama3', '1.0', 'admin'),
-    ('code_generation', 'ollama-llama3', '1.0', 'admin'),
+    ('code_generation', 'ollama-DeepSeekCoder', '1.0', 'admin'),
     ('summarization', 'ollama-llama3', '1.0', 'admin'),
-    ('advanced_chat', 'gemini-cloud', '1.0', 'admin')
+    ('advanced_chat', 'gemini-cloud', '1.0', 'admin'),
+    ('unclassified', 'ollama-llama3', '1.0', 'admin')
 ON CONFLICT (intent_name) DO NOTHING;
 
 INSERT INTO tenant_service_permissions (tenant_id, service_id, allowed, granted_by)

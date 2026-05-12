@@ -94,6 +94,7 @@ make status
 | `data/databases.yaml` | ai-data | Kong DB + Keycloak DB + Redis |
 | `application/opa.yaml` | ai-application | OPA (2 replicas) + Rego policy |
 | `application/fastapi.yaml` | ai-application | FastAPI (3 replicas) + HPA |
+| `application/intent-classifier.yaml` | ai-application | Intent classifier (2 replicas + HPA) + taxonomy ConfigMap |
 | `application/keycloak-and-logger.yaml` | ai-application | Keycloak + Kong Logger |
 | `gateway/kong-cp.yaml` | ai-gateway | Kong Control Plane |
 | `gateway/kong-dp.yaml` | ai-gateway | Kong Data Plane (3 replicas) + HPA |
@@ -136,6 +137,13 @@ make hpa
 
 # Remove everything
 make teardown
+```
+
+Keycloak login for the app now goes through Kong at `http://localhost/auth` (no direct `localhost:8080` port-forward required for normal app auth flow).  
+If you need direct Keycloak admin/service access, use:
+
+```bash
+kubectl port-forward -n ai-application svc/keycloak 8080:8080
 ```
 
 ---
@@ -240,6 +248,7 @@ k8s/
 │   └── databases.yaml             ← Kong DB + Keycloak DB + Redis
 ├── application/
 │   ├── opa.yaml                   ← Policy engine (2 replicas)
+│   ├── intent-classifier.yaml     ← Zero-shot intent service (2 replicas + HPA)
 │   ├── fastapi.yaml               ← AI backend (3 replicas + HPA)
 │   └── keycloak-and-logger.yaml   ← Identity + log receiver
 └── gateway/
