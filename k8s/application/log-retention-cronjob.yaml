@@ -1,0 +1,106 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# log-retention-cronjob.yaml — Automated Nightly Log Cleanup
+# ─────────────────────────────────────────────────────────────────────────────
+# Runs every night at 02:00 UTC, connects to PostgreSQL, and executes the
+# cleanup_old_logs() stored procedure to delete records older than the
+# configured retention periods.
+#
+# Prerequisites:
+#   1. Run `backend/scripts/log-retention.sql` against the platform DB first
+#      to create the stored procedure.
+#   2. The `platform-db-secret` must exist in the ai-application namespace.
+# ─────────────────────────────────────────────────────────────────────────────
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: log-retention-cleanup
+  namespace: ai-application
+  labels:
+    app: log-retention
+    project: enterprise-ai-gateway
+    component: maintenance
+spec:
+  # Run every night at 02:00 UTC
+  schedule: "0 2 * * *"
+  # Keep last 3 successful and 1 failed job for debugging
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 1
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      # Auto-cleanup completed pods after 1 hour
+      ttlSecondsAfterFinished: 3600
+      backoffLimit: 2
+      template:
+        metadata:
+          labels:
+            app: log-retention
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: log-cleanup
+              image: postgres:16-alpine
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  echo "═══════════════════════════════════════════════════════"
+                  echo " Log Retention Cleanup — $(date -u '+%Y-%m-%d %H:%M UTC')"
+                  echo "═══════════════════════════════════════════════════════"
+                  echo ""
+                  echo "Retention Policy:"
+                  echo "  • api_usage_records:        30 days"
+                  echo "  • ai_requests:              30 days"
+                  echo "  • usage_token_logs:          90 days"
+                  echo "  • security_events:           90 days"
+                  echo "  • policy_eval_audit:         60 days"
+                  echo "  • permission/intent audit: 180 days"
+                  echo ""
+
+                  # Run cleanup and capture results
+                  RESULT=$(psql "$DATABASE_URL" -t -A -F'|' -c \
+                    "SELECT table_name, rows_deleted FROM cleanup_old_logs();" 2>&1)
+
+                  if [ $? -ne 0 ]; then
+                    echo "ERROR: Cleanup failed!"
+                    echo "$RESULT"
+                    exit 1
+                  fi
+
+                  echo "Results:"
+                  echo "────────────────────────────────────────"
+                  echo "$RESULT" | while IFS='|' read -r tbl count; do
+                    printf "  %-40s %s rows deleted\n" "$tbl" "$count"
+                  done
+                  echo "────────────────────────────────────────"
+
+                  # Also show current table sizes after cleanup
+                  echo ""
+                  echo "Current Table Sizes:"
+                  psql "$DATABASE_URL" -c \
+                    "SELECT relname AS table_name, n_live_tup AS est_rows,
+                            pg_size_pretty(pg_total_relation_size(C.oid)) AS size
+                     FROM pg_class C
+                     JOIN pg_namespace N ON N.oid = C.relnamespace
+                     WHERE relname IN (
+                       'api_usage_records','ai_requests','usage_token_logs',
+                       'security_events','policy_evaluation_audit_logs',
+                       'permission_audit_logs','intent_mapping_audit_logs')
+                     AND N.nspname = 'public'
+                     ORDER BY pg_total_relation_size(C.oid) DESC;"
+
+                  echo ""
+                  echo "✅ Log retention cleanup completed successfully."
+              env:
+                - name: DATABASE_URL
+                  valueFrom:
+                    secretKeyRef:
+                      name: platform-db-secret
+                      key: DATABASE_URL
+              resources:
+                requests:
+                  memory: "32Mi"
+                  cpu: "50m"
+                limits:
+                  memory: "128Mi"
+                  cpu: "200m"
