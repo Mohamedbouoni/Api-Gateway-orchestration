@@ -19,7 +19,9 @@ SPACY_MODEL_NAME = "en_core_web_sm"
 def load_spacy_model() -> Any:
     """Load and cache the spaCy model in-process."""
     try:
-        return spacy.load(SPACY_MODEL_NAME)
+        nlp = spacy.load(SPACY_MODEL_NAME)
+        logger.info("[spacy_loader] spaCy model loaded: %s", SPACY_MODEL_NAME)
+        return nlp
     except OSError as exc:
         raise RuntimeError(
             "spaCy model 'en_core_web_sm' is not installed. "
@@ -29,7 +31,5 @@ def load_spacy_model() -> Any:
 
 def get_nlp() -> Any:
     """FastAPI dependency that returns the cached spaCy NLP object."""
-    nlp = load_spacy_model()
-    logger.info("[spacy_loader] spaCy model loaded: %s", SPACY_MODEL_NAME)
-    return nlp
+    return load_spacy_model()
 

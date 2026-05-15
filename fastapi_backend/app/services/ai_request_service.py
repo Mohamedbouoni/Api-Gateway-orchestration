@@ -6,6 +6,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import time
 import urllib.parse
 import uuid
 from dataclasses import dataclass, field
@@ -111,6 +112,73 @@ class AIRequestService:
                 parts.append(f"{role}: {content}")
         return "\n".join(parts).strip()
 
+    @staticmethod
+    def _estimate_token_usage(
+        messages: List[Dict[str, str]],
+        response_text: str = "",
+    ) -> Dict[str, int]:
+        """Estimate prompt/output tokens when the provider omits usage metadata."""
+
+        def _text_to_tokens(text: str) -> int:
+            stripped = (text or "").strip()
+            if not stripped:
+                return 0
+            return max(1, len(stripped) // 4)
+
+        prompt_text = "".join(
+            (m.get("content") or "") for m in messages if isinstance(m, dict)
+        )
+        return {
+            "prompt_eval_count": _text_to_tokens(prompt_text),
+            "eval_count": _text_to_tokens(response_text),
+        }
+
+    def _resolve_usage(
+        self,
+        usage: Optional[Dict[str, Any]],
+        messages: List[Dict[str, str]],
+        response_text: str = "",
+    ) -> Dict[str, int]:
+        """Return Ollama-shaped usage, estimating when the provider reports none."""
+        raw = usage or {}
+        prompt_tokens = int(raw.get("prompt_eval_count") or 0)
+        eval_tokens = int(raw.get("eval_count") or 0)
+        if prompt_tokens + eval_tokens > 0:
+            return {
+                "prompt_eval_count": prompt_tokens,
+                "eval_count": eval_tokens,
+            }
+        return self._estimate_token_usage(messages, response_text)
+
+    async def _record_usage_and_increment(
+        self,
+        *,
+        request_id: str,
+        tenant_id: str,
+        resolved_service_id: str,
+        model_name: str,
+        usage: Dict[str, int],
+    ) -> None:
+        prompt_tokens = usage["prompt_eval_count"]
+        eval_tokens = usage["eval_count"]
+        total_tokens = prompt_tokens + eval_tokens
+        if total_tokens <= 0:
+            return
+
+        async with self._session_factory() as session:
+            await session.execute(text("SELECT set_config('app.is_admin', 'true', true)"))
+            await _create_usage_log(
+                session,
+                request_id=request_id,
+                tenant_id=tenant_id,
+                service_id=resolved_service_id,
+                model_name=model_name,
+                input_tokens=prompt_tokens,
+                output_tokens=eval_tokens,
+            )
+
+        await self._quota_service.increment_usage(tenant_id, total_tokens)
+
     def _gemini_headers(self) -> Dict[str, str]:
         """Build Gemini request headers copied from the exploit logic."""
         return {
@@ -192,7 +260,7 @@ class AIRequestService:
 
         return {
             "message": {"role": "assistant", "content": text},
-            "usage": {},
+            "usage": self._estimate_token_usage(messages, text),
         }
 
     async def _call_gemini_stream(
@@ -623,6 +691,7 @@ class AIRequestService:
                     raise ProviderError("Provider stream returned no iterator")
 
                 carry_buffer = ""
+                assistant_text = ""
                 async for chunk in stream_iter:
                     token = chunk.get("token", "") or ""
                     done = bool(chunk.get("done", False))
@@ -639,42 +708,31 @@ class AIRequestService:
                             token, carry_buffer
                         )
                         if safe_text:
+                            assistant_text += safe_text
                             yield "data: " + json.dumps({"token": safe_text, "done": False}) + "\n\n"
 
                     if done:
-                        # Extract usage info if available
-                        usage = chunk.get("usage")
-                        current_quota = None
-                        
-                        if usage:
-                            prompt_tokens = usage.get("prompt_eval_count", 0)
-                            eval_tokens = usage.get("eval_count", 0)
-                            
-                            # Persist usage to Postgres
-                            async with self._session_factory() as session:
-                                await session.execute(text("SELECT set_config('app.is_admin', 'true', true)"))
-                                await _create_usage_log(
-                                    session,
-                                    request_id=request_id,
-                                    tenant_id=tenant_id,
-                                    service_id=resolved_service_id,
-                                    model_name=outbound_model,
-                                    input_tokens=prompt_tokens,
-                                    output_tokens=eval_tokens
-                                )
-                            
-                            # Update Redis usage
-                            await self._quota_service.increment_usage(tenant_id, prompt_tokens + eval_tokens)
-                            
-                        # Fetch latest quota status for push
+                        # Flush remaining carry buffer with redaction first.
+                        final_token = carry_buffer + (token or "")
+                        response_text = assistant_text + final_token
+                        usage = self._resolve_usage(
+                            chunk.get("usage"),
+                            messages,
+                            response_text=response_text,
+                        )
+                        await self._record_usage_and_increment(
+                            request_id=request_id,
+                            tenant_id=tenant_id,
+                            resolved_service_id=resolved_service_id,
+                            model_name=outbound_model,
+                            usage=usage,
+                        )
                         current_quota = await self._quota_service.get_quota_status(tenant_id)
 
                         # SSE contract:
                         # 1) data frames can carry token text with done=false
                         # 2) final frame (done=true) is metadata-only with token=""
                         # This prevents clients from having to special-case done=true text.
-                        # Flush remaining carry buffer with redaction first.
-                        final_token = carry_buffer + (token or "")
                         if final_token:
                             final_redacted = self._output_guard.redact(final_token)
                             final_token = final_redacted.redacted_text
@@ -752,6 +810,7 @@ class AIRequestService:
 
         outbound_model = pf.service.model_name
         outbound_provider_url = pf.service.provider_url
+        started_at = time.perf_counter()
 
         try:
             if pf.service.provider_type == "gemini":
@@ -778,26 +837,20 @@ class AIRequestService:
             finally:
                 raise ProviderError(f"Failed to connect to AI provider: {str(exc)}")
 
-        # Usage tracking for JSON
-        usage = provider_data.get("usage", {})
-        prompt_tokens = usage.get("prompt_eval_count", 0)
-        eval_tokens = usage.get("eval_count", 0)
-        
-        async with self._session_factory() as session:
-            await session.execute(text("SELECT set_config('app.is_admin', 'true', true)"))
-            await _create_usage_log(
-                session,
-                request_id=pf.request_id,
-                tenant_id=pf.tenant_id,
-                service_id=pf.resolved_service_id,
-                model_name=outbound_model,
-                input_tokens=prompt_tokens,
-                output_tokens=eval_tokens
-            )
-        
-        await self._quota_service.increment_usage(pf.tenant_id, prompt_tokens + eval_tokens)
-        
-        # Push latest quota status
+        elapsed_ms = int((time.perf_counter() - started_at) * 1000)
+        response_text = provider_data.get("message", {}).get("content", "")
+        usage = self._resolve_usage(
+            provider_data.get("usage"),
+            pf.messages,
+            response_text=response_text,
+        )
+        await self._record_usage_and_increment(
+            request_id=pf.request_id,
+            tenant_id=pf.tenant_id,
+            resolved_service_id=pf.resolved_service_id,
+            model_name=outbound_model,
+            usage=usage,
+        )
         current_quota = await self._quota_service.get_quota_status(pf.tenant_id)
 
         await self._update_status_in_new_session(
@@ -807,7 +860,6 @@ class AIRequestService:
         )
 
         # ── Output Guard: Full PII redaction on JSON response ──
-        response_text = provider_data.get("message", {}).get("content", "")
         if response_text:
             redaction_result = self._output_guard.redact(response_text)
             if redaction_result.redaction_count > 0:

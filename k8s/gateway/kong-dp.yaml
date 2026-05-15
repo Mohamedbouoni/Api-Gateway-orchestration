@@ -42,7 +42,7 @@ metadata:
     app: kong-dp
     project: enterprise-ai-gateway
 spec:
-  replicas: 3
+  replicas: 1
   selector:
     matchLabels:
       app: kong-dp
@@ -68,11 +68,11 @@ spec:
                 name: kong-dp-config
           resources:
             requests:
-              memory: "256Mi"
-              cpu: "250m"
+              memory: "128Mi"
+              cpu: "100m"
             limits:
-              memory: "1Gi"
-              cpu: "1000m"
+              memory: "512Mi"
+              cpu: "500m"
           livenessProbe:
             httpGet:
               path: /status
@@ -149,8 +149,8 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: kong-dp
-  minReplicas: 3
-  maxReplicas: 10
+  minReplicas: 1
+  maxReplicas: 3
   metrics:
     - type: Resource
       resource:

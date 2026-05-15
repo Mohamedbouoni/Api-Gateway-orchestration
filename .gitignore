@@ -24,6 +24,7 @@ vault-data/
 *.key
 *.pem
 *.crt
+.hf_token
 
 # Docker volumes & data
 postgres-data/

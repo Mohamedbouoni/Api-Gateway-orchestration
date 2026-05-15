@@ -15,14 +15,35 @@ import re
 from typing import Any, Dict, List, Set
 
 from presidio_analyzer import AnalyzerEngine
+from presidio_analyzer.nlp_engine import NlpEngineProvider
 
 from app.core.text_utils import normalize_text
 from app.schemas.ai_request import AIRequestSchema, SensitivityLevel
 
 logger = logging.getLogger(__name__)
 
-# Presidio entity types treated like legacy spaCy low-signal (ORG/GPE/LOC).
-PRESIDIO_LOW_SIGNAL_TYPES: frozenset[str] = frozenset({"ORGANIZATION", "LOCATION"})
+# PII Sensitivity Tiers mapping entity types to SensitivityLevel.
+# None means the entity is tolerated (no automatic upgrade).
+PII_SENSITIVITY_TIERS: Dict[str, SensitivityLevel | None] = {
+    # Always HIGH — critical secrets / financial / identity
+    "SSN": SensitivityLevel.HIGH,
+    "CREDIT_CARD": SensitivityLevel.HIGH,
+    "IBAN": SensitivityLevel.HIGH,
+    "JWT": SensitivityLevel.HIGH,
+    "API_KEY": SensitivityLevel.HIGH,
+    "US_PASSPORT": SensitivityLevel.HIGH,
+    "MEDICAL_LICENSE": SensitivityLevel.HIGH,
+    # MEDIUM — personal but not catastrophic alone
+    "EMAIL": SensitivityLevel.MEDIUM,
+    "PHONE": SensitivityLevel.MEDIUM,
+    "ADDRESS": SensitivityLevel.MEDIUM,
+    "PERSON": SensitivityLevel.MEDIUM,
+    # LOW signal — don't upgrade at all (tolerated)
+    "DATE_TIME": None,
+    "ORGANIZATION": None,
+    "LOCATION": None,
+    "URL": None,
+}
 
 EMAIL_PATTERN: re.Pattern[str] = re.compile(r"[\w\.\-]+@[\w\.\-]+\.\w+")
 
@@ -47,6 +68,17 @@ STREET_ADDRESS_PATTERN: re.Pattern[str] = re.compile(
     re.I,
 )
 
+US_PASSPORT_PATTERN: re.Pattern[str] = re.compile(r"(?<!\w)[A-Z0-9]{9}(?!\w)")
+MEDICAL_LICENSE_PATTERN: re.Pattern[str] = re.compile(r"(?<!\w)[A-Z]{2}\d{7}(?!\w)")
+STREET_ADDRESS_PATTERN: re.Pattern[str] = re.compile(
+    r"(?<!\w)\d{1,6}\s+"
+    r"(?:[A-Za-z0-9.\-]+\s+){0,4}"
+    r"(?:Street|St\.?|Avenue|Ave\.?|Road|Rd\.?|Boulevard|Blvd\.?|Lane|Ln\.?|Drive|Dr\.?|Court|Ct\.?|"
+    r"Way|Terrace|Ter\.?|Circle|Cir\.?|Place|Pl\.?)"
+    r"(?!\w)",
+    re.I,
+)
+
 JWT_PATTERN: re.Pattern[str] = re.compile(
     r"(?<!\w)eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}(?!\w)"
 )
@@ -59,14 +91,38 @@ API_KEY_GENERIC_ASSIGNMENT_PATTERN: re.Pattern[str] = re.compile(
     re.I,
 )
 
+# Use the same spaCy model baked into the Docker image (see Dockerfile).
+# Presidio's default is en_core_web_lg (~400 MB) which it downloads on first use.
+PRESIDIO_SPACY_MODEL = os.getenv("PRESIDIO_SPACY_MODEL", "en_core_web_sm")
+
 _analyzer_engine: AnalyzerEngine | None = None
+
+
+def _create_presidio_analyzer() -> AnalyzerEngine:
+    """Build Presidio with an explicit spaCy model — avoids runtime downloads."""
+    configuration = {
+        "nlp_engine_name": "spacy",
+        "models": [{"lang_code": "en", "model_name": PRESIDIO_SPACY_MODEL}],
+    }
+    provider = NlpEngineProvider(nlp_configuration=configuration)
+    return AnalyzerEngine(nlp_engine=provider.create_engine())
 
 
 def _get_presidio_analyzer() -> AnalyzerEngine:
     global _analyzer_engine
     if _analyzer_engine is None:
-        _analyzer_engine = AnalyzerEngine()
+        _analyzer_engine = _create_presidio_analyzer()
     return _analyzer_engine
+
+
+def warmup_presidio_analyzer() -> None:
+    """Eager-load Presidio + spaCy at startup (CPU-bound; run in executor)."""
+    analyzer = _get_presidio_analyzer()
+    analyzer.analyze(text="startup warmup", language="en")
+    logger.info(
+        "[ContentInspector] Presidio analyzer warm-up complete (model=%s)",
+        PRESIDIO_SPACY_MODEL,
+    )
 
 
 def _luhn_check(number_digits: str) -> bool:
@@ -111,13 +167,9 @@ def _parse_allowed_low_signal_intents() -> Set[str]:
     return {part.strip() for part in raw.split(",") if part.strip()}
 
 
-def _should_skip_presidio_entity(*, entity_type: str, intent: str, environment: str) -> bool:
-    """Skip ORG/LOC-like types in dev; in prod only allow when intent is in env list."""
-    if entity_type not in PRESIDIO_LOW_SIGNAL_TYPES:
-        return False
-    if environment == "prod" and intent in _parse_allowed_low_signal_intents():
-        return False
-    return True
+def _get_target_sensitivity(entity_type: str) -> SensitivityLevel | None:
+    """Return the sensitivity level this entity type should trigger."""
+    return PII_SENSITIVITY_TIERS.get(entity_type)
 
 
 def _count_regex_matches(pattern: re.Pattern[str], text: str) -> int:
@@ -186,39 +238,48 @@ class ContentInspectorService:
         _add_detected("API_KEY", _count_regex_matches(API_KEY_GITHUB_PATTERN, combined_text))
         _add_detected("API_KEY", _count_regex_matches(API_KEY_GENERIC_ASSIGNMENT_PATTERN, combined_text))
 
+        _add_detected("US_PASSPORT", _count_regex_matches(US_PASSPORT_PATTERN, combined_text))
+        _add_detected("MEDICAL_LICENSE", _count_regex_matches(MEDICAL_LICENSE_PATTERN, combined_text))
+
         try:
             analyzer = _get_presidio_analyzer()
             results = analyzer.analyze(text=combined_text, language="en")
             for r in results:
                 et = str(r.entity_type)
-                if _should_skip_presidio_entity(
-                    entity_type=et,
-                    intent=body.intent,
-                    environment=body.metadata.environment,
-                ):
-                    continue
                 _add_detected(et, 1)
         except Exception as exc:
             logger.warning("[ContentInspector] Presidio analyze failed: %s", exc)
 
-        if detected_counts:
+        # Resolve the highest sensitivity level among all detected PII types
+        highest_tier: SensitivityLevel = declared
+        for et in detected_counts.keys():
+            tier = _get_target_sensitivity(et)
+            if tier is None:
+                continue
+            
+            # Compare and upgrade if the new tier is higher
+            if tier == SensitivityLevel.HIGH:
+                highest_tier = SensitivityLevel.HIGH
+                break  # Can't go higher than HIGH
+            elif tier == SensitivityLevel.MEDIUM and highest_tier != SensitivityLevel.HIGH:
+                highest_tier = SensitivityLevel.MEDIUM
+
+        if highest_tier != declared:
             detected_types = sorted(detected_counts.keys())
             total_count = sum(detected_counts.values())
             logger.info(
-                "[ContentInspector] PII detected %s",
+                "[ContentInspector] PII detected %s. Upgrading sensitivity %s → %s",
                 {"types": detected_types, "count": total_count},
-            )
-            logger.info(
-                "[ContentInspector] Upgrading sensitivity %s → HIGH due to PII.",
                 declared.value,
+                highest_tier.value,
             )
-            return SensitivityLevel.HIGH, detected_types, total_count
+            return highest_tier, detected_types, total_count
 
         logger.debug(
-            "[ContentInspector] No PII detected — sensitivity remains %s",
+            "[ContentInspector] PII detected but none triggered a sensitivity upgrade — remains %s",
             declared.value,
         )
-        return declared, [], 0
+        return declared, sorted(detected_counts.keys()), sum(detected_counts.values())
 
     async def resolve_sensitivity(self, body: AIRequestSchema, nlp: Any) -> SensitivityLevel:
         """Return the final resolved SensitivityLevel."""

@@ -42,6 +42,8 @@ data:
   INTENT_TAXONOMY_PATH: "/etc/intent-taxonomy/intent_labels_v1.yaml"
   # HuggingFace model cache (DistilBERT warm-up at startup)
   HF_HOME: "/var/cache/huggingface"
+  # Presidio spaCy model — must match `python -m spacy download` in Dockerfile
+  PRESIDIO_SPACY_MODEL: "en_core_web_sm"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -52,15 +54,12 @@ metadata:
     app: fastapi
     project: enterprise-ai-gateway
 spec:
-  replicas: 3
+  replicas: 1
   selector:
     matchLabels:
       app: fastapi
   strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxSurge: 2       # can temporarily have 5 pods during update
-      maxUnavailable: 0 # never drop below 3 pods
+    type: Recreate
   template:
     metadata:
       labels:
@@ -69,7 +68,7 @@ spec:
       containers:
         - name: fastapi
           image: api-gateways-backend:latest
-          imagePullPolicy: Never  # use local Docker image (dev mode)
+          imagePullPolicy: Never # use local Docker image (dev mode)
           ports:
             - containerPort: 3000
           envFrom:
@@ -85,20 +84,19 @@ spec:
             - name: intent-taxonomy
               mountPath: /etc/intent-taxonomy
               readOnly: true
-            - name: hf-cache
-              mountPath: /var/cache/huggingface
           resources:
             requests:
-              memory: "1536Mi"
-              cpu: "500m"
+              memory: "1Gi"
+              cpu: "100m"
             limits:
-              memory: "3Gi"
-              cpu: "2000m"
+              memory: "2Gi"
+              cpu: "1000m"
           startupProbe:
-            tcpSocket:
+            httpGet:
+              path: /api/
               port: 3000
-            periodSeconds: 15
-            failureThreshold: 60
+            periodSeconds: 10
+            failureThreshold: 90
           livenessProbe:
             tcpSocket:
               port: 3000
@@ -115,9 +113,6 @@ spec:
         - name: intent-taxonomy
           configMap:
             name: intent-taxonomy-v1
-        - name: hf-cache
-          emptyDir:
-            sizeLimit: 3Gi
 ---
 # Service: Kong DP reaches FastAPI via this internal DNS name
 apiVersion: v1
@@ -149,31 +144,31 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: fastapi
-  minReplicas: 3
-  maxReplicas: 10
+  minReplicas: 1
+  maxReplicas: 3
   metrics:
     - type: Resource
       resource:
         name: cpu
         target:
           type: Utilization
-          averageUtilization: 70   # scale up when average CPU > 70%
+          averageUtilization: 70 # scale up when average CPU > 70%
     - type: Resource
       resource:
         name: memory
         target:
           type: Utilization
-          averageUtilization: 80   # scale up when average memory > 80%
+          averageUtilization: 80 # scale up when average memory > 80%
   behavior:
     scaleUp:
-      stabilizationWindowSeconds: 60   # wait 60s before scaling up again
+      stabilizationWindowSeconds: 60 # wait 60s before scaling up again
       policies:
         - type: Pods
           value: 2
-          periodSeconds: 60            # add at most 2 pods per minute
+          periodSeconds: 60 # add at most 2 pods per minute
     scaleDown:
-      stabilizationWindowSeconds: 300  # wait 5 min before scaling down
+      stabilizationWindowSeconds: 300 # wait 5 min before scaling down
       policies:
         - type: Pods
           value: 1
-          periodSeconds: 120           # remove at most 1 pod per 2 minutes
+          periodSeconds: 120 # remove at most 1 pod per 2 minutes

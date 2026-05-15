@@ -66,11 +66,11 @@ spec:
           # Resource limits: prevent one pod from eating all cluster CPU/RAM
           resources:
             requests:
+              memory: "128Mi"
+              cpu: "50m"
+            limits:
               memory: "256Mi"
               cpu: "250m"
-            limits:
-              memory: "512Mi"
-              cpu: "500m"
           # Health checks: Kubernetes restarts the pod if the DB stops responding
           livenessProbe:
             exec:

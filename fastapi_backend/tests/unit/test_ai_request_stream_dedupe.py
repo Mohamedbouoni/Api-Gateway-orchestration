@@ -51,6 +51,12 @@ class _NoopSession:
     async def execute(self, *_: Any, **__: Any) -> None:
         return None
 
+    def add(self, *_: Any, **__: Any) -> None:
+        return None
+
+    async def commit(self) -> None:
+        return None
+
 
 def _make_service() -> AIRequestService:
     """Build an AIRequestService instance with minimal real collaborators."""

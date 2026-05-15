@@ -39,19 +39,51 @@ function Build-LocalImage {
         [string]$DockerfileDir,
         [string]$DockerfilePath = ""
     )
+
     $maxAttempts = 3
+
     for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
+
         Write-Host "  Building image: $ImageName (attempt $attempt/$maxAttempts)" -ForegroundColor Gray
-        $dockerArgs = @("build", "-t", $ImageName)
+
+        $dockerArgs = @(
+            "build",
+            "-t", $ImageName
+        )
+
+        # Frontend Vite build arguments
+        if ($ImageName -eq "api-gateways-frontend:latest") {
+
+            $dockerArgs += @(
+                "--build-arg", "VITE_KEYCLOAK_URL=http://localhost/auth",
+                "--build-arg", "VITE_KEYCLOAK_REALM=newRealm",
+                "--build-arg", "VITE_KEYCLOAK_CLIENT_ID=myclient",
+                "--build-arg", "VITE_APP_URL=http://localhost",
+                "--build-arg", "AI_ENDPOINT=https://localhost:8443/api/ai/orchestrate/"
+            )
+        }
+
         if ($DockerfilePath) {
             $dockerArgs += @("-f", $DockerfilePath)
         }
+
+        # Automatically pass HF_TOKEN if found in the build directory
+        $hfTokenPath = Join-Path $DockerfileDir ".hf_token"
+
+        if (Test-Path $hfTokenPath) {
+            $dockerArgs += @("--secret", "id=hf_token,src=$hfTokenPath")
+        }
+
         $dockerArgs += $DockerfileDir
+
         $buildOutput = & docker @dockerArgs 2>&1
+
         $buildText = ($buildOutput | Out-String)
+
         if ($buildText) {
             Write-Host $buildText
         }
+
         $exitCode = $LASTEXITCODE
 
         if ($exitCode -eq 0) {
@@ -62,6 +94,7 @@ function Build-LocalImage {
         $isRegistryMetadataFailure = $buildText -match "failed to resolve source metadata"
 
         $isRetryable = $isTlsHandshakeTimeout -or $isRegistryMetadataFailure
+
         if (-not $isRetryable -or $attempt -eq $maxAttempts) {
             throw "Failed to build image: $ImageName"
         }
@@ -157,18 +190,43 @@ if ($applyExitCode -ne 0) {
 # ── Wait for services ─────────────────────────────────────────────────────
 Write-Host ""
 Write-Host "Waiting for databases..." -ForegroundColor Gray
-kubectl wait --for=condition=ready pod -l app=platform-db -n ai-data --timeout=180s
-if ($LASTEXITCODE -ne 0) { throw "platform-db pods did not become ready in time." }
-kubectl wait --for=condition=ready pod -l app=kong-db -n ai-data --timeout=180s
-if ($LASTEXITCODE -ne 0) { throw "kong-db pods did not become ready in time." }
+kubectl wait --for=condition=ready pod -l app=platform-db -n ai-data --timeout=300s
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "  platform-db failed to become ready. Dumping pod info..." -ForegroundColor Red
+    kubectl describe pod -l app=platform-db -n ai-data
+    kubectl logs -l app=platform-db -n ai-data --all-containers=true --tail=50
+    throw "platform-db pods did not become ready in time."
+}
+kubectl wait --for=condition=ready pod -l app=kong-db -n ai-data --timeout=300s
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "  kong-db failed to become ready. Dumping pod info..." -ForegroundColor Red
+    kubectl describe pod -l app=kong-db -n ai-data
+    kubectl logs -l app=kong-db -n ai-data --all-containers=true --tail=50
+    throw "kong-db pods did not become ready in time."
+}
 
 Write-Host "Waiting for application layer..." -ForegroundColor Gray
-kubectl wait --for=condition=ready pod -l app=fastapi -n ai-application --timeout=900s
-if ($LASTEXITCODE -ne 0) { throw "fastapi pods did not become ready in time." }
-kubectl wait --for=condition=ready pod -l app=intent-classifier -n ai-application --timeout=240s
-if ($LASTEXITCODE -ne 0) { throw "intent-classifier pods did not become ready in time." }
-kubectl wait --for=condition=ready pod -l app=opa -n ai-application --timeout=120s
-if ($LASTEXITCODE -ne 0) { throw "opa pods did not become ready in time." }
+kubectl wait --for=condition=ready pod -l app=fastapi -n ai-application --timeout=1200s
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "  fastapi failed to become ready. Dumping pod info..." -ForegroundColor Red
+    kubectl describe pod -l app=fastapi -n ai-application
+    kubectl logs -l app=fastapi -n ai-application --all-containers=true --tail=50
+    throw "fastapi pods did not become ready in time."
+}
+kubectl wait --for=condition=ready pod -l app=intent-classifier -n ai-application --timeout=300s
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "  intent-classifier failed to become ready. Dumping pod info..." -ForegroundColor Red
+    kubectl describe pod -l app=intent-classifier -n ai-application
+    kubectl logs -l app=intent-classifier -n ai-application --all-containers=true --tail=50
+    throw "intent-classifier pods did not become ready in time."
+}
+kubectl wait --for=condition=ready pod -l app=opa -n ai-application --timeout=180s
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "  opa failed to become ready. Dumping pod info..." -ForegroundColor Red
+    kubectl describe pod -l app=opa -n ai-application
+    kubectl logs -l app=opa -n ai-application --all-containers=true --tail=50
+    throw "opa pods did not become ready in time."
+}
 
 Write-Host "Waiting for gateway..." -ForegroundColor Gray
 kubectl wait --for=condition=ready pod -l app=kong-cp -n ai-gateway --timeout=240s

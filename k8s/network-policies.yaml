@@ -380,7 +380,6 @@ spec:
               app: prometheus
       ports:
         - port: 3010
-
 ---
 # allow kong-dp to reach redis
 apiVersion: networking.k8s.io/v1
@@ -496,4 +495,66 @@ spec:
         - port: 443
           protocol: TCP
         - port: 11434
+          protocol: TCP
+---
+# ── RULE 17: Kong DP can reach Keycloak ──────────────────────────────────────
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-kong-dp-to-keycloak
+  namespace: ai-application
+  labels:
+    project: enterprise-ai-gateway
+spec:
+  podSelector:
+    matchLabels:
+      app: keycloak
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ai-gateway
+          podSelector:
+            matchLabels:
+              app: kong-dp
+      ports:
+        - port: 8080
+---
+# ── RULE 18: Keycloak egress — databases, DNS ────────────────────────────────
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-keycloak-egress
+  namespace: ai-application
+  labels:
+    project: enterprise-ai-gateway
+spec:
+  podSelector:
+    matchLabels:
+      app: keycloak
+  policyTypes:
+    - Egress
+  egress:
+    # Keycloak PostgreSQL in ai-data
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ai-data
+          podSelector:
+            matchLabels:
+              app: keycloak-db
+      ports:
+        - port: 5432
+          protocol: TCP
+    # DNS resolution (kube-system)
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
           protocol: TCP

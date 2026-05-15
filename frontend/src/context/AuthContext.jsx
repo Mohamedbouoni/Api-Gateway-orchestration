@@ -21,9 +21,7 @@ export const AuthProvider = ({ children }) => {
         });
         clientRef.current = client;
 
-        // redirectUri tells Keycloak where to send the browser after login.
-        // Use VITE_APP_URL (the Kong gateway) so the flow goes through Kong,
-        // not the raw Vite dev server. Falls back to current origin if not set.
+        // redirectUri must match a Kong-routed URL (VITE_APP_URL), not a raw port-forward.
         const redirectUri = import.meta.env.VITE_APP_URL
             ? import.meta.env.VITE_APP_URL + '/'
             : window.location.origin + '/';

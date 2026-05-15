@@ -164,13 +164,18 @@ INJECTION_PATTERNS: List[InjectionPattern] = [
         weight=1.5,
         description="Injects model-specific control tokens",
     ),
+    InjectionPattern(
+        name="system_prompt_direct_request",
+        pattern=re.compile(r"show\s+me\s+your\s+system\s+prompt", re.IGNORECASE),
+        weight=1.0,
+    ),
 ]
 
 
 class InjectionClassifier:
     """DistilBERT-based prompt injection scoring (CPU; run via executor)."""
 
-    MODEL_ID = "fmops/distilbert-prompt-injection"
+    MODEL_ID = "meta-llama/Llama-Prompt-Guard-2-86M"
 
     def __init__(self) -> None:
         self._pipeline: Any = None

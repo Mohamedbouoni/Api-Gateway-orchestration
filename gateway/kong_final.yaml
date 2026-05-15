@@ -9,7 +9,7 @@ upstreams:
     healthchecks:
       active:
         type: http
-        http_path: /__vite_ping
+        http_path: /
         healthy:
           interval: 5
           successes: 1
@@ -17,7 +17,7 @@ upstreams:
           interval: 5
           http_failures: 2
     targets:
-      - target: frontend.ai-gateway.svc.cluster.local:5173
+      - target: frontend.ai-gateway.svc.cluster.local:80
         weight: 100
 
 services:
@@ -49,6 +49,17 @@ services:
         strip_path: false
         protocols:
           - http
+        plugins:
+          - name: correlation-id
+            config:
+              header_name: x-request-id
+              generator: uuid
+              echo_downstream: true
+          - name: request-size-limiting
+            config:
+              allowed_payload_size: 2
+              size_unit: megabytes
+
       - name: fastapi-ai
         paths:
           - /api/ai/request
@@ -62,8 +73,22 @@ services:
               hour: 1000
               minute: 100
               second: 10
-              limit_by: "consumer"
-              policy: "local"
+              limit_by: consumer
+              policy: local
+          - name: request-size-limiting
+            config:
+              allowed_payload_size: 1
+              size_unit: megabytes
+          - name: correlation-id
+            config:
+              header_name: x-request-id
+              generator: uuid
+              echo_downstream: true
+          - name: request-termination
+            config:
+              status_code: 503
+              message: "Service temporarily unavailable"
+            enabled: false
 
   - name: frontend
     protocol: http

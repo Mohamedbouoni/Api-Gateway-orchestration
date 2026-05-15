@@ -43,11 +43,10 @@ spec:
           image: api-gateways-frontend:latest
           imagePullPolicy: Never
           ports:
-            - containerPort: 5173
+            - containerPort: 80
           envFrom:
             - configMapRef:
                 name: frontend-config
-          command: ["npm", "run", "dev", "--", "--host"]
           resources:
             requests:
               memory: "128Mi"
@@ -57,14 +56,14 @@ spec:
               cpu: "500m"
           livenessProbe:
             httpGet:
-              path: /__vite_ping
-              port: 5173
+              path: /
+              port: 80
             initialDelaySeconds: 15
             periodSeconds: 10
           readinessProbe:
             httpGet:
-              path: /__vite_ping
-              port: 5173
+              path: /
+              port: 80
             initialDelaySeconds: 5
             periodSeconds: 3
             failureThreshold: 10
@@ -81,8 +80,8 @@ spec:
   selector:
     app: frontend
   ports:
-    - port: 5173
-      targetPort: 5173
+    - port: 80
+      targetPort: 80
   type: ClusterIP
 ---
 # ─────────────────────────────────────────────────────────────────────────────

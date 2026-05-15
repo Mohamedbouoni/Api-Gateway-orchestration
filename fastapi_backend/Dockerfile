@@ -22,14 +22,16 @@ RUN pip install --no-cache-dir --default-timeout=120 --retries 10 -r requirement
 
 RUN python -m spacy download en_core_web_sm
 
-# Bake the DistilBERT injection model into the image so startup warm-up is
+# Bake the Prompt-Guard injection model into the image so startup warm-up is
 # instant — no download on first boot.  The model lands in HF_HOME which the
 # K8s manifest sets to /var/cache/huggingface (emptyDir, pre-populated here).
 ENV HF_HOME=/var/cache/huggingface
-RUN python -c "\
+RUN --mount=type=secret,id=hf_token \
+    python -c "\
 from transformers import pipeline; \
-pipeline('text-classification', model='fmops/distilbert-prompt-injection', \
-         device=-1)"
+token = open('/run/secrets/hf_token').read().strip(); \
+pipeline('text-classification', model='meta-llama/Llama-Prompt-Guard-2-86M', \
+         token=token, device=-1)"
 
 COPY . .
 

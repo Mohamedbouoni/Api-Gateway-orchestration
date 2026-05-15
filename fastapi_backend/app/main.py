@@ -31,7 +31,10 @@ from app.infrastructure.nlp.spacy_loader import get_nlp
 from app.models.governance_policy import GovernancePolicy
 from app.schemas.policy import PolicyFileSchema, PolicySchema, PolicyConditionSchema
 from app.services.ai_request_service import AIRequestService
-from app.services.content_inspector_service import ContentInspectorService
+from app.services.content_inspector_service import (
+    ContentInspectorService,
+    warmup_presidio_analyzer,
+)
 from app.services.intent_cache_service import IntentCacheService
 from app.services.intent_mappings_service import IntentMappingsService
 from app.services.output_guard_service import OutputGuardService
@@ -130,6 +133,10 @@ async def lifespan(app: FastAPI):
 
     # Fail fast if required external dependencies (spaCy model) are missing.
     _ = get_nlp()
+
+    # Presidio defaults to en_core_web_lg and downloads on first analyze() unless
+    # configured and warmed here (uses en_core_web_sm from the image).
+    await _loop.run_in_executor(None, warmup_presidio_analyzer)
 
     # Initialize cache from DB.
     await intent_cache_service.initialize()

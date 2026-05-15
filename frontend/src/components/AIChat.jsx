@@ -32,6 +32,33 @@ const CURSOR_STYLE = `
 }
 `;
 
+// Resolved-sensitivity visual theme (PII scan / upgrade indicators)
+const SENSITIVITY_THEME = {
+  HIGH: {
+    bg: "#ef4444",
+    softBg: "rgba(239, 68, 68, 0.12)",
+    border: "rgba(239, 68, 68, 0.35)",
+    text: "#f87171",
+  },
+  MEDIUM: {
+    bg: "#eab308",
+    softBg: "rgba(234, 179, 8, 0.12)",
+    border: "rgba(234, 179, 8, 0.35)",
+    text: "#facc15",
+  },
+  LOW: {
+    bg: "#22c55e",
+    softBg: "rgba(34, 197, 94, 0.12)",
+    border: "rgba(34, 197, 94, 0.35)",
+    text: "#4ade80",
+  },
+};
+
+function getSensitivityTheme(level) {
+  const key = String(level || "LOW").toUpperCase();
+  return SENSITIVITY_THEME[key] ?? SENSITIVITY_THEME.LOW;
+}
+
 const AIChat = ({
   logout,
   fetchAdmin,
@@ -168,6 +195,7 @@ const AIChat = ({
         hour: "2-digit",
         minute: "2-digit",
       }),
+      providedSensitivity: selectedSensitivity,
     };
 
     const conversationHistory = [...messages, userMessage].slice(-MAX_HISTORY);
@@ -247,6 +275,7 @@ const AIChat = ({
                 minute: "2-digit",
               }),
               isError: true,
+              providedSensitivity: selectedSensitivity,
               detectedPiiTypes,
               piiCount,
             },
@@ -275,6 +304,7 @@ const AIChat = ({
               minute: "2-digit",
             }),
             isStreaming: true,
+            providedSensitivity: selectedSensitivity,
           },
         ]);
       };
@@ -344,8 +374,17 @@ const AIChat = ({
               setResolvedService(data.resolved_service);
             setMessages((prev) => {
               const updated = [...prev];
-              updated[updated.length - 1] = {
-                ...updated[updated.length - 1],
+              const lastIdx = updated.length - 1;
+              const piiMeta = {
+                resolvedSensitivity: data.resolved_sensitivity || null,
+                detectedPiiTypes: Array.isArray(data.detected_pii_types)
+                  ? data.detected_pii_types
+                  : null,
+                piiCount: data.pii_count || 0,
+              };
+
+              updated[lastIdx] = {
+                ...updated[lastIdx],
                 isStreaming: false,
                 requestId: data.request_id || null,
                 resolvedService: data.resolved_service || null,
@@ -358,13 +397,8 @@ const AIChat = ({
                   typeof data.intent_confidence === "number"
                     ? data.intent_confidence
                     : null,
-                resolvedSensitivity: data.resolved_sensitivity || null,
-                detectedPiiTypes: Array.isArray(data.detected_pii_types)
-                  ? data.detected_pii_types
-                  : null,
-                piiCount: data.pii_count || 0,
-                // Streaming latency comes from X-Request-ID header only;
-                // no per-message upstream latency available in SSE mode
+                providedSensitivity: selectedSensitivity,
+                ...piiMeta,
                 metrics: {
                   proxyLatency: response.headers.get("x-kong-proxy-latency"),
                   upstreamLatency: response.headers.get(
@@ -373,6 +407,15 @@ const AIChat = ({
                   debug: response.headers.get("x-ai-debug"),
                 },
               };
+
+              // Mirror PII / resolved sensitivity onto the user turn for bubble tinting
+              if (lastIdx > 0 && updated[lastIdx - 1]?.role === "user") {
+                updated[lastIdx - 1] = {
+                  ...updated[lastIdx - 1],
+                  ...piiMeta,
+                };
+              }
+
               return updated;
             });
           }
@@ -621,7 +664,21 @@ const AIChat = ({
           </div>
         )}
 
-        {messages.map((m, i) => (
+        {messages.map((m, i) => {
+          const level = m.resolvedSensitivity
+            ? getSensitivityTheme(m.resolvedSensitivity)
+            : null;
+          const isSensitivityMatch =
+            m.resolvedSensitivity &&
+            m.providedSensitivity &&
+            m.resolvedSensitivity === m.providedSensitivity;
+          const isSensitivityUpgraded =
+            m.resolvedSensitivity &&
+            m.providedSensitivity &&
+            m.resolvedSensitivity !== m.providedSensitivity;
+          const showSensitivityTint = isSensitivityUpgraded && level != null;
+
+          return (
           <div
             key={i}
             className={`message-wrapper ${m.role} ${m.isError ? "error" : ""}`}
@@ -636,7 +693,19 @@ const AIChat = ({
                 width: "100%",
               }}
             >
-              <div className={`message-bubble ${m.isCancelled ? "cancelled-bubble" : ""}`}>
+              <div
+                className={`message-bubble ${m.isCancelled ? "cancelled-bubble" : ""}`}
+                style={
+                  showSensitivityTint
+                    ? {
+                        boxShadow: `0 0 0 2px ${level.border}`,
+                        ...(m.role === "user"
+                          ? {}
+                          : { background: level.softBg }),
+                      }
+                    : undefined
+                }
+              >
                 {m.isCancelled ? (
                   <div className="cancelled-message">
                     {m.content && (
@@ -701,16 +770,21 @@ const AIChat = ({
 
                 {/* PII indicator (server-side inspection summary) */}
                 {Array.isArray(m.detectedPiiTypes) &&
-                  m.detectedPiiTypes.length > 0 && (
+                  m.detectedPiiTypes.length > 0 &&
+                  level && (
                     <div
                       style={{
                         marginTop: "1rem",
                         padding: "0.75rem 1rem",
-                        background: "rgba(239, 68, 68, 0.1)",
-                        border: "1px solid rgba(239, 68, 68, 0.3)",
+                        background: isSensitivityMatch
+                          ? "transparent"
+                          : level.softBg,
+                        border: isSensitivityMatch
+                          ? "1px solid rgba(255,255,255,0.1)"
+                          : `1px solid ${level.border}`,
                         borderRadius: "12px",
                         fontSize: "0.8rem",
-                        color: "#f87171",
+                        color: isSensitivityMatch ? "inherit" : level.text,
                         display: "flex",
                         flexDirection: "column",
                         gap: "0.4rem",
@@ -722,7 +796,7 @@ const AIChat = ({
                     >
                       <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
                         <span style={{ 
-                          background: "#ef4444", 
+                          background: level.bg, 
                           color: "white", 
                           padding: "2px 8px", 
                           borderRadius: "999px", 
@@ -738,11 +812,11 @@ const AIChat = ({
                       <div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem" }}>
                         {m.detectedPiiTypes.map(type => (
                           <span key={type} style={{
-                            background: "rgba(239, 68, 68, 0.2)",
+                            background: level.softBg,
                             padding: "1px 6px",
                             borderRadius: "4px",
                             fontSize: "0.7rem",
-                            border: "1px solid rgba(239, 68, 68, 0.2)"
+                            border: `1px solid ${level.border}`
                           }}>
                             {type}
                           </span>
@@ -753,12 +827,40 @@ const AIChat = ({
                           marginTop: "0.2rem", 
                           fontSize: "0.7rem", 
                           opacity: 0.8,
-                          borderTop: "1px solid rgba(239, 68, 68, 0.1)",
+                          borderTop: `1px solid ${level.border}`,
                           paddingTop: "0.4rem"
                         }}>
-                          Resolved Sensitivity: <span style={{ fontWeight: 700, color: "#fca5a5" }}>{m.resolvedSensitivity}</span>
+                          Resolved Sensitivity:{" "}
+                          <span style={{ fontWeight: 700, color: level.text }}>
+                            {m.resolvedSensitivity}
+                          </span>
+                          {m.providedSensitivity && !isSensitivityMatch && (
+                            <span style={{ opacity: 0.75 }}>
+                              {" "}
+                              (declared {m.providedSensitivity})
+                            </span>
+                          )}
                         </div>
                       )}
+                    </div>
+                  )}
+
+                {isSensitivityUpgraded &&
+                  level &&
+                  (!m.detectedPiiTypes || m.detectedPiiTypes.length === 0) && (
+                    <div
+                      style={{
+                        marginTop: "0.75rem",
+                        padding: "0.5rem 0.75rem",
+                        background: level.softBg,
+                        border: `1px solid ${level.border}`,
+                        borderRadius: "10px",
+                        fontSize: "0.75rem",
+                        color: level.text,
+                      }}
+                    >
+                      Sensitivity upgraded: {m.providedSensitivity} →{" "}
+                      {m.resolvedSensitivity}
                     </div>
                   )}
               </div>
@@ -808,7 +910,8 @@ const AIChat = ({
               <div className="timestamp">{m.timestamp}</div>
             </div>
           </div>
-        ))}
+        );
+        })}
 
         {/* Typing dots — while waiting for first token */}
         {isLoading && (
