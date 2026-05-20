@@ -15,6 +15,7 @@ data:
   VITE_KEYCLOAK_CLIENT_ID: "myclient"
   # Public URL (Kong LoadBalancer). Used for Keycloak redirect after login.
   VITE_APP_URL: "http://localhost"
+  VITE_GRAFANA_URL: "http://localhost/grafana"
   VITE_API_PROXY_TARGET: "http://kong-dp.ai-gateway.svc.cluster.local:80"
   # Hot reload cannot traverse Kong reliably; disable HMR to stop ws://localhost console errors.
   VITE_HMR_DISABLED: "true"
@@ -47,11 +48,10 @@ spec:
           image: api-gateways-frontend:latest
           imagePullPolicy: Never
           ports:
-            - containerPort: 5173
+            - containerPort: 80
           envFrom:
             - configMapRef:
                 name: frontend-config
-          command: ["npm", "run", "dev", "--", "--host"]
           resources:
             requests:
               memory: "128Mi"
@@ -61,14 +61,14 @@ spec:
               cpu: "500m"
           livenessProbe:
             httpGet:
-              path: /__vite_ping
-              port: 5173
+              path: /
+              port: 80
             initialDelaySeconds: 15
             periodSeconds: 10
           readinessProbe:
             httpGet:
-              path: /__vite_ping
-              port: 5173
+              path: /
+              port: 80
             initialDelaySeconds: 5
             periodSeconds: 3
             failureThreshold: 10
@@ -85,8 +85,8 @@ spec:
   selector:
     app: frontend
   ports:
-    - port: 5173
-      targetPort: 5173
+    - port: 80
+      targetPort: 80
   type: ClusterIP
 ---
 # ─────────────────────────────────────────────────────────────────────────────
@@ -230,8 +230,10 @@ spec:
             - name: GF_AUTH_ANONYMOUS_ORG_ROLE
               value: "Viewer"
             - name: GF_SERVER_ROOT_URL
-              value: "http://localhost:3000/grafana/"
+              value: "http://localhost/grafana/"
             - name: GF_SERVER_SERVE_FROM_SUB_PATH
+              value: "true"
+            - name: GF_SECURITY_ALLOW_EMBEDDING
               value: "true"
           resources:
             requests:

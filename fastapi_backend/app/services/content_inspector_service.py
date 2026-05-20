@@ -9,39 +9,56 @@ never the matched raw substrings.
 
 from __future__ import annotations
 
-import os
+import asyncio
 import logging
+import os
 import re
 from typing import Any, Dict, List, Set
 
+from presidio_analyzer import AnalyzerEngine
+from presidio_analyzer.nlp_engine import NlpEngineProvider
+
+from app.core.text_utils import normalize_text
 from app.schemas.ai_request import AIRequestSchema, SensitivityLevel
 
 logger = logging.getLogger(__name__)
 
-# spaCy entity labels treated as PII.
-# Defaults are intentionally high-signal; low-signal types are opt-in (prod-only, per intent).
-SPACY_HIGH_SIGNAL_TYPES: frozenset[str] = frozenset({"PERSON", "PHONE"})
-SPACY_LOW_SIGNAL_TYPES: frozenset[str] = frozenset({"ORG", "GPE", "LOC"})
+# PII Sensitivity Tiers mapping entity types to SensitivityLevel.
+# None means the entity is tolerated (no automatic upgrade).
+PII_SENSITIVITY_TIERS: Dict[str, SensitivityLevel | None] = {
+    # Always HIGH — critical secrets / financial / identity
+    "SSN": SensitivityLevel.HIGH,
+    "CREDIT_CARD": SensitivityLevel.HIGH,
+    "IBAN": SensitivityLevel.HIGH,
+    "JWT": SensitivityLevel.HIGH,
+    "API_KEY": SensitivityLevel.HIGH,
+    "US_PASSPORT": SensitivityLevel.HIGH,
+    "MEDICAL_LICENSE": SensitivityLevel.HIGH,
+    # MEDIUM — personal but not catastrophic alone
+    "EMAIL": SensitivityLevel.MEDIUM,
+    "PHONE": SensitivityLevel.MEDIUM,
+    "ADDRESS": SensitivityLevel.MEDIUM,
+    "PERSON": SensitivityLevel.MEDIUM,
+    # LOW signal — don't upgrade at all (tolerated)
+    "DATE_TIME": None,
+    "ORGANIZATION": None,
+    "LOCATION": None,
+    "URL": None,
+}
 
-# Regex for email addresses (spaCy en_core_web_sm misses many emails).
 EMAIL_PATTERN: re.Pattern[str] = re.compile(r"[\w\.\-]+@[\w\.\-]+\.\w+")
 
-# Phone patterns (intentionally conservative).
 PHONE_PATTERN_US: re.Pattern[str] = re.compile(
     r"(?<!\w)(?:\+?1[-.\s]?)?(?:\(\d{3}\)|\d{3})[-.\s]?\d{3}[-.\s]?\d{4}(?!\w)"
 )
 PHONE_PATTERN_E164: re.Pattern[str] = re.compile(r"(?<!\w)\+[1-9]\d{6,14}(?!\w)")
 
-# SSN: standard US format.
 SSN_PATTERN: re.Pattern[str] = re.compile(r"(?<!\w)\d{3}-\d{2}-\d{4}(?!\w)")
 
-# Credit cards: find candidates then validate using Luhn.
 CC_CANDIDATE_PATTERN: re.Pattern[str] = re.compile(r"(?<!\w)(?:\d[ -]*?){13,19}(?!\w)")
 
-# IBAN: basic structure check (2 letters + 2 digits + up to 30 alnum).
 IBAN_PATTERN: re.Pattern[str] = re.compile(r"(?<!\w)[A-Z]{2}\d{2}[A-Z0-9]{11,30}(?!\w)", re.I)
 
-# Address heuristics: "123 Main St" / PO Box.
 PO_BOX_PATTERN: re.Pattern[str] = re.compile(r"(?<!\w)P\.?\s*O\.?\s*Box\s*\d{1,6}(?!\w)", re.I)
 STREET_ADDRESS_PATTERN: re.Pattern[str] = re.compile(
     r"(?<!\w)\d{1,6}\s+"
@@ -52,12 +69,21 @@ STREET_ADDRESS_PATTERN: re.Pattern[str] = re.compile(
     re.I,
 )
 
-# JWTs: base64url-like segments; jwt header often starts with "eyJ".
+US_PASSPORT_PATTERN: re.Pattern[str] = re.compile(r"(?<!\w)[A-Z0-9]{9}(?!\w)")
+MEDICAL_LICENSE_PATTERN: re.Pattern[str] = re.compile(r"(?<!\w)[A-Z]{2}\d{7}(?!\w)")
+STREET_ADDRESS_PATTERN: re.Pattern[str] = re.compile(
+    r"(?<!\w)\d{1,6}\s+"
+    r"(?:[A-Za-z0-9.\-]+\s+){0,4}"
+    r"(?:Street|St\.?|Avenue|Ave\.?|Road|Rd\.?|Boulevard|Blvd\.?|Lane|Ln\.?|Drive|Dr\.?|Court|Ct\.?|"
+    r"Way|Terrace|Ter\.?|Circle|Cir\.?|Place|Pl\.?)"
+    r"(?!\w)",
+    re.I,
+)
+
 JWT_PATTERN: re.Pattern[str] = re.compile(
     r"(?<!\w)eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}(?!\w)"
 )
 
-# API keys (a few common high-signal patterns).
 API_KEY_AWS_ACCESS_PATTERN: re.Pattern[str] = re.compile(r"(?<!\w)AKIA[0-9A-Z]{16}(?!\w)")
 API_KEY_GOOGLE_PATTERN: re.Pattern[str] = re.compile(r"(?<!\w)AIza[0-9A-Za-z\-_]{35}(?!\w)")
 API_KEY_GITHUB_PATTERN: re.Pattern[str] = re.compile(r"(?<!\w)ghp_[A-Za-z0-9]{36}(?!\w)")
@@ -66,12 +92,43 @@ API_KEY_GENERIC_ASSIGNMENT_PATTERN: re.Pattern[str] = re.compile(
     re.I,
 )
 
+# Use the same spaCy model baked into the Docker image (see Dockerfile).
+# Presidio's default is en_core_web_lg (~400 MB) which it downloads on first use.
+PRESIDIO_SPACY_MODEL = os.getenv("PRESIDIO_SPACY_MODEL", "en_core_web_sm")
+
+_analyzer_engine: AnalyzerEngine | None = None
+
+
+def _create_presidio_analyzer() -> AnalyzerEngine:
+    """Build Presidio with an explicit spaCy model — avoids runtime downloads."""
+    configuration = {
+        "nlp_engine_name": "spacy",
+        "models": [{"lang_code": "en", "model_name": PRESIDIO_SPACY_MODEL}],
+    }
+    provider = NlpEngineProvider(nlp_configuration=configuration)
+    return AnalyzerEngine(nlp_engine=provider.create_engine())
+
+
+def _get_presidio_analyzer() -> AnalyzerEngine:
+    global _analyzer_engine
+    if _analyzer_engine is None:
+        _analyzer_engine = _create_presidio_analyzer()
+    return _analyzer_engine
+
+
+def warmup_presidio_analyzer() -> None:
+    """Eager-load Presidio + spaCy at startup (CPU-bound; run in executor)."""
+    analyzer = _get_presidio_analyzer()
+    analyzer.analyze(text="startup warmup", language="en")
+    logger.info(
+        "[ContentInspector] Presidio analyzer warm-up complete (model=%s)",
+        PRESIDIO_SPACY_MODEL,
+    )
+
 
 def _luhn_check(number_digits: str) -> bool:
-    """Validate a credit card number candidate using the Luhn algorithm."""
     digits = [int(d) for d in number_digits]
     checksum = 0
-    # Standard Luhn: starting from the rightmost digit, double every second digit.
     for i, d in enumerate(reversed(digits)):
         if i % 2 == 1:
             d *= 2
@@ -82,13 +139,11 @@ def _luhn_check(number_digits: str) -> bool:
 
 
 def _iban_mod97_check(iban_alnum: str) -> bool:
-    """Basic mod-97 check for IBANs to reduce false positives."""
     iban = iban_alnum.replace(" ", "").upper()
     if len(iban) < 15 or len(iban) > 34:
         return False
     rearranged = iban[4:] + iban[:4]
 
-    # Convert letters to numbers: A=10 .. Z=35
     converted_parts: List[str] = []
     for ch in rearranged:
         if ch.isdigit():
@@ -101,27 +156,21 @@ def _iban_mod97_check(iban_alnum: str) -> bool:
     converted_str = "".join(converted_parts)
 
     remainder = 0
-    # Iterate in chunks to avoid big ints.
     for chunk_i in range(0, len(converted_str), 9):
         remainder = int(str(remainder) + converted_str[chunk_i : chunk_i + 9]) % 97
     return remainder == 1
 
 
 def _parse_allowed_low_signal_intents() -> Set[str]:
-    """Read intent list from env (prod-only)."""
     raw = os.getenv("PII_ALLOW_LOW_SIGNAL_INTENTS", "").strip()
     if not raw:
         return set()
     return {part.strip() for part in raw.split(",") if part.strip()}
 
 
-def _resolve_spacy_labels_for_upgrade(*, intent: str, environment: str) -> frozenset[str]:
-    """Return spaCy entity labels that should be treated as PII for this request."""
-    labels: Set[str] = set(SPACY_HIGH_SIGNAL_TYPES)
-    # Default excludes ORG/GPE/LOC; enable in prod per intent via env var.
-    if environment == "prod" and intent in _parse_allowed_low_signal_intents():
-        labels |= set(SPACY_LOW_SIGNAL_TYPES)
-    return frozenset(labels)
+def _get_target_sensitivity(entity_type: str) -> SensitivityLevel | None:
+    """Return the sensitivity level this entity type should trigger."""
+    return PII_SENSITIVITY_TIERS.get(entity_type)
 
 
 def _count_regex_matches(pattern: re.Pattern[str], text: str) -> int:
@@ -136,26 +185,23 @@ class ContentInspectorService:
     ) -> tuple[SensitivityLevel, List[str], int]:
         """Inspect message content and return (resolved_sensitivity, detected_pii_types, total_count).
 
-        Notes:
-        - If declared sensitivity is already HIGH, this returns (HIGH, []) and does not call nlp.
-        - `detected_pii_types` is a deduped, sorted list of detector type strings.
+        `nlp` is retained for API compatibility; inspection uses Presidio + regex.
         """
+        _ = nlp  # unused — Presidio provides NER-style PII detection
+
         declared: SensitivityLevel = SensitivityLevel(body.metadata.sensitivity)
         if declared is SensitivityLevel.HIGH:
             return SensitivityLevel.HIGH, [], 0
 
         messages = getattr(body.payload, "messages", [])
-        # BEFORE: we scanned the entire conversation history, which caused "PII bleed"
-        # (old PII in earlier turns upgrading new clean turns to HIGH).
-        #
-        # AFTER: scan only the most recent message. Prior turns are already persisted with
-        # their own resolved sensitivity, and re-scanning them on every request is incorrect.
         if not messages:
             return declared, [], 0
         last = messages[-1]
         combined_text = getattr(last, "content", "") or ""
         if not combined_text.strip():
             return declared, [], 0
+
+        combined_text = normalize_text(combined_text)
 
         detected_counts: Dict[str, int] = {}
 
@@ -164,13 +210,11 @@ class ContentInspectorService:
                 return
             detected_counts[type_name] = detected_counts.get(type_name, 0) + count
 
-        # Deterministic detectors (model-independent).
         _add_detected("EMAIL", _count_regex_matches(EMAIL_PATTERN, combined_text))
         _add_detected("PHONE", _count_regex_matches(PHONE_PATTERN_US, combined_text))
         _add_detected("PHONE", _count_regex_matches(PHONE_PATTERN_E164, combined_text))
         _add_detected("SSN", _count_regex_matches(SSN_PATTERN, combined_text))
 
-        # Credit cards: Luhn validation.
         cc_candidates = [m.group(0) for m in CC_CANDIDATE_PATTERN.finditer(combined_text)]
         cc_valid = 0
         for cand in cc_candidates:
@@ -179,7 +223,6 @@ class ContentInspectorService:
                 cc_valid += 1
         _add_detected("CREDIT_CARD", cc_valid)
 
-        # IBAN: basic match + mod-97 check.
         iban_candidates = [m.group(0).replace(" ", "") for m in IBAN_PATTERN.finditer(combined_text)]
         iban_valid = 0
         for iban in iban_candidates:
@@ -187,48 +230,62 @@ class ContentInspectorService:
                 iban_valid += 1
         _add_detected("IBAN", iban_valid)
 
-        # Address heuristics.
         _add_detected("ADDRESS", _count_regex_matches(PO_BOX_PATTERN, combined_text))
         _add_detected("ADDRESS", _count_regex_matches(STREET_ADDRESS_PATTERN, combined_text))
 
-        # Secrets / credentials.
         _add_detected("JWT", _count_regex_matches(JWT_PATTERN, combined_text))
         _add_detected("API_KEY", _count_regex_matches(API_KEY_AWS_ACCESS_PATTERN, combined_text))
         _add_detected("API_KEY", _count_regex_matches(API_KEY_GOOGLE_PATTERN, combined_text))
         _add_detected("API_KEY", _count_regex_matches(API_KEY_GITHUB_PATTERN, combined_text))
         _add_detected("API_KEY", _count_regex_matches(API_KEY_GENERIC_ASSIGNMENT_PATTERN, combined_text))
 
-        # Optional spaCy NER for entity categories (configurable).
-        doc = nlp(combined_text)
-        allowed_spacy_labels = _resolve_spacy_labels_for_upgrade(
-            intent=body.intent,
-            environment=body.metadata.environment,
-        )
-        for ent in doc.ents:
-            if ent.label_ in allowed_spacy_labels:
-                _add_detected(ent.label_, 1)
+        _add_detected("US_PASSPORT", _count_regex_matches(US_PASSPORT_PATTERN, combined_text))
+        _add_detected("MEDICAL_LICENSE", _count_regex_matches(MEDICAL_LICENSE_PATTERN, combined_text))
 
-        if detected_counts:
+        try:
+            analyzer = _get_presidio_analyzer()
+            loop = asyncio.get_running_loop()
+            results = await loop.run_in_executor(
+                None, analyzer.analyze, combined_text, "en"
+            )
+            for r in results:
+                et = str(r.entity_type)
+                _add_detected(et, 1)
+        except Exception as exc:
+            logger.warning("[ContentInspector] Presidio analyze failed: %s", exc)
+
+        # Resolve the highest sensitivity level among all detected PII types
+        highest_tier: SensitivityLevel = declared
+        for et in detected_counts.keys():
+            tier = _get_target_sensitivity(et)
+            if tier is None:
+                continue
+            
+            # Compare and upgrade if the new tier is higher
+            if tier == SensitivityLevel.HIGH:
+                highest_tier = SensitivityLevel.HIGH
+                break  # Can't go higher than HIGH
+            elif tier == SensitivityLevel.MEDIUM and highest_tier != SensitivityLevel.HIGH:
+                highest_tier = SensitivityLevel.MEDIUM
+
+        if highest_tier != declared:
             detected_types = sorted(detected_counts.keys())
             total_count = sum(detected_counts.values())
             logger.info(
-                "[ContentInspector] PII detected %s",
+                "[ContentInspector] PII detected %s. Upgrading sensitivity %s → %s",
                 {"types": detected_types, "count": total_count},
-            )
-            logger.info(
-                "[ContentInspector] Upgrading sensitivity %s → HIGH due to PII.",
                 declared.value,
+                highest_tier.value,
             )
-            return SensitivityLevel.HIGH, detected_types, total_count
+            return highest_tier, detected_types, total_count
 
         logger.debug(
-            "[ContentInspector] No PII detected — sensitivity remains %s",
+            "[ContentInspector] PII detected but none triggered a sensitivity upgrade — remains %s",
             declared.value,
         )
-        return declared, [], 0
+        return declared, sorted(detected_counts.keys()), sum(detected_counts.values())
 
     async def resolve_sensitivity(self, body: AIRequestSchema, nlp: Any) -> SensitivityLevel:
         """Return the final resolved SensitivityLevel."""
         resolved, _types, _count = await self.inspect_content(body, nlp)
         return resolved
-

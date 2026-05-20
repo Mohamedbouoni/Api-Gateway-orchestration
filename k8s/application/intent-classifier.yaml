@@ -53,7 +53,7 @@ metadata:
     app: intent-classifier
     project: enterprise-ai-gateway
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: intent-classifier
@@ -77,11 +77,11 @@ spec:
               readOnly: true
           resources:
             requests:
+              memory: "512Mi"
+              cpu: "100m"
+            limits:
               memory: "1Gi"
               cpu: "500m"
-            limits:
-              memory: "2Gi"
-              cpu: "2000m"
           livenessProbe:
             httpGet:
               path: /healthz
@@ -128,8 +128,8 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: intent-classifier
-  minReplicas: 2
-  maxReplicas: 8
+  minReplicas: 1
+  maxReplicas: 3
   metrics:
     - type: Resource
       resource:

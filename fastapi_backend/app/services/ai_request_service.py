@@ -3,8 +3,10 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
+import time
 import urllib.parse
 import uuid
 from dataclasses import dataclass, field
@@ -18,6 +20,8 @@ if TYPE_CHECKING:  # pragma: no cover
 from sqlalchemy import text
 
 from app.core.exceptions import (
+    DomainError,
+    IntentNotFoundError,
     ProviderError,
     ServiceNotFoundError,
     TenantIdMissingError,
@@ -100,6 +104,95 @@ class AIRequestService:
     # ── Private helpers ──────────────────────────────────────────────────────
 
     @staticmethod
+    def _sse_frame(payload: Dict[str, Any]) -> str:
+        return "data: " + json.dumps(payload) + "\n\n"
+
+    @staticmethod
+    def _domain_error_to_sse_payload(exc: DomainError) -> Dict[str, Any]:
+        """Map domain exceptions to SSE error shape consumed by the frontend."""
+        if isinstance(exc, PolicyViolationError):
+            return {
+                "error": {
+                    "message": str(exc),
+                    "status": 403,
+                    "detail": {
+                        "message": str(exc),
+                        "description": exc.description,
+                        "policy_id": exc.policy_id,
+                        "detected_pii_types": exc.detected_pii_types,
+                        "pii_count": exc.pii_count,
+                    },
+                }
+            }
+        if isinstance(exc, SecurityViolationError):
+            return {
+                "error": {
+                    "message": "Message blocked by AI Prompt Guard.",
+                    "status": 400,
+                    "detail": {
+                        "message": "Message blocked by AI Prompt Guard.",
+                        "pii_count": exc.pii_count,
+                        "detected_pii_types": exc.detected_pii_types,
+                    },
+                }
+            }
+        if isinstance(exc, QuotaExceededError):
+            return {
+                "error": {
+                    "message": str(exc),
+                    "status": 429,
+                    "detail": str(exc),
+                }
+            }
+        if isinstance(exc, TenantNotAuthorizedError):
+            return {
+                "error": {
+                    "message": str(exc),
+                    "status": 403,
+                    "detail": str(exc),
+                }
+            }
+        if isinstance(exc, TenantIdMissingError):
+            return {
+                "error": {
+                    "message": str(exc),
+                    "status": 401,
+                    "detail": str(exc),
+                }
+            }
+        if isinstance(exc, ServiceNotFoundError):
+            return {
+                "error": {
+                    "message": str(exc),
+                    "status": 404,
+                    "detail": str(exc),
+                }
+            }
+        if isinstance(exc, IntentNotFoundError):
+            return {
+                "error": {
+                    "message": str(exc),
+                    "status": 422,
+                    "detail": str(exc),
+                }
+            }
+        if isinstance(exc, ProviderError):
+            return {
+                "error": {
+                    "message": str(exc),
+                    "status": 502,
+                    "detail": str(exc),
+                }
+            }
+        return {
+            "error": {
+                "message": str(exc),
+                "status": 500,
+                "detail": str(exc),
+            }
+        }
+
+    @staticmethod
     def _messages_to_classify_text(body: Any) -> str:
         """Flatten chat messages into one string for intent classification."""
         parts: List[str] = []
@@ -109,6 +202,73 @@ class AIRequestService:
             if content:
                 parts.append(f"{role}: {content}")
         return "\n".join(parts).strip()
+
+    @staticmethod
+    def _estimate_token_usage(
+        messages: List[Dict[str, str]],
+        response_text: str = "",
+    ) -> Dict[str, int]:
+        """Estimate prompt/output tokens when the provider omits usage metadata."""
+
+        def _text_to_tokens(text: str) -> int:
+            stripped = (text or "").strip()
+            if not stripped:
+                return 0
+            return max(1, len(stripped) // 4)
+
+        prompt_text = "".join(
+            (m.get("content") or "") for m in messages if isinstance(m, dict)
+        )
+        return {
+            "prompt_eval_count": _text_to_tokens(prompt_text),
+            "eval_count": _text_to_tokens(response_text),
+        }
+
+    def _resolve_usage(
+        self,
+        usage: Optional[Dict[str, Any]],
+        messages: List[Dict[str, str]],
+        response_text: str = "",
+    ) -> Dict[str, int]:
+        """Return Ollama-shaped usage, estimating when the provider reports none."""
+        raw = usage or {}
+        prompt_tokens = int(raw.get("prompt_eval_count") or 0)
+        eval_tokens = int(raw.get("eval_count") or 0)
+        if prompt_tokens + eval_tokens > 0:
+            return {
+                "prompt_eval_count": prompt_tokens,
+                "eval_count": eval_tokens,
+            }
+        return self._estimate_token_usage(messages, response_text)
+
+    async def _record_usage_and_increment(
+        self,
+        *,
+        request_id: str,
+        tenant_id: str,
+        resolved_service_id: str,
+        model_name: str,
+        usage: Dict[str, int],
+    ) -> None:
+        prompt_tokens = usage["prompt_eval_count"]
+        eval_tokens = usage["eval_count"]
+        total_tokens = prompt_tokens + eval_tokens
+        if total_tokens <= 0:
+            return
+
+        async with self._session_factory() as session:
+            await session.execute(text("SELECT set_config('app.is_admin', 'true', true)"))
+            await _create_usage_log(
+                session,
+                request_id=request_id,
+                tenant_id=tenant_id,
+                service_id=resolved_service_id,
+                model_name=model_name,
+                input_tokens=prompt_tokens,
+                output_tokens=eval_tokens,
+            )
+
+        await self._quota_service.increment_usage(tenant_id, total_tokens)
 
     def _gemini_headers(self) -> Dict[str, str]:
         """Build Gemini request headers copied from the exploit logic."""
@@ -191,7 +351,7 @@ class AIRequestService:
 
         return {
             "message": {"role": "assistant", "content": text},
-            "usage": {},
+            "usage": self._estimate_token_usage(messages, text),
         }
 
     async def _call_gemini_stream(
@@ -223,15 +383,23 @@ class AIRequestService:
         completed_at: Optional[datetime] = None,
         error_detail: Optional[str] = None,
     ) -> None:
-        async with self._session_factory() as session:
-            await session.execute(text("SELECT set_config('app.is_admin', 'true', true)"))
-            await update_ai_request_status(
-                session,
-                request_id=request_id,
-                status=status,
-                completed_at=completed_at,
-                error_detail=error_detail,
+        try:
+            async with self._session_factory() as session:
+                await session.execute(text("SELECT set_config('app.is_admin', 'true', true)"))
+                await update_ai_request_status(
+                    session,
+                    request_id=request_id,
+                    status=status,
+                    completed_at=completed_at,
+                    error_detail=error_detail,
+                )
+        except Exception as exc:
+            logger.error(
+                "[AIRequestService] _update_status_in_new_session failed "
+                "(request=%s status=%s): %s",
+                request_id, status, exc,
             )
+            raise
 
     async def _run_pre_flight(
         self,
@@ -240,28 +408,46 @@ class AIRequestService:
         current_user: Dict[str, Any],
         body: Any,
         nlp: Any,
+        request_id: str | None = None,
     ) -> _PreFlightResult:
-        """Shared pre-flight pipeline: auth → quota → record → inspect → policy → security.
+        """Shared pre-flight pipeline: parallel inspect/classify/prompt → resolve → record → policy.
 
         Returns a _PreFlightResult with everything both submit paths need.
         Raises domain exceptions on any check failure.
         """
-        request_id = str(uuid.uuid4())
+        request_id = request_id or str(uuid.uuid4())
         raw_intent: str = body.intent
         environment: str = body.metadata.environment
 
         # ── Tenant validation ──
-        tenant_id = current_user.get("tenant_id") or "tenant-a" # Fallback for test/demo
+        tenant_id = current_user.get("tenant_id") or "tenant-a"  # Fallback for test/demo
         if not tenant_id:
             raise TenantIdMissingError()
 
-        # ── Intent classification (auto) or shadow logging ──
+        messages: List[Dict[str, str]] = [
+            {"role": m.role, "content": m.content} for m in body.payload.messages
+        ]
         classify_text = self._messages_to_classify_text(body)
         intent_name = raw_intent
         intent_mode = "manual"
         intent_confidence: float | None = None
         intent_source: str | None = None
         intent_taxonomy_version: str | None = None
+
+        run_classify = (
+            raw_intent == settings.intent_auto_token
+            or (
+                settings.intent_classifier_shadow
+                and self._intent_classifier.is_configured
+                and bool(classify_text)
+            )
+        )
+        classify_task_created = (
+            run_classify
+            and bool(classify_text)
+            and self._intent_classifier.is_configured
+        )
+
         logger.info(
             "Intent classification start request_id=%s tenant_id=%s provided_intent=%s mode=%s classifier_enabled=%s text_len=%s",
             request_id,
@@ -271,14 +457,40 @@ class AIRequestService:
             self._intent_classifier.is_configured,
             len(classify_text),
         )
+
+        # ── Phase A: classify + content inspect + prompt security (parallel) ──
+        classify_task = None
+        inspect_task = None
+        try:
+            async with asyncio.TaskGroup() as tg:
+                inspect_task = tg.create_task(
+                    self._content_inspector_service.inspect_content(body, nlp)
+                )
+                tg.create_task(
+                    self._run_prompt_security_scan(
+                        request_id=request_id,
+                        tenant_id=tenant_id,
+                        messages=messages,
+                        pii_count=None,
+                        detected_pii_types=None,
+                    )
+                )
+                if classify_task_created:
+                    classify_task = tg.create_task(
+                        self._intent_classifier.classify(
+                            text=classify_text,
+                            tenant_id=tenant_id,
+                            environment=environment,
+                        )
+                    )
+        except* SecurityViolationError as eg:
+            raise eg.exceptions[0] from eg
+
+        decision = classify_task.result() if classify_task is not None else None
+
         if raw_intent == settings.intent_auto_token:
             intent_mode = "auto"
-            if classify_text and self._intent_classifier.is_configured:
-                decision = await self._intent_classifier.classify(
-                    text=classify_text,
-                    tenant_id=tenant_id,
-                    environment=environment,
-                )
+            if decision is not None:
                 intent_name = decision.intent_label
                 intent_confidence = decision.confidence
                 intent_source = decision.source
@@ -305,12 +517,7 @@ class AIRequestService:
                     fallback_reason,
                     UNCLASSIFIED_LABEL,
                 )
-        elif settings.intent_classifier_shadow and self._intent_classifier.is_configured and classify_text:
-            decision = await self._intent_classifier.classify(
-                text=classify_text,
-                tenant_id=tenant_id,
-                environment=environment,
-            )
+        elif decision is not None:
             intent_mode = "shadow"
             intent_confidence = decision.confidence
             intent_source = decision.source
@@ -326,7 +533,9 @@ class AIRequestService:
                 decision.source,
             )
 
-        # ── Intent resolution ──
+        final_sensitivity, detected_pii_types, pii_count = inspect_task.result()
+
+        # ── Phase B: intent resolution, permission, quota, service lookup ──
         resolved_service_id = self._intent_cache_service.resolve_intent(intent_name)
         logger.info(
             "Intent resolution request_id=%s tenant_id=%s provided_intent=%s resolved_intent=%s resolved_service=%s mode=%s",
@@ -359,7 +568,7 @@ class AIRequestService:
         if service is None:
             raise ServiceNotFoundError(service_id=resolved_service_id)
 
-        # ── Persist tracking record ──
+        # ── Phase C: persist tracking record + resolved sensitivity ──
         try:
             await create_ai_request(
                 db,
@@ -376,10 +585,6 @@ class AIRequestService:
             logger.exception("Failed to persist request record: %s", exc)
             raise ProviderError("Failed to persist request record")
 
-        # ── Content inspection (PII detection + sensitivity upgrade) ──
-        final_sensitivity, detected_pii_types, pii_count = (
-            await self._content_inspector_service.inspect_content(body, nlp)
-        )
         if final_sensitivity.value != body.metadata.sensitivity.value:
             logger.warning(
                 "Sensitivity upgraded %s → %s for request %s",
@@ -393,8 +598,11 @@ class AIRequestService:
             request_id=request_id,
             resolved_sensitivity=final_sensitivity.value,
         )
+        # Single commit for create_ai_request + update_resolved_sensitivity +
+        # check_tenant_service_permission_and_audit (all flushed above).
+        await db.commit()
 
-        # ── Policy evaluation ──
+        # ── Phase D: policy evaluation (requires upgraded sensitivity from inspect) ──
         policy_context = {
             "sensitivity": final_sensitivity,
             "tenant": tenant_id,
@@ -419,6 +627,29 @@ class AIRequestService:
                         "service_type": getattr(service, "service_type", "on-prem"),
                     },
                 )
+            # Re-assert admin context on the existing db session before updating.
+            # The session's transaction-local set_config values are cleared after
+            # each commit. Using the db session directly — rather than a new
+            # session — avoids the asyncpg lazy-BEGIN race where set_config and
+            # the UPDATE land in different implicit transactions.
+            try:
+                await db.execute(text("SELECT set_config('app.is_admin', 'true', true)"))
+                await update_ai_request_status(
+                    db,
+                    request_id=request_id,
+                    status="denied",
+                    completed_at=datetime.utcnow(),
+                    error_detail=f"Policy violation: {exc.policy_id} — {exc.description}",
+                )
+                logger.info(
+                    "[AIRequestService] request %s status set to 'denied' (policy=%s)",
+                    request_id, exc.policy_id,
+                )
+            except Exception as status_exc:
+                logger.error(
+                    "[AIRequestService] Failed to set status 'denied' for request %s: %s",
+                    request_id, status_exc,
+                )
             # Re-raise with PII info for the router/frontend
             raise PolicyViolationError(
                 policy_id=exc.policy_id,
@@ -441,20 +672,6 @@ class AIRequestService:
                     "service_type": getattr(service, "service_type", "on-prem"),
                 },
             )
-
-        # ── Build outbound messages ──
-        messages: List[Dict[str, str]] = [
-            {"role": m.role, "content": m.content} for m in body.payload.messages
-        ]
-
-        # ── Prompt security scan (Input Shield) ──
-        await self._run_prompt_security_scan(
-            request_id=request_id,
-            tenant_id=tenant_id,
-            messages=messages,
-            pii_count=pii_count,
-            detected_pii_types=detected_pii_types,
-        )
 
         return _PreFlightResult(
             request_id=request_id,
@@ -483,7 +700,7 @@ class AIRequestService:
         detected_pii_types: Optional[List[str]] = None,
     ) -> None:
         """Scan messages for prompt injection and log/block as needed."""
-        scan_result = self._prompt_security.scan_messages(messages)
+        scan_result = await self._prompt_security.scan_messages(messages)
 
         if scan_result.is_blocked:
             async with self._session_factory() as sec_session:
@@ -538,34 +755,40 @@ class AIRequestService:
         nlp: Any,
     ) -> Dict[str, Any]:
         """Stream SSE events for an AI request."""
-        pf = await self._run_pre_flight(
-            db=db, current_user=current_user, body=body, nlp=nlp,
-        )
+        request_id = str(uuid.uuid4())
 
-        outbound_model = pf.service.model_name
-        outbound_provider_url = pf.service.provider_url
-
-        # Capture pre-flight values for the closure
-        request_id = pf.request_id
-        tenant_id = pf.tenant_id
-        intent_name = pf.intent_name
-        resolved_service_id = pf.resolved_service_id
-        final_sensitivity = pf.final_sensitivity
-        detected_pii_types = pf.detected_pii_types
-        pii_count = pf.pii_count
-        messages = pf.messages
-        provided_intent = pf.provided_intent
-        intent_mode = pf.intent_mode
-        intent_confidence = pf.intent_confidence
-        intent_source = pf.intent_source
-        intent_taxonomy_version = pf.intent_taxonomy_version
-
-        # ── Initialization Pulse ──
-        # Send an immediate empty packet to trigger frontend typing dots.
-        # This prevents the UI from "hanging" while waiting for Ollama to load the model.
         async def _event_stream() -> AsyncIterator[str]:
-            yield "data: " + json.dumps({"token": "", "done": False}) + "\n\n"
-            
+            yield self._sse_frame({"status": "thinking"})
+
+            try:
+                pf = await self._run_pre_flight(
+                    db=db,
+                    current_user=current_user,
+                    body=body,
+                    nlp=nlp,
+                    request_id=request_id,
+                )
+            except DomainError as exc:
+                yield self._sse_frame(self._domain_error_to_sse_payload(exc))
+                return
+
+            outbound_model = pf.service.model_name
+            outbound_provider_url = pf.service.provider_url
+            tenant_id = pf.tenant_id
+            intent_name = pf.intent_name
+            resolved_service_id = pf.resolved_service_id
+            final_sensitivity = pf.final_sensitivity
+            detected_pii_types = pf.detected_pii_types
+            pii_count = pf.pii_count
+            messages = pf.messages
+            provided_intent = pf.provided_intent
+            intent_mode = pf.intent_mode
+            intent_confidence = pf.intent_confidence
+            intent_source = pf.intent_source
+            intent_taxonomy_version = pf.intent_taxonomy_version
+
+            yield self._sse_frame({"token": "", "done": False})
+
             first_token = True
             try:
                 if pf.service.provider_type == "gemini":
@@ -584,6 +807,7 @@ class AIRequestService:
                     raise ProviderError("Provider stream returned no iterator")
 
                 carry_buffer = ""
+                assistant_text = ""
                 async for chunk in stream_iter:
                     token = chunk.get("token", "") or ""
                     done = bool(chunk.get("done", False))
@@ -600,42 +824,31 @@ class AIRequestService:
                             token, carry_buffer
                         )
                         if safe_text:
+                            assistant_text += safe_text
                             yield "data: " + json.dumps({"token": safe_text, "done": False}) + "\n\n"
 
                     if done:
-                        # Extract usage info if available
-                        usage = chunk.get("usage")
-                        current_quota = None
-                        
-                        if usage:
-                            prompt_tokens = usage.get("prompt_eval_count", 0)
-                            eval_tokens = usage.get("eval_count", 0)
-                            
-                            # Persist usage to Postgres
-                            async with self._session_factory() as session:
-                                await session.execute(text("SELECT set_config('app.is_admin', 'true', true)"))
-                                await _create_usage_log(
-                                    session,
-                                    request_id=request_id,
-                                    tenant_id=tenant_id,
-                                    service_id=resolved_service_id,
-                                    model_name=outbound_model,
-                                    input_tokens=prompt_tokens,
-                                    output_tokens=eval_tokens
-                                )
-                            
-                            # Update Redis usage
-                            await self._quota_service.increment_usage(tenant_id, prompt_tokens + eval_tokens)
-                            
-                        # Fetch latest quota status for push
+                        # Flush remaining carry buffer with redaction first.
+                        final_token = carry_buffer + (token or "")
+                        response_text = assistant_text + final_token
+                        usage = self._resolve_usage(
+                            chunk.get("usage"),
+                            messages,
+                            response_text=response_text,
+                        )
+                        await self._record_usage_and_increment(
+                            request_id=request_id,
+                            tenant_id=tenant_id,
+                            resolved_service_id=resolved_service_id,
+                            model_name=outbound_model,
+                            usage=usage,
+                        )
                         current_quota = await self._quota_service.get_quota_status(tenant_id)
 
                         # SSE contract:
                         # 1) data frames can carry token text with done=false
                         # 2) final frame (done=true) is metadata-only with token=""
                         # This prevents clients from having to special-case done=true text.
-                        # Flush remaining carry buffer with redaction first.
-                        final_token = carry_buffer + (token or "")
                         if final_token:
                             final_redacted = self._output_guard.redact(final_token)
                             final_token = final_redacted.redacted_text
@@ -713,6 +926,7 @@ class AIRequestService:
 
         outbound_model = pf.service.model_name
         outbound_provider_url = pf.service.provider_url
+        started_at = time.perf_counter()
 
         try:
             if pf.service.provider_type == "gemini":
@@ -739,26 +953,20 @@ class AIRequestService:
             finally:
                 raise ProviderError(f"Failed to connect to AI provider: {str(exc)}")
 
-        # Usage tracking for JSON
-        usage = provider_data.get("usage", {})
-        prompt_tokens = usage.get("prompt_eval_count", 0)
-        eval_tokens = usage.get("eval_count", 0)
-        
-        async with self._session_factory() as session:
-            await session.execute(text("SELECT set_config('app.is_admin', 'true', true)"))
-            await _create_usage_log(
-                session,
-                request_id=pf.request_id,
-                tenant_id=pf.tenant_id,
-                service_id=pf.resolved_service_id,
-                model_name=outbound_model,
-                input_tokens=prompt_tokens,
-                output_tokens=eval_tokens
-            )
-        
-        await self._quota_service.increment_usage(pf.tenant_id, prompt_tokens + eval_tokens)
-        
-        # Push latest quota status
+        elapsed_ms = int((time.perf_counter() - started_at) * 1000)
+        response_text = provider_data.get("message", {}).get("content", "")
+        usage = self._resolve_usage(
+            provider_data.get("usage"),
+            pf.messages,
+            response_text=response_text,
+        )
+        await self._record_usage_and_increment(
+            request_id=pf.request_id,
+            tenant_id=pf.tenant_id,
+            resolved_service_id=pf.resolved_service_id,
+            model_name=outbound_model,
+            usage=usage,
+        )
         current_quota = await self._quota_service.get_quota_status(pf.tenant_id)
 
         await self._update_status_in_new_session(
@@ -768,7 +976,6 @@ class AIRequestService:
         )
 
         # ── Output Guard: Full PII redaction on JSON response ──
-        response_text = provider_data.get("message", {}).get("content", "")
         if response_text:
             redaction_result = self._output_guard.redact(response_text)
             if redaction_result.redaction_count > 0:

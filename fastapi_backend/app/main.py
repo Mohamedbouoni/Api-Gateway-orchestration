@@ -33,19 +33,26 @@ from app.core.middleware import (
 )
 from app.core.security import get_current_user
 from app.core.logging import setup_logging
-from app.infrastructure.ai_provider.ollama_client import chat as _  # noqa: F401
+from app.infrastructure.ai_provider.ollama_client import chat as _, close_client as _close_ollama_client  # noqa: F401
 from app.infrastructure.db.session import AsyncSessionLocal
 from app.infrastructure.db.tenant_filters import register_tenant_orm_filters
 from app.infrastructure.nlp.spacy_loader import get_nlp
 from app.models.governance_policy import GovernancePolicy
 from app.schemas.policy import PolicyFileSchema, PolicySchema, PolicyConditionSchema
+from app.infrastructure.intent_classifier.client import IntentClassifierClient as _IntentClassifierClient
 from app.services.ai_request_service import AIRequestService
-from app.services.content_inspector_service import ContentInspectorService
+from app.services.content_inspector_service import (
+    ContentInspectorService,
+    warmup_presidio_analyzer,
+)
 from app.services.intent_cache_service import IntentCacheService
 from app.services.intent_mappings_service import IntentMappingsService
 from app.services.output_guard_service import OutputGuardService
 from app.services.policy_service import PolicyService
-from app.services.prompt_security_service import PromptSecurityService
+from app.services.prompt_security_service import (
+    InjectionClassifier,
+    PromptSecurityService,
+)
 from app.services.quota_service import QuotaService
 from prometheus_fastapi_instrumentator import Instrumentator
 
@@ -60,8 +67,11 @@ quota_service = QuotaService(
     quotas_file=settings.quotas_file_path,
     redis_url=settings.redis_url
 )
-prompt_security_service = PromptSecurityService()
+injection_classifier = InjectionClassifier()
+prompt_security_service = PromptSecurityService(injection_classifier=injection_classifier)
 output_guard_service = OutputGuardService()
+# Shared persistent HTTP client — avoids a fresh TCP handshake on every classify call.
+intent_classifier_client = _IntentClassifierClient()
 
 register_tenant_orm_filters()
 
@@ -75,6 +85,7 @@ def _build_ai_request_service() -> AIRequestService:
         prompt_security_service=prompt_security_service,
         output_guard_service=output_guard_service,
         session_factory=AsyncSessionLocal,
+        intent_classifier_client=intent_classifier_client,
     )
 
 
@@ -129,8 +140,18 @@ async def lifespan(app: FastAPI):
         await policy_service.sync_from_db(db)
         await prompt_security_service.reload_patterns(db)
 
+    # Load DistilBERT injection classifier off the event loop (CPU / disk bound).
+    _loop = asyncio.get_running_loop()
+    await _loop.run_in_executor(None, injection_classifier.load)
+    await _loop.run_in_executor(None, injection_classifier.score, "warmup")
+    logger.info("[Startup] InjectionClassifier load and warm-up complete")
+
     # Fail fast if required external dependencies (spaCy model) are missing.
     _ = get_nlp()
+
+    # Presidio defaults to en_core_web_lg and downloads on first analyze() unless
+    # configured and warmed here (uses en_core_web_sm from the image).
+    await _loop.run_in_executor(None, warmup_presidio_analyzer)
 
     # Initialize cache from DB.
     await intent_cache_service.initialize()
@@ -145,6 +166,8 @@ async def lifespan(app: FastAPI):
             await task
         except asyncio.CancelledError:
             pass
+        await intent_classifier_client.aclose()
+        await _close_ollama_client()
 
 
 def create_app() -> FastAPI:

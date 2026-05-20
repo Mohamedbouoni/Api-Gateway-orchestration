@@ -1,3 +1,6 @@
+#rapport files:
+rapport_stage_extracted_images/
+rapport_stage.pdf
 # Python
 __pycache__/
 *.pyc
@@ -24,6 +27,7 @@ vault-data/
 *.key
 *.pem
 *.crt
+.hf_token
 
 # Docker volumes & data
 postgres-data/

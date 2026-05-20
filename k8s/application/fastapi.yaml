@@ -4,7 +4,7 @@
 # The brain of the platform. Handles:
 #   - JWT validation
 #   - Intent classification → AI model routing
-#   - PII detection (spaCy NLP)
+#   - PII detection (Presidio + regex; spaCy still installed for get_nlp dependency)
 #   - OPA policy evaluation
 #   - Token quota enforcement (Redis)
 #   - Prompt injection scanning
@@ -40,6 +40,10 @@ data:
   INTENT_CLASSIFIER_ENABLED: "true"
   INTENT_CLASSIFIER_SHADOW: "false"
   INTENT_TAXONOMY_PATH: "/etc/intent-taxonomy/intent_labels_v1.yaml"
+  # HuggingFace model cache (DistilBERT warm-up at startup)
+  HF_HOME: "/var/cache/huggingface"
+  # Presidio spaCy model — must match `python -m spacy download` in Dockerfile
+  PRESIDIO_SPACY_MODEL: "en_core_web_sm"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -50,15 +54,12 @@ metadata:
     app: fastapi
     project: enterprise-ai-gateway
 spec:
-  replicas: 3
+  replicas: 1
   selector:
     matchLabels:
       app: fastapi
   strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxSurge: 2       # can temporarily have 5 pods during update
-      maxUnavailable: 0 # never drop below 3 pods
+    type: Recreate
   template:
     metadata:
       labels:
@@ -67,7 +68,7 @@ spec:
       containers:
         - name: fastapi
           image: api-gateways-backend:latest
-          imagePullPolicy: Never  # use local Docker image (dev mode)
+          imagePullPolicy: Never # use local Docker image (dev mode)
           ports:
             - containerPort: 3000
           envFrom:
@@ -85,21 +86,27 @@ spec:
               readOnly: true
           resources:
             requests:
-              memory: "512Mi"
-              cpu: "250m"
-            limits:
               memory: "1Gi"
+              cpu: "100m"
+            limits:
+              memory: "2Gi"
               cpu: "1000m"
+          startupProbe:
+            httpGet:
+              path: /api/
+              port: 3000
+            periodSeconds: 10
+            failureThreshold: 90
           livenessProbe:
             tcpSocket:
               port: 3000
-            initialDelaySeconds: 40
+            initialDelaySeconds: 30
             periodSeconds: 20
             failureThreshold: 3
           readinessProbe:
             tcpSocket:
               port: 3000
-            initialDelaySeconds: 20
+            initialDelaySeconds: 5
             periodSeconds: 10
             failureThreshold: 3
       volumes:
@@ -137,31 +144,31 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: fastapi
-  minReplicas: 3
-  maxReplicas: 10
+  minReplicas: 1
+  maxReplicas: 3
   metrics:
     - type: Resource
       resource:
         name: cpu
         target:
           type: Utilization
-          averageUtilization: 70   # scale up when average CPU > 70%
+          averageUtilization: 70 # scale up when average CPU > 70%
     - type: Resource
       resource:
         name: memory
         target:
           type: Utilization
-          averageUtilization: 80   # scale up when average memory > 80%
+          averageUtilization: 80 # scale up when average memory > 80%
   behavior:
     scaleUp:
-      stabilizationWindowSeconds: 60   # wait 60s before scaling up again
+      stabilizationWindowSeconds: 60 # wait 60s before scaling up again
       policies:
         - type: Pods
           value: 2
-          periodSeconds: 60            # add at most 2 pods per minute
+          periodSeconds: 60 # add at most 2 pods per minute
     scaleDown:
-      stabilizationWindowSeconds: 300  # wait 5 min before scaling down
+      stabilizationWindowSeconds: 300 # wait 5 min before scaling down
       policies:
         - type: Pods
           value: 1
-          periodSeconds: 120           # remove at most 1 pod per 2 minutes
+          periodSeconds: 120 # remove at most 1 pod per 2 minutes
