@@ -13,7 +13,11 @@ data:
   VITE_KEYCLOAK_URL: "http://localhost/auth"
   VITE_KEYCLOAK_REALM: "newRealm"
   VITE_KEYCLOAK_CLIENT_ID: "myclient"
+  # Public URL (Kong LoadBalancer). Used for Keycloak redirect after login.
   VITE_APP_URL: "http://localhost"
+  VITE_API_PROXY_TARGET: "http://kong-dp.ai-gateway.svc.cluster.local:80"
+  # Hot reload cannot traverse Kong reliably; disable HMR to stop ws://localhost console errors.
+  VITE_HMR_DISABLED: "true"
 ---
 apiVersion: apps/v1
 kind: Deployment

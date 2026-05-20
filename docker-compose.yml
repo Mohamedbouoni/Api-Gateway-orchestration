@@ -350,6 +350,7 @@ services:
       VITE_KEYCLOAK_CLIENT_ID: myclient
       # The URL Kong serves the frontend on (or the dev server directly)
       VITE_APP_URL: http://localhost:5173
+      VITE_API_PROXY_TARGET: http://kong-dp:80
     ports:
       - "5173:5173"
     volumes:

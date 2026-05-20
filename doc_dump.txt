@@ -1,0 +1,2756 @@
+Academic Year : 2024 / 2025  
+ 
+ 
+ 
+  
+ 
+  N° d’ordre  :  
+ 
+End Of Studies Project 
+Report  
+ 
+ 
+Presented in order to obtain the  
+ 
+ 
+National Bachelor’s Degree in Computer Science   
+Major  : 
+Software Engineering and Information Systems  
+ 
+By 
+ 
+Firas BEN SAID  & Ahmed Seddik BOUCHIBA  
+ 
+ 
+Architectural Redesign and Implementation of an 
+Open -Source Webinar Platform  
+ 
+ 
+Defended on 23/06/2025 in front of  the jury composed of  : 
+ 
+ Mr. : Mohamed MOHAMED  President  
+Ms. : Nawel BAYAR  Reporter  
+Ms. : Asma MANSOUR  Academic Supervisor  
+Mr. : Ghazi TRIKI  Profession al Supervisor  
+  Private University  
+Horizon School of Digital Technologies  
+*****  
+N° agrément : 2020/02  
+*****  
+ 
+ 
+ 
+
+Dedication
+To the pillars of my world
+This thesis is dedicated with heartfelt gratitude and deep love.
+To my beloved parents,
+Your love, support, and faith have shaped every step of my journey. Your sacriﬁces and
+encouragement are the foundation of this achievement. You are my greatest inspiration.
+To my brothers,
+Through laughter, trials, and understandingyou’ve walked beside me. Our bond, both of
+blood and friendship, is a constant source of strength.
+To Seif Chokri,
+My childhood companion, whose friendship has withstood the test of time. From
+carefree days to lifes turning points, your presence has remained constant. Thank you
+for the memories, loyalty, and unwavering support that continue to mean so much to me.
+To Samar Hammami,
+Your unwavering support, kindness, and the moments we shared during those
+transformative years have left a lasting impact. Your dedication, intelligence, and quiet
+strength have always inspired me. You are not only a dear friend but also my idolan
+example of what it means to lead with purpose and excellence.
+To all my friends, old and new,
+Your laughter, companionship, and support have made this journey brighter and more
+meaningful.
+To everyone I’ve encountered along the way,
+Each interaction, brief or lasting, has contributed to my growth and understanding of
+the world.
+With sincere gratitude,
+Ahmed Seddik BOUCHIBA
+It would be impossible for me to begin writing this project without giving thanks to God
+the almighty, the merciful for having allowed me to reach this point.
+To my mother Najet & my father Mohamed,
+Your love, support, and faith have shaped every step of my journey. Your sacriﬁces and
+encouragement are the foundation of this achievement. You are my greatest inspiration.
+To my sisters Nawres & Ferdaws,
+I cannot express through these lines all my feelings of love and tenderness towards you.
+May love and brotherhood unite us forever. I wish you success in your life, with all the
+happiness that it takes to fulﬁll you.
+To all my friends, old and new,
+Your laughter, companionship, and support have made this journey brighter and more
+meaningful.
+To everyone I’ve encountered along the way,
+Each interaction, brief or lasting, has contributed to my growth and understanding of
+the world.
+Last but not least, I wanna thank me
+I wanna thank me for believing in me
+I wanna thank me for doing all this hard work
+I wanna thank me for having no days oﬀ
+I wanna thank me for, for never quitting
+With sincere gratitude,
+Firas BEN SAID
+Acknowledgements
+This project would not have been possible without the steadfast support, guidance, and
+encouragement from many individuals. We are profoundly grateful to everyone who con-
+tributed, in any capacity, to the successful completion of this work.
+We wish to extend our sincere gratitude to:
+Dr. Asma MANSOUR , our academic supervisor, for her invaluable guidance, in-
+sightful feedback, and unwavering support throughout the duration of this project.
+Mr. Ghazi TRIKI , our company supervisor, for his trust, mentorship, and profes-
+sional expertise, which signiﬁcantly enriched the practical aspects of our experience.
+Dr. Mohamed MOHAMED , for his invaluable guidance, expert academic mentor-
+ship, and profound technical insights. His unwavering support and constructive feedback
+were instrumental in shaping this project and elevating the quality of this work.
+Ms. Nawel BAYAR , our professor, whose expertise and encouragement played a
+crucial role during pivotal stages of our academic journey.
+Mr. Mahdi BENNASER , our institute engineer, for his technical assistance and
+dedicated support on speciﬁc tasks, which greatly facilitated our progress.
+Ms. Mariam WARDANI , for her creative input and valuable assistance with the
+design aspects of the project, which enhanced the visual and user experience signiﬁcantly.
+Mr. Alexander AANDRYASHIN from Moon Support, Russia, for his availability,
+valuable guidance, and helpful contributions throughout the development process.
+Finally, to all those who supported us directly or indirectly, we extend our heartfelt
+thanks and deepest appreciation.
+With sincere gratitude,
+Ahmed Seddik BOUCHIBA & Firas BEN SAID
+Abstract
+The rapid adoption of virtual communication platforms has highlighted the need for scal-
+able solutions to support large-scale webinars and live events while preserving interactivity.
+The SpoutBreeze project, developed by RIADVICE, addresses this challenge by introduc-
+ing a modular, open-source platform that seamlessly integrates BigBlueButton (BBB)
+for interactive sessions with scalable broadcasting capabilities. This report presents the
+system design, development, and deployment of SpoutBreeze, leveraging browser automa-
+tion, real-time streaming protocols (RTMP), and cloud-native technologies to decouple
+interactivity from audience scalability.
+Keywords: Moon - FFmpeg - Webinar - RTMP - Kubernetes - BigBlue-
+Button - system design
+Résumé
+L’adoption rapide des plateformes de communication virtuelle a mis en lumière le besoin
+de solutions évolutives pour prendre en charge les webinaires et les événements en direct
+à grande échelle, tout en préservant l’interactivité. Le projet SpoutBreeze, développé par
+RIADVICE, relève ce déﬁ en proposant une plateforme open-source modulaire qui intègre
+de manière transparente BigBlueButton (BBB) pour les sessions interactives, tout en
+oﬀrant des capacités de diﬀusion scalable. Ce rapport présente la conception de système,
+le développement et le déploiement de SpoutBreeze, s’appuyant sur l’automatisation de
+navigateur, les protocoles de streaming en temps réel (RTMP) et les technologies cloud-
+native pour dissocier l’interactivité de la scalabilité du public.
+Mot-clés: Moon - FFmpeg - Webinaire - RTMP - Kubernetes - BigBlue-
+Button - conception de système
+Contents
+General Introduction 1
+1 General Context 3
+1.1 Presentation of the host company . . . . . . . . . . . . . . . . . . . . . . . 3
+1.1.1 Presentation of RIADVICE . . . . . . . . . . . . . . . . . . . . . 3
+1.1.2 Service Overview . . . . . . . . . . . . . . . . . . . . . . . . . . . . 4
+1.2 Project Scope . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 4
+1.2.1 Project Context . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 4
+1.2.2 Problem Statement . . . . . . . . . . . . . . . . . . . . . . . . . . . 5
+1.2.3 Proposed Solution . . . . . . . . . . . . . . . . . . . . . . . . . . . 6
+1.3 Study of the Existing System . . . . . . . . . . . . . . . . . . . . . . . . . 6
+1.3.1 Existing Webinar Solutions . . . . . . . . . . . . . . . . . . . . . . 7
+1.3.1.1 Commercial Solutions . . . . . . . . . . . . . . . . . . . . 7
+1.3.1.2 Open-Source Solution . . . . . . . . . . . . . . . . . . . . 8
+1.3.2 Existing Streaming Software Solutions . . . . . . . . . . . . . . . . 8
+1.3.3 Adopted solutions . . . . . . . . . . . . . . . . . . . . . . . . . . . . 10
+1.4 Work Methodology . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 11
+1.4.1 Overview of the Software Development Life Cycle (Software Devel-
+opment Life Cycle (SDLC)) . . . . . . . . . . . . . . . . . . . . . . 11
+1.4.2 Chosen Methodology: Iterative Model . . . . . . . . . . . . . . . . 11
+1.4.3 Justiﬁcation for the choice . . . . . . . . . . . . . . . . . . . . . . . 11
+1.4.4 Description of the Iterative Model . . . . . . . . . . . . . . . . . . . 12
+2 System Redesign and Requirements Analysis 14
+2.1 Analysis of the Previous Architecture . . . . . . . . . . . . . . . . . . . . . 14
+2.1.1 SpoutBreeze Components . . . . . . . . . . . . . . . . . . . . . . . 15
+2.1.2 Architecture Limitations . . . . . . . . . . . . . . . . . . . . . . . . 16
+2.2 New Architecture Approach . . . . . . . . . . . . . . . . . . . . . . . . . . 17
+2.2.1 Key Architectural Enhancements and System Components . . . . . 19
+2.2.2 Advantages Over the Old Architecture . . . . . . . . . . . . . . . . 20
+2.3 Requirement Speciﬁcation . . . . . . . . . . . . . . . . . . . . . . . . . . . 21
+2.3.1 Identiﬁcation of actors . . . . . . . . . . . . . . . . . . . . . . . . . 21
+2.3.2 Identiﬁcation of requirements . . . . . . . . . . . . . . . . . . . . . 21
+2.3.2.1 Functional Requirements . . . . . . . . . . . . . . . . . . . 21
+CONTENTS
+2.3.2.2 Non-Functional Requirements . . . . . . . . . . . . . . . . 22
+2.4 Use Case Diagram . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 23
+2.4.1 General use case Diagram . . . . . . . . . . . . . . . . . . . . . . . 24
+2.4.2 Detailed use case Diagram . . . . . . . . . . . . . . . . . . . . . . . 25
+2.4.2.1 Use Case "Manage Users" . . . . . . . . . . . . . . . . . . 25
+2.4.2.2 Use Case "Manage Events & Channels" . . . . . . . . . . . 26
+2.4.2.3 Use Case "Manage RTMP Endpoints" . . . . . . . . . . . 27
+2.4.2.4 Use Case "Access Recordings" . . . . . . . . . . . . . . . . 28
+2.5 Conclusion . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 28
+3 BBB plugin integration and SpoutBreeze System Development 29
+3.1 System Architecture . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 29
+3.2 Iterative Development Methodology in Practice . . . . . . . . . . . . . . . 32
+3.3 Authentication System with Keycloak . . . . . . . . . . . . . . . . . . . . . 33
+3.3.1 Keycloak . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 33
+3.3.2 Integration of Keycloak into the System . . . . . . . . . . . . . . . 33
+3.3.3 Deployment and Conﬁguration . . . . . . . . . . . . . . . . . . . . 34
+3.3.4 Token-Based Authentication with HttpOnly Cookies . . . . . . . . 35
+3.3.5 Frontend Integration . . . . . . . . . . . . . . . . . . . . . . . . . . 35
+3.3.6 Backend Integration . . . . . . . . . . . . . . . . . . . . . . . . . . 35
+3.3.7 Role Management and Authorization . . . . . . . . . . . . . . . . . 35
+3.3.8 Challenges and Reﬁnements . . . . . . . . . . . . . . . . . . . . . . 36
+3.4 BBB plugin integration . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 36
+3.4.1 What Is a BBB Plugin ? . . . . . . . . . . . . . . . . . . . . . . . . 36
+3.4.2 Why a Plugin Was Needed ? . . . . . . . . . . . . . . . . . . . . . . 37
+3.4.2.1 Limitations in BBBs Native Capabilities . . . . . . . . . . 37
+3.4.2.2 Plugin Architecture in BBB 3.0 . . . . . . . . . . . . . . . 37
+3.4.2.3 Streaming Integration Features . . . . . . . . . . . . . . . 37
+3.4.2.4 Twitch IRC Integration . . . . . . . . . . . . . . . . . . . 39
+3.4.2.5 Modular and Maintainable Design . . . . . . . . . . . . . 39
+3.4.3 Streaming Trigger Flow: Plugin to Backend Communication . . . . 39
+3.4.4 Technical Integration Challenges and Resolutions . . . . . . . . . . 40
+3.4.4.1 Plugin Registration and Recognition . . . . . . . . . . . . 40
+3.4.4.2 Plugin Not Loading in the UI . . . . . . . . . . . . . . . . 41
+3.4.4.3 Backend Communication and Twitch Integration . . . . . 41
+3.4.4.4 Dockerization of the Plugin . . . . . . . . . . . . . . . . . 43
+3.5 SpoutBreeze System Development . . . . . . . . . . . . . . . . . . . . . . . 44
+3.5.1 Overview . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 44
+3.5.2 Three-Tier Architecture . . . . . . . . . . . . . . . . . . . . . . . . 44
+CONTENTS
+3.5.3 Clean Architecture Pattern . . . . . . . . . . . . . . . . . . . . . . 45
+3.5.4 General Architecture of SpoutBreeze . . . . . . . . . . . . . . . . . 46
+3.5.5 Database Design . . . . . . . . . . . . . . . . . . . . . . . . . . . . 47
+3.5.5.1 Key Tables . . . . . . . . . . . . . . . . . . . . . . . . . . 48
+3.5.5.2 Relationships . . . . . . . . . . . . . . . . . . . . . . . . . 49
+3.5.6 Software Design . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 49
+3.5.6.1 Static View: Class Diagram . . . . . . . . . . . . . . . . . 49
+3.5.6.2 Dynamic View: Sequence Diagram . . . . . . . . . . . . . 51
+3.5.7 Integration and Iteration Highlights . . . . . . . . . . . . . . . . . . 52
+3.5.7.1 Testing Strategy . . . . . . . . . . . . . . . . . . . . . . . 53
+4 Broadcaster Microservice and Moon Browser Automation 55
+4.1 Iterative Development Methodology in Practice . . . . . . . . . . . . . . . 55
+4.2 Backend Development: Broadcaster Microservice . . . . . . . . . . . . . . . 57
+4.2.1 Overview . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 57
+4.2.2 Core Responsibilities . . . . . . . . . . . . . . . . . . . . . . . . . . 57
+4.2.3 Architecture . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 57
+4.2.4 Exposed API Endpoints . . . . . . . . . . . . . . . . . . . . . . . . 58
+4.2.4.1 Health Endpoints . . . . . . . . . . . . . . . . . . . . . . . 58
+4.2.4.2 Broadcasting Endpoint . . . . . . . . . . . . . . . . . . . . 58
+4.2.5 Comprehensive Testing Strategy and Implementation . . . . . . . . 59
+4.2.5.1 Testing Framework Architecture . . . . . . . . . . . . . . 59
+4.2.5.2 Focused Testing on Controller Layer Functionality . . . . 59
+4.2.6 Dockerization . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 60
+4.2.7 Continuous Integration and Continuous Deployment with GitHub
+Actions . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 61
+4.2.7.1 Continuous Integration Workﬂow . . . . . . . . . . . . . . 61
+4.2.7.2 Continuous Deployment Workﬂow . . . . . . . . . . . . . 62
+4.2.7.3 Beneﬁts of Continuous Integration/Continuous Deployment
+(CI/CD) . . . . . . . . . . . . . . . . . . . . . . . . . . . . 63
+4.3 Broadcaster : Moon browser automation tool . . . . . . . . . . . . . . . . . 63
+4.3.1 Moon vs. Selenoid . . . . . . . . . . . . . . . . . . . . . . . . . . . 63
+4.3.2 FFmpeg Integration . . . . . . . . . . . . . . . . . . . . . . . . . . . 64
+4.3.3 Iterative Feature Development . . . . . . . . . . . . . . . . . . . . . 66
+5 Kubernetes Cluster and Monitoring 68
+5.1 Kubernetes Cluster Architecture . . . . . . . . . . . . . . . . . . . . . . . . 68
+5.1.1 Cluster Version and Tooling . . . . . . . . . . . . . . . . . . . . . . 68
+5.1.2 Container Runtime Environment . . . . . . . . . . . . . . . . . . . 68
+5.1.3 Cluster Setup . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 69
+CONTENTS
+5.1.4 Cluster Architecture Diagram . . . . . . . . . . . . . . . . . . . . . 69
+5.1.5 Cluster Design and Topology . . . . . . . . . . . . . . . . . . . . . 69
+5.1.6 Core Components . . . . . . . . . . . . . . . . . . . . . . . . . . . . 70
+5.1.7 Networking Architecture . . . . . . . . . . . . . . . . . . . . . . . . 71
+5.1.8 Infrastructure Speciﬁcations . . . . . . . . . . . . . . . . . . . . . . 71
+5.1.9 Helm Package Manager . . . . . . . . . . . . . . . . . . . . . . . . . 72
+5.2 Monitoring and Observability . . . . . . . . . . . . . . . . . . . . . . . . . 72
+5.2.1 Observability . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 73
+5.2.2 The Strategic Advantages of Istio for Observability . . . . . . . . . 73
+5.2.2.1 Enhancing Microservices with Istios Service Mesh . . . . . 73
+5.2.2.2 Deploying Istio . . . . . . . . . . . . . . . . . . . . . . . . 74
+5.2.2.3 Kiali Observability Console . . . . . . . . . . . . . . . . . 75
+5.2.2.4 Kiali architecture . . . . . . . . . . . . . . . . . . . . . . . 75
+5.2.2.5 Kiali Dashboard . . . . . . . . . . . . . . . . . . . . . . . 76
+5.2.3 Monitoring Approach . . . . . . . . . . . . . . . . . . . . . . . . . . 77
+5.2.3.1 Rationale for Prometheus Adoption . . . . . . . . . . . . . 77
+5.2.3.2 Deploying Prometheus . . . . . . . . . . . . . . . . . . . . 78
+5.2.3.3 Visualization Approach with Grafana . . . . . . . . . . . . 79
+6 Realization 81
+6.1 Development environment . . . . . . . . . . . . . . . . . . . . . . . . . . . 81
+6.1.1 Hardware Environment . . . . . . . . . . . . . . . . . . . . . . . . . 81
+6.1.2 Software Environment . . . . . . . . . . . . . . . . . . . . . . . . . 81
+6.1.2.1 Spoutbreeze-Backend . . . . . . . . . . . . . . . . . . . . . 82
+6.1.2.2 Fpoutbreeze-Frontend . . . . . . . . . . . . . . . . . . . . 83
+6.1.2.3 BBB plugin . . . . . . . . . . . . . . . . . . . . . . . . . . 84
+6.1.2.4 Spoutbreeze-Broadcaster . . . . . . . . . . . . . . . . . . . 85
+6.1.2.5 Moon . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 86
+6.1.2.6 DevOps and Monitoring . . . . . . . . . . . . . . . . . . . 86
+6.1.3 Project Deployment Overview . . . . . . . . . . . . . . . . . . . . . 88
+6.1.3.1 User Interface Overview . . . . . . . . . . . . . . . . . . . 88
+6.1.3.2 Kubernetes Workloads Overview . . . . . . . . . . . . . . 95
+6.1.3.3 Keycloak Docker Container . . . . . . . . . . . . . . . . . 97
+General Conclusion 98
+Bibliography 99
+List of Figures
+1.1 RIADVICE Company Logo . . . . . . . . . . . . . . . . . . . . . . . . . . 4
+1.2 SpoutBreeze logo . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 5
+1.3 Github issue screenshot . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 6
+1.4 Zoom logo . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 7
+1.5 GoToWebinar logo . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 8
+1.6 Jitsi Meet logo . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 8
+1.7 OBS Studio logo . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 9
+1.8 Streamlabs OBS logo . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 9
+1.9 Wirecast logo . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 10
+1.10 Iterative Model . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 12
+2.1 Previous Architecture of SpoutBreeze . . . . . . . . . . . . . . . . . . . . . 15
+2.2 New Kubernetes-based Architecture of SpoutBreeze . . . . . . . . . . . . . 18
+2.3 General Use Case Diagram . . . . . . . . . . . . . . . . . . . . . . . . . . . 24
+2.4 Use Case "Manage Users" . . . . . . . . . . . . . . . . . . . . . . . . . . . . 25
+2.5 Use Case Diagram: Manage Users & channels . . . . . . . . . . . . . . . . 26
+2.6 Use Case Diagram: Manage Real-Time Messaging Protocol (RTMP) End-
+points . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 27
+2.7 Use Case Diagram: Access Recordings . . . . . . . . . . . . . . . . . . . . 28
+3.1 High-level architecture of SpoutBreeze Backend, Frontend, and Keycloak. .29
+3.2 Backend Continuous Integration Workﬂow with GitHub Actions . . . . . . 31
+3.3 Backend Continuous Delivery Workﬂow with GitHub Actions . . . . . . . . 31
+3.4 Backend Continuous Deployment Workﬂow with GitHub Actions . . . . . . 32
+3.5 OAuth 2.0 Authentication Flow with PKCE using Keycloak . . . . . . . . 34
+3.6 Starting stream activity workﬂow . . . . . . . . . . . . . . . . . . . . . . . 38
+3.7 Plugin loading process . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 39
+3.8 Sequence diagram modeling the start stream . . . . . . . . . . . . . . . . . 40
+3.9 Sequence diagram modeling the twitch IRC integration . . . . . . . . . . . 42
+3.10 Three-tier architecture . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 45
+3.11 SpoutBreeze System Architecture Overview . . . . . . . . . . . . . . . . . 46
+3.12 Relational Model Diagram . . . . . . . . . . . . . . . . . . . . . . . . . . . 48
+3.13 SpoutBreeze Class Diagram (Backend Static View) . . . . . . . . . . . . . 50
+3.14 Sequence diagram modeling the creation and start of an event . . . . . . . 52
+LIST OF FIGURES
+3.15 Sample Pytest output showing successful test cases. . . . . . . . . . . . . . 54
+4.1 High-level architecture of Broadcaster Microservice and Moon Browser Au-
+tomation. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 56
+4.2 Oﬃcial logo of Go Web Framework (Gin), the lightweight Go web framework. 57
+4.3 Broadcaster Sequence Diagram . . . . . . . . . . . . . . . . . . . . . . . . 58
+4.4 Logo of Ginkgo, a testing framework for Go (Golang). . . . . . . . . . . . . 59
+4.5 Logo of Gomega, a matcher library for writing expressive tests in Go. . . . 59
+4.6 Screenshot of successful test run summary for Controllers Suite. . . . . . . 60
+4.7 Continuous Integration Workﬂow in GitHub Actions . . . . . . . . . . . . . 62
+4.8 Continuous Deployment Workﬂow in GitHub Actions . . . . . . . . . . . . 63
+4.9 Logo of Aerokube, the founders of Moon and Selenoid,
+featuring the shared oﬃcial emblem. . . . . . . . . . . . . . . . . . . . . . 64
+4.10 Oﬃcial Fast Forward MPEG (FFmpeg) logo representing the open-source
+multimedia framework. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 65
+5.1 Kubernetes Cluster Architecture. . . . . . . . . . . . . . . . . . . . . . . . 69
+5.2 kubectl get nodes output showing cluster topology. . . . . . . . . . . . . 70
+5.3 Prometheus and Grafana-based monitoring stack for collecting and visual-
+izing cluster metrics. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 72
+5.4 Istio service mesh with Kiali for traﬃc management and service observability. 73
+5.5 Istio Architecture. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 74
+5.6 Kiali Architecture and Integration Points with Istio Components . . . . . . 76
+5.7 Kiali Dashboard Overview Showing Service Topology and Traﬃc Flow . . . 77
+5.8 Prometheus Monitoring Architecture and Data Flow . . . . . . . . . . . . 78
+5.9 Grafana dashboard visualizing Kubernetes metrics . . . . . . . . . . . . . . 79
+6.1 FastAPI Logo . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 82
+6.2 Swagger UI Logo . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 82
+6.3 Keycloak Logo . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 82
+6.4 Pytest framework Logo . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 82
+6.5 PostgreSQL Logo . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 83
+6.6 SQLAlchemy Logo . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 83
+6.7 BigBlueButton Logo . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 83
+6.8 Next.js Logo . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 83
+6.9 TypeScript Logo . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 84
+6.10 Material UI Logo . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 84
+6.11 Tailwind CSS Logo . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 84
+6.12 Figma Logo . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 84
+6.13 React Logo . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 85
+LIST OF FIGURES
+6.14 Webpack Logo . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 85
+6.15 CSS Logo . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 85
+6.16 Selenium Logo . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 85
+6.17 Bash Logo . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 86
+6.18 Docker Logo . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 86
+6.19 Kubernetes Logo . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 86
+6.20 Helm Logo . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 86
+6.21 GitHub Actions Logo . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 87
+6.22 Istio Logo . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 87
+6.23 Kiali Logo . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 87
+6.24 Prometheus Logo . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 87
+6.25 Grafana Logo . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 88
+6.26 Ingress NGINX Logo . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 88
+6.27 Landing page . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 88
+6.28 Keycloak login page . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 89
+6.29 Dashboard page . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 89
+6.30 RTMP Endpoints Page . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 90
+6.31 Add RTMP Endpoints Modal . . . . . . . . . . . . . . . . . . . . . . . . . 90
+6.32 Channels Page . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 91
+6.33 Single Channel Page . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 91
+6.34 Create event form page . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 92
+6.35 Copy join URL modal . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 92
+6.36 Start Stream Modal in BBB . . . . . . . . . . . . . . . . . . . . . . . . . . 93
+6.37 Live Session on Twitch . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 93
+6.38 Twitch and BBB Chat Message Exchange . . . . . . . . . . . . . . . . . . 94
+6.39 Admin access control page . . . . . . . . . . . . . . . . . . . . . . . . . . . 94
+6.40 Keycloak client page . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 95
+6.41 Workloads deployed in the spoutbreeze namespace. . . . . . . . . . . . . 95
+6.42 Workloads deployed in the moon namespace. . . . . . . . . . . . . . . . . . 96
+6.43 Workloads deployed in the postgresdb namespace. . . . . . . . . . . . . . 96
+6.44 Workloads deployed in the monitoring namespace. . . . . . . . . . . . . . 96
+6.45 Workloads deployed in the istio-system namespace. . . . . . . . . . . . . 97
+6.46 Output of docker ps showing the running Keycloak Docker container. . .97
+List of Tables
+4.1 Feature comparison between Selenoid and Moon . . . . . . . . . . . . . . . 64
+Glossary
+API Application Programming Interface.
+BBB BigBlueButton.
+BDD Behavior-Driven Development.
+BGP Border Gateway Protocol.
+CD Continuous Deployment.
+CDN Content Delivery Network.
+CI/CD Continuous Integration/Continuous Deployment.
+CNI Container Network Interface.
+CORS Cross-Origin Resource Sharing.
+CRD Custom Resource Deﬁnition.
+CRI Container Runtime Interface.
+CSRF Cross Site Request Forgery.
+CSS Cascading Style Sheets.
+DNS Domain Name System.
+FFmpeg Fast Forward MPEG.
+Gin Go Web Framework.
+Gzip GNU zip.
+HTML Hypertext Markup Language.
+HTTP Hypertext Transfer Protocol.
+HTTPS Hypertext Transfer Protocol Secure.
+IDIdentiﬁcation.
+Glossary
+IPInternet Protocol.
+IRC Internet Relay Chat.
+JSJavascript.
+JSON JavaScript Object Notation.
+JWT JSON Web Tokens.
+MIME Multipurpose Internet Mail Extensions.
+mTLS Mutual Transport Layer Security.
+NAT Network Address Translation.
+PKCE Proof Key for Code Exchange.
+PoC Proof of Concept.
+PVC Persistent Volume Claim.
+Redis Remote Dictionary Server.
+REST Representational State Transfer.
+RESTful REST-compliant.
+RTMP Real-Time Messaging Protocol.
+SDLC Software Development Life Cycle.
+SSO Single Sign-On.
+TAR Tape Archive.
+TDD Test-Driven Development.
+TLS Transport Layer Security.
+UIUser Interface.
+UML Uniﬁed Modeling Language.
+URI Uniform Resource Identiﬁer.
+XSS Cross-Site Scripting.
+General Introduction
+General Introduction
+In recent years, virtual communication platforms have become essential in education,
+business, and entertainment. Web conferencing systems enable real-time interaction with
+features like whiteboards, polls, breakout rooms, and collaborative note-taking.
+However, these platforms often face scalability challenges when hosting large webinars
+or live events with thousands of viewers. The tight coupling between interactivity and
+participant capacity limits their ability to support large audiences.
+Motivated by this challenge, RIADVICE has launched the SpoutBreeze project ,
+a modular and extensible open-source platform designed to bridge the gap between Big-
+BlueButton (BBB) s interactive core and the need for large-scale broadcasting, without
+modifying or recompiling BBB s source code.
+One solution is to decouple interactivity from broadcasting by using browser automa-
+tion to join sessions, capture audio and video streams, and forward them to streaming
+infrastructures via protocols like RTMP . This allows interactive sessions to run normally
+while enabling scalable broadcasts.
+The objective of this work is to design a scalable architecture combining browser au-
+tomation, real-time streaming, and cloud-native deployment to overcome these limita-
+tions. We will provide a comprehensive overview of the system, covering its design,
+development, and deployment stages.
+This work proposes a scalable solution for large online events while preserving interac-
+tivity and ﬂexibility for future improvements.
+The structure of this report has been carefully organized to ensure a coherent and
+progressive presentation of the work, as outlined below:
+Chapter 1 introduces the general context of the work. It outlines the problem state-
+ment, deﬁnes the project scope, and reviews existing systems that address similar chal-
+lenges.
+Chapter 2 presents the system redesign along with a detailed requirements analysis.
+It compares the limitations of the previous architecture with the improvements brought
+by the proposed solution.
+Chapter 3 describes the integration of conferencing plugins and the comprehensive
+development of the system components that support the overall functionality.
+Chapter 4 covers the development of the Broadcaster microservice and Moon browser
+1
+General Introduction
+automation for stream capture and processing.
+Chapter 5 explains the setup of the Kubernetes cluster. It also covers the monitor-
+ing tools and observability techniques applied to maintain system reliability and ensure
+scalability.
+Chapter 6 concludes with the realization phase, highlighting the development environ-
+ments, deployment workﬂows, and the practical implementation of all system components.
+Finally, the report ends with a Conclusion and Perspectives , summarizing key
+achievements and outlining future directions for enhancing the SpoutBreeze platform.
+2
+Chapter 1
+General Context
+Introduction
+This chapter establishes the foundational context for the project titled Architectural Re-
+design and Implementation of an Open-Source Webinar Platform . It begins by presenting
+the host company, RIADVICE . Following this, the chapter delineates the project’s scope,
+detailing the speciﬁc challenges addressed and the objectives set forth. A comprehensive
+analysis of existing webinar and streaming solutions is then provided to underscore the
+motivations behind the proposed solution. The chapter concludes with an overview of the
+chosen methodology, outlining the development approach adopted to achieve the project’s
+goals.
+1.1 Presentation of the host company
+1.1.1 Presentation of RIADVICE
+RIADVICE is a Tunisian technology company founded in 2013, specializing in software
+engineering, DevOps services, and open-source solutions. It is internationally recognized
+as one of the ﬁve oﬃcial commercial support providers for BBB , the leading open-source
+web conferencing platform designed for online learning. Since its inception, RIADVICE
+has been a key contributor to the BBB project, oﬀering services such as hosting, cus-
+tomization, and integration to clients across over 50 countries.
+Beyond its expertise in BBB ,RIADVICE delivers a comprehensive range of DevOps so-
+lutions, including infrastructure as code, continuous integration and delivery, monitoring,
+and security. The company also provides agile software engineering services, encom-
+passing prototyping, software architecture and design, UI/UX, and quality assurance.
+RIADVICE ’s commitment to open-source development and its strategic partnerships,
+such as with OVHcloud, underscore its role as a trusted partner in digital transformation
+initiatives.[ 1]
+3
+Chapter 1: General Context
+Figure 1.1: RIADVICE Company Logo
+1.1.2 Service Overview
+•BigBlueButton BBB :BBB is an open-source web conferencing solution tailored
+for educational institutions. It enables universities, faculties, departments, and in-
+dividual educators to create dedicated accounts. Professors and tutors can leverage
+BBB to conduct virtual oﬃce hours, labs, or online tutorials, enhancing the remote
+learning experience.
+•Open Source Hosting: RIADVICE oﬀers hosting solutions that provide ex-
+ceptional transparency, security, and performance. These services are designed to
+support a wide range of applications, from WordPress to BBB and others, ensuring
+reliable and eﬃcient operation.
+•Agile Software Engineering: Specializing in digitizing business processes, RI-
+ADVICE delivers custom software applications. Their end-to-end services encom-
+pass prototyping, software architecture and design, user interface/user experience
+(UI/UX) development, and quality assurance, all adhering to agile methodologies
+to ensure timely and high-quality delivery.
+•DevOps Services: RIADVICE ’s DevOps oﬀerings enable businesses to transi-
+tion to continuous deployment models. Covering the entire technology lifecycle,
+their services include infrastructure as code, continuous integration and delivery,
+monitoring, and security solutions. These services are scalable, catering to both
+small-scale digital systems and large-scale enterprise products, facilitating eﬃcient
+and reliable software delivery.
+1.2 Project Scope
+1.2.1 Project Context
+The project entitled Architectural Redesign and Implementation of an Open-Source We-
+binar Platform is carried out as part of our end-of-studies project for the completion of a
+Bachelor’s degree in Software Engineering & Information Systems. This initiative aligns
+with the practical application of the knowledge acquired throughout my academic journey
+at Horizon School Of Digital Technologies. Conducted within the company RIADVICE
+over a period of 4 to 6 months, this project focuses on the development of an external
+4
+Chapter 1: General Context
+platform, SpoutBreeze , designed to integrate seamlessly with the BBB system with-
+out requiring any modiﬁcation or recompilation of the core application. The source code
+and related components of the platform are available on the oﬃcial GitHub organization:
+https://github.com/spoutbreeze .
+Figure 1.2: SpoutBreeze logo
+1.2.2 Problem Statement
+BBB is a widely adopted open-source web conferencing solution, particularly well-suited
+for educational institutions. It oﬀers an array of interactive features such as shared white-
+boards, polls, breakout rooms, and collaborative notes, making it a powerful tool for vir-
+tual learning. BBB performs eﬃciently with interactive sessions ranging from 100 to 300
+concurrent users, and under optimized conditions, it can support up to 500 participants.
+Despite its strengths, BBB is architecturally limited in its ability to scale beyond a few
+hundred concurrent users in a single session. This becomes a critical bottleneck in webinar
+scenarios where thousands of viewers need to attend the same event. The platforms
+tight coupling between interactivity and capacity makes it diﬃcult to separate active
+participants from passive viewers, preventing eﬀective large-scale broadcasting within the
+same meeting context.
+This limitation was explicitly acknowledged in a GitHub issue posted by the BBB
+maintainers [ 2], where they proposed a potential workaround: using a headless browser
+to join a BBB session, capture the audio/video feed, and stream it to a Content Delivery
+Network (CDN) viaRTMP . This would allow a presenter to retain interactivity with BBB
+participants while simultaneously reaching a broader audience through a live broadcast.
+The project presented in this report originates from that proposal, aiming to implement
+and extend such a solution to bridge the gap between interactivity and scalability in BBB -
+based webinars.
+5
+Chapter 1: General Context
+Figure 1.3: Github issue screenshot
+1.2.3 Proposed Solution
+To overcome these constraints, RIADVICE initiated the SpoutBreeze project, a mod-
+ular platform designed to extend BBB without modifying its core code. The original
+version was initially funded by a public grant from Mainz University in Germany and a
+private U.S. investor. Although its initial objectives were not fully met, the funders were
+reimbursed, allowing for a renewed and more focused development phase.
+SpoutBreeze leverages a browser automation tool called Moon to programmatically
+joinBBB meetings as a participant. Within this automated browser session, FFmpeg
+is injected to capture the video and audio streams in real-time. These streams are then
+pushed to Real-Time Messaging Protocol RTMP endpoints, enabling high-quality, large-
+scale broadcasting.
+This decoupled architecture, which it will be detailed later, maintains the full interac-
+tivity of the original BBB session for active participants, while allowing the same session
+to be simultaneously streamed to an unlimited number of passive viewers. The result is
+a scalable, maintainable solution that bridges the gap between real-time engagement and
+mass broadcasting.
+1.3 Study of the Existing System
+This section brieﬂy reviews existing webinar and streaming solutions to highlight their
+limitations and the need for a more scalable architecture.
+6
+Chapter 1: General Context
+1.3.1 Existing Webinar Solutions
+There are a variety of webinar solutions available today, each oﬀering diﬀerent features
+tailored to speciﬁc needs. However, many of these solutions come with their own limita-
+tions, such as scalability issues, high costs, or a lack of integration with certain platforms.
+Below are a few popular commercial and open-source solutions that are widely used in
+the industry.
+1.3.1.1 Commercial Solutions
+1. Zoom Webinar Zoom is one of the most popular solutions for corporate meetings
+and webinars, known for its user-friendly interface and scalability.[ 3]
+•Features : Screen sharing, breakout rooms, HD video/audio, audience engagement
+tools (polls, chat, Q&A).
+•Pros : Zoom supports up to thousands of participants, making it highly scalable.
+It is easy to use, and the features cater to both small meetings and large-scale
+webinars.
+•Cons : For large audiences, the cost of Zoom can become prohibitive. Additionally,
+while Zoom excels in engagement features, it lacks some specialized educational
+tools that are available on other platforms like BBB . Furthermore, when you need
+to host a webinar for 10,000+ participants, you are required to contact Zoom’s
+sales team to set up the event, as there is no direct option to purchase or access
+this capability via self-service. This adds an extra layer of complexity and potential
+delays in securing the necessary infrastructure for large-scale events.
+Figure 1.4: Zoom logo
+2. GoToWebinar GoToWebinar is a professional platform suited for businesses and
+organizations hosting pre-recorded events, training sessions, and presentations.[ 4]
+•Features : Pre-recorded sessions, customizable registration forms, detailed analyt-
+ics, automated email reminders, surveys, and polls.
+7
+Chapter 1: General Context
+•Pros : The platform is ideal for hosting webinars with reliable streaming and ad-
+vanced engagement tools. It supports up to 3,000 participants, and the analytics
+tools provide valuable insights into attendee behavior.
+•Cons : GoToWebinar lacks real-time interaction features, making it unsuitable for
+highly interactive sessions. Additionally, it only works on Google Chrome and
+Microsoft Edge, limiting accessibility for users on other browsers.
+Figure 1.5: GoToWebinar logo
+1.3.1.2 Open-Source Solution
+3. Jitsi Meet Jitsi Meet is a lightweight, open-source video conferencing solution that
+is often used for smaller-scale webinars and video calls.[ 5]
+•Features : HD video/audio, chat, screen sharing, and end-to-end encryption.
+•Pros : Jitsi Meet is free, open-source, and easy to deploy. It is a great option for
+users looking for a simple and secure platform.
+•Cons : While Jitsi Meet excels in ease of use, it has limited scalability and is not
+ideal for hosting very large webinars or events.
+Figure 1.6: Jitsi Meet logo
+1.3.2 Existing Streaming Software Solutions
+In addition to webinar platforms, streaming software solutions are crucial for broadcasting
+content to a wider audience. These tools allow seamless live streaming to platforms like
+YouTube, Twitch, and other RTMP endpoints, and can complement webinar platforms
+by providing enhanced broadcasting capabilities. Below are some of the most commonly
+used streaming solutions:
+8
+Chapter 1: General Context
+•OBS Studio :[6]
+–Features : Open-source software for video recording and live streaming. OBS
+supports streaming to multiple platforms and oﬀers advanced features like
+scene transitions, chroma key (green screen), and audio mixing.
+–Pros : Free and open-source, highly customizable, and supports multiple plat-
+forms.
+–Cons : While OBS provides a wide range of features, it requires signiﬁcant
+technical knowledge to set up and use eﬀectively. The user interface can be
+overwhelming for beginners, and it lacks native integrations with webinar plat-
+forms like Zoom or Microsoft Teams, which could make it more cumbersome
+to combine with interactive features.
+Figure 1.7: OBS Studio logo
+•Streamlabs OBS :[7]
+–Features : A variant of OBS tailored for streamers, oﬀering more user-friendly
+features such as customizable templates, easy integration with platforms like
+Twitch and YouTube, and an integrated dashboard for monitoring stream
+health.
+–Pros : Simpliﬁes streaming setup compared to OBS, with additional pre-
+conﬁgured templates and more user-friendly features.
+–Cons : Despite being more user-friendly, Streamlabs OBS still also requires
+some technical knowledge and can be prone to performance issues, particularly
+on lower-end systems. Additionally, some features are locked behind a paid
+subscription, limiting access to advanced functionalities unless you opt for the
+premium version.
+Figure 1.8: Streamlabs OBS logo
+9
+Chapter 1: General Context
+•Wirecast :[8]
+–Features : A professional live broadcasting software with support for multiple
+cameras, video eﬀects, graphics, and encoding for multiple platforms simul-
+taneously. Wirecast is designed for higher-end productions with professional-
+grade features.
+–Pros : Oﬀers advanced broadcasting features for high-end productions, includ-
+ing 4K streaming, customizable transitions, and multi-platform broadcasting.
+–Cons : The major downside of Wirecast is its high price point, making it less
+accessible for smaller events or organizations with a limited budget. It also
+requires a higher level of technical expertise to operate eﬀectively, and the
+learning curve can be steep for new users.
+Figure 1.9: Wirecast logo
+1.3.3 Adopted solutions
+While existing streaming tools such as OBS, Streamlabs, and Wirecast provide powerful
+broadcasting capabilities, they require users to set up external software, manage complex
+conﬁgurations, and manually link RTMP endpoints. These steps can be technical and
+time-consuming for non-experts.
+Our solution addresses this complexity by oﬀering a "Click-to-Stream" approach di-
+rectly within the webinar or virtual event platform. Users will simply press a Start
+Stream button from their meet session, choose an RTMP destination (e.g., Twitch), and
+the stream will launch automatically.
+•No Software Setup: Users do not need to install third-party streaming software
+like OBS.
+•One-Click Simplicity: The process of starting a stream is reduced to a few clicks.
+•RTMP Flexibility: Can support multiple RTMP endpoints, allowing ﬂexibility
+in broadcast destinations.
+•Integrated Workﬂow: All streaming is managed within the same user interface,
+eliminating the need to switch tools or platforms.
+10
+Chapter 1: General Context
+This design drastically simpliﬁes the streaming process, making it accessible to users
+with minimal technical background while maintaining compatibility with existing plat-
+forms.
+1.4 Work Methodology
+1.4.1 Overview of the Software Development Life Cycle ( SDLC )
+The Software Development Life Cycle (SDLC) is a structured framework that guides the
+development of software applications from inception to deployment and maintenance. It
+encompasses a series of well-deﬁned phases, including planning, analysis, design, imple-
+mentation, testing, deployment, and maintenance. The primary objective of SDLC is to
+produce high-quality software that meets or exceeds customer expectations, is completed
+within time and cost estimates, and is maintainable and scalable over time.[ 9]
+Various SDLC models have been developed to address diﬀerent project needs and
+complexities. Common models include:
+•Waterfall Model: A linear and sequential approach where each phase must be
+completed before the next begins.
+•Spiral Model: Combines iterative development with systematic aspects of the
+waterfall model, focusing on risk assessment.
+•Iterative Model: Develops the system through repeated cycles (iterations), allow-
+ing for incremental improvements and reﬁnements.
+1.4.2 Chosen Methodology: Iterative Model
+For our project we selected the Iterative Model as the most suitable SDLC approach.
+It involves repetitive development cycles, including Requirement Analysis, Design and
+Development, Testing, and Implementation.[ 10]
+1.4.3 Justiﬁcation for the choice
+The Iterative Model oﬀers several advantages that align well with our project’s objectives:
+•Flexibility: A linear and sequential approach where each phase must be completed
+before the next begins.[ 9]
+•Early Detection of Issues: By developing the software in small increments and
+conducting testing at each stage, potential issues can be identiﬁed and addressed
+early in the development cycle.[ 9]
+11
+Chapter 1: General Context
+•Early Value Delivery: Each iteration results in a working version of the software,
+allowing for early delivery of functional components.[ 9]
+1.4.4 Description of the Iterative Model
+The Iterative Model is a cyclical process that involves developing a system through re-
+peated cycles, allowing for incremental enhancements with each iteration. Each cycle
+typically encompasses the following phases:
+1.Requirement Analysis: Identify and document the speciﬁc requirements for the
+current iteration.
+2.Design: Develop architectural and detailed designs based on the identiﬁed require-
+ments.
+3.Implementation: Translate the design into executable code.
+4.Testing: Conduct thorough testing to ensure the implemented features meet the
+speciﬁed requirements and are free of defects.
+5.Evaluation: Assess the iteration’s outcomes, gather feedback, and plan for the
+next cycle.
+This iterative process continues until the complete system is developed, ensuring that the
+software evolves in alignment with user needs and technological changes.
+Figure 1.10: Iterative Model
+12
+Chapter 1: General Context
+Conclusion
+This chapter presented the general context of the project by introducing RIADVICE, its
+expertise in DevOps and its contribution to BBB . It outlined the challenges faced by
+existing webinar and streaming solutions, particularly in scalability and integration. To
+address these, the SpoutBreeze solution was proposed as a way to extend BBB s capa-
+bilities without modifying its core. The chosen iterative methodology was also brieﬂy
+discussed. This sets the foundation for the next chapters, which will cover the design and
+implementation of the proposed system.
+13
+Chapter 2
+System Redesign and Requirements
+Analysis
+Introduction
+In this chapter, we begin by presenting the architectural redesign of SpoutBreeze , an
+open-source webinar platform, transitioning from its previously structure to a more scal-
+able, maintainable, and modular solution. We then conduct a thorough analysis of the
+system requirements by identifying the key actors and clearly deﬁning both functional
+and non-functional requirements. These elements guided the redesign process and shaped
+the core features of the platform, which are further illustrated through detailed use-case
+diagrams.
+2.1 Analysis of the Previous Architecture
+The original SpoutBreeze system followed a semi-monolithic design, composed of multiple
+tightly coupled components that limited its scalability, maintainability, and observability.
+Figure 2.1illustrates this architecture.
+14
+Chapter 2: System Redesign and Requirements Analysis
+Figure 2.1: Previous Architecture of SpoutBreeze
+2.1.1 SpoutBreeze Components
+1.Extender
+•Technologies: Node.js, MongoDB
+•Role: Interacts with the DOM of the BBB Hypertext Markup Language
+(HTML) 5 client and exchanges data with the Interactor.
+•MVP Proof of Concept (PoC) :Injects a button into the HTML 5 client
+that loads a list of available broadcasting endpoints.
+2.Interactor
+•Technologies: Micronaut (Java)
+•Role: Listens to Remote Dictionary Server (Redis) pub/sub, communicates
+with the Extender and Web Application Programming Interface (API) .
+•MVP PoC:Fetches endpoints from the API and sends them to the Extender;
+forwards broadcasting demands to the API and provides status feedback.
+3.Web
+•Technologies: PHP
+15
+Chapter 2: System Redesign and Requirements Analysis
+•Role: Acts as a secure intermediary between BBB components, especially the
+Interactor.
+•MVP PoC:Working API endpoints managed by the backend developer.
+4.Manager
+•Technologies: Spring Boot, PostgreSQL
+•Role: Handles and distributes incoming broadcasting requests to available
+agents.
+•MVP PoC:Assigns broadcasting requests dynamically based on resource
+availability.
+5.Agent
+•Technologies: Spring Boot
+•Role: Receives broadcasting commands and initiates Selenoid sessions.
+•MVP PoC:Starts/stops broadcasting and uses Selenium to manipulate the
+HTML 5 client DOM (e.g., hiding elements).
+6.Broadcaster
+•Technologies: Selenoid, Docker, FFmpeg
+•Role: Captures HTML 5 interface and streams to external platforms such as
+YouTube.
+•MVP PoC:Starts and stops the streaming process.
+7.Player
+•Technologies: Node.js (additional details to be completed if needed)
+•Role: Real-time playback and user interface (exact PoC details not provided).
+2.1.2 Architecture Limitations
+While this architecture enabled basic streaming functionality, it suﬀered from signiﬁcant
+limitations:
+•Limited Scalability: Individual components could not scale independently.
+•Deployment Complexity: Lack of container orchestration increased operational
+overhead.
+•Single Points of Failure: Failures in components like Redis or Selenoid aﬀected
+the entire pipeline.
+16
+Chapter 2: System Redesign and Requirements Analysis
+•Insuﬃcient Observability: Monitoring and logging were minimal, complicating
+debugging and system health analysis.
+These issues prompted a shift towards a modern, containerized microservices architec-
+ture detailed in the following section.
+2.2 New Architecture Approach
+The redesigned architecture of SpoutBreeze adopts a Kubernetes-native microservices
+approach, signiﬁcantly improving system scalability, observability, and resilience. This
+modern infrastructure allows for independent service deployment, robust monitoring, and
+seamless scaling. Figure 2.2illustrates the updated system layout.
+•Frontend : Built with Next.js.
+•Backend : FastAPI service handling business logic and APIs.
+•Keycloak : Identity and access management using OAuth2/OIDC.
+•PostgreSQL : Central relational database with persistent storage.
+•Monitoring : Includes Prometheus (metrics), Grafana (dashboards) and Kiali (ser-
+vice mesh observability).
+•Service Mesh : Istio manages secure, observable, and resilient service communica-
+tion.
+•Automation : Moon handles browser automation in pods.
+•Streaming : Integrates with Twitch for live broadcasts.
+Each of these components will be discussed in more detail later.
+17
+Chapter 2: System Redesign and Requirements Analysis
+POD -Spoutbr eeze br owser
+8080
+4444
+8080
+4444
+4444 4444 4444 8080 9090 8080 9090 8080 9090DEPL OY-Spoutbr eeze moon
+POD -1 POD -2 POD -3
+1323 1323 1323DEPL OY-Spoutbr eeze br oadcast er
+POD -1 POD -2 POD -3
+4444:32090 8080:31827 9090:31827
+SER VICE -Spoutbr eeze moonNodeP ort
+1323:31 665
+SER VICE -Spoutbr eeze br oadcast erNodeP ort8000 8000 8000DEPL OY-Spoutbr eeze back end
+POD -1 POD -2 POD -3
+8000:
+SER VICE -Spoutbr eeze back endNodeP ort
+3000:
+SER VICE -Spoutbr eeze frontendNodeP ort3000 3000 3000DEPL OY-Spoutbr eeze frontend
+POD -1 POD -2 POD -3
+POS T /br oadcast er/joinBBB
+5432/ TCP
+SER VICE -Postgr esql  Clust erIP
+5432/ TCP
+SER VICE -Postgr esql -hlClust erIPStatefulSet pod/ postgr esql
+pvc-postgr espostgr esdb -namespacepv-postgr esgrafana-pv 
+pvc-prometheus -
+server   
+pvc-storage-
+prometheus -
+aler tmanag er4701 4701 4701DEPL OY-Spoutbr eeze plugin
+POD -1 POD -2 POD -3
+grafana
+istio-ingressgateway
+istiod
+jaeger
+kiali
+prometheus
+prometheus -
+server-pvaler tmanag er-pv k8s-Cluster (1-control Plane, 3-workers)
+moon -namespacespoutbr eeze -namespace
+creates
+monit oring -namespace
+grafana – ClusterIP – 80/TCP
+grafana-ext – NodePort – 80:30377/TCP
+prometheus-alertmanager – ClusterIP – 9093/TCP
+prometheus-alertmanager-headless – ClusterIP – 9093/TCP
+prometheus-kube-state-metrics – ClusterIP – 8080/TCP
+prometheus-prometheus-node-exporter – ClusterIP – 9100/TCP
+prometheus-prometheus-pushgateway – ClusterIP – 9091/TCP
+prometheus-server – ClusterIP – 80/TCP
+prometheus-server-ext – NodePort – 80:30976/TCPgrafana – 1/1
+prometheus-kube-state-metrics – 1/1
+prometheus-prometheus-pushgateway – 1/1
+prometheus-server – 1/1grafana  – 1/1
+prometheus-alertmanager  – 1/1
+prometheus-kube-state-metrics – 1/1
+prometheus-prometheus-node-exporter – 1/1
+prometheus-prometheus-node-exporter – 1/1
+prometheus-prometheus-node-exporter – 1/1
+prometheus-prometheus-node-exporter – 1/1
+prometheus-prometheus-pushgateway – 1/1
+prometheus-server – 2/2istio -system-namespace
+grafana-65bfb5f855-rd4sl → Ready: 1/1
+istio-ingressgateway-6fcf48f7d4-b5vtb → Ready: 1/1
+istiod-84444f67c-fhdxq → Ready: 1/1
+jaeger-868fbc75d7-q4zv6 → Ready: 1/1
+kiali-6d774d8bb8-lznkz → Ready: 1/1
+loki-0 → Ready: 0/2 (Pending)
+prometheus-689cc795d4-wbf6x → Ready: 2/2
+grafana → ClusterIP (Port: 3000)
+istio-ingressgateway → LoadBalancer (Ports: 15021, 80, 443)
+istiod → ClusterIP (Ports: 15010, 15012, 443, 15014)
+jaeger-collector → ClusterIP (Ports: 14268, 14250, 9411, 4317, 4318)
+kiali → NodePort (Ports: 20001, 9090)
+loki → ClusterIP (Ports: 3100, 9095)
+loki-headless → ClusterIP (Port: 3100)
+loki-memberlist → ClusterIP (Port: 7946)
+prometheus → ClusterIP (Port: 9090)
+tracing → ClusterIP (Ports: 80, 16685)
+zipkin → ClusterIP (Port: 9411)
+Figure 2.2: New Kubernetes-based Architecture of SpoutBreeze
+18
+Chapter 2: System Redesign and Requirements Analysis
+2.2.1 Key Architectural Enhancements and System Components
+•Plugin-Based Extensibility for BBB :Leveraging the oﬃcial plugin architec-
+ture introduced in BBB v3, a capability that was not available when the initial
+version of the system was developed ,SpoutBreeze eliminates legacy DOM injection
+techniques in favor of a maintainable and upgrade-friendly plugin system. This ap-
+proach ensures clean integration with the BBB client, improves long-term stability,
+and simpliﬁes version upgrades.
+•Modular Microservices Architecture: The system is decomposed into well-
+deﬁned, independently deployable microservices, covering the frontend interface,
+backend APIs, browser automation, and streaming logic. This modularity supports
+better scalability, fault isolation, and maintainability.
+•Namespace-Based Service Isolation:
+–moon-namespace : Contains video processing components such as FFmpeg and
+browser automation tools (e.g., Selenoid) for session capture and transforma-
+tion.
+–spoutbreeze-namespace : Hosts the primary application services, including
+the frontend UI and backend interaction logic.
+–postgresdb-namespace : Encapsulates PostgreSQL database services, utiliz-
+ing StatefulSets and persistent storage for data integrity.
+–monitoring-namespace : Integrates observability tools such as Prometheus,
+Grafana, and Alertmanager for centralized monitoring and alerting.
+•Comprehensive Kubernetes Capabilities:
+–NodePort and Ingress Controllers: Provide controlled access to services.
+Ingress controllers enable advanced routing, Transport Layer Security (TLS)
+termination, and virtual host support.
+–Horizontal and Vertical Pod Autoscaling (HPA/VPA): Dynamically
+scale workloads based on CPU, memory usage, or custom metrics to optimize
+performance and resource utilization.
+–Persistent Volume Claims ( Persistent Volume Claim (PVC) s):En-
+sure durable storage for stateful services, supporting snapshots, backups, and
+volume resizing across cloud providers.
+–Liveness, Readiness, and Startup Probes: Enable proactive service health
+checks and facilitate zero-downtime rolling deployments with graceful pod life-
+cycle management.
+19
+Chapter 2: System Redesign and Requirements Analysis
+–Namespaces and Resource Quotas: Allow logical separation of services
+and enforce limits on resource usage to ensure isolation and fair distribution
+in multi-tenant clusters.
+–ConﬁgMaps and Secrets Management: Decouple conﬁguration and sen-
+sitive data from application code to support secure and ﬂexible deployment
+practices.
+–Service Discovery and Domain Name System (DNS) :Provide built-
+in service registration and name resolution, enabling seamless inter-service
+communication.
+–Helm Support: Use Helm charts for reusable deployment templates.
+–Taints, Tolerations, and Node Aﬃnity: Control workload placement and
+enforce policies to ensure high availability and optimal resource scheduling.
+–Custom Resource Deﬁnitions ( Custom Resource Deﬁnition (CRD) s)
+and Operators: Extend Kubernetes functionality with domain-speciﬁc con-
+trollers for lifecycle automation of complex services.
+•Integrated Observability Stack: A comprehensive monitoring layer based on
+Prometheus and Grafana provides real-time visibility into application health, per-
+formance, and resource utilization. Alertmanager supports proactive incident de-
+tection and response workﬂows.
+•End-to-End Streaming Pipeline: The broadcasting component employs FFm-
+pegfor real-time video processing and leverages Selenium-based automation to
+stream live BBB sessions to platforms like Twitch, ensuring broad accessibility and
+automation.
+2.2.2 Advantages Over the Old Architecture
+•Plugin Architecture in BBB :Eliminates brittle DOM injection by leveraging
+oﬃcially supported plugins, improving maintainability and forward compatibility.
+•Improved Scalability: Each microservice scales independently, allowing for eﬃ-
+cient resource allocation and cost optimization.
+•Fault Isolation: Service-level separation through pods and namespaces localizes
+errors and prevents cascading failures.
+•Enhanced Observability: Centralized metrics and dashboards signiﬁcantly re-
+duce mean time to detection (MTTD) and resolution (MTTR).
+20
+Chapter 2: System Redesign and Requirements Analysis
+•Streamlined CI/CD :The containerized approach, combined with Kubernetes
+deployment strategies (e.g., rolling updates), simpliﬁes continuous integration and
+delivery workﬂows.
+•Resilience and Recovery: Stateful workloads, PVC s, and self-healing capabilities
+ensure high availability and consistent user experience.
+2.3 Requirement Speciﬁcation
+2.3.1 Identiﬁcation of actors
+Actors are human users or automated systems that interact within our software. We will
+try to identify the diﬀerent actors involved in our system.
+•Admin (Superadmin): Has full access to the platform, manages system settings,
+users, and overall SpoutBreeze conﬁgurations.
+•Moderator: Manages events, channels, RTMP Endpoints, access BBB recordings
+and starts BBB sessions.
+•Bot (Moon + Selenium): Automated agent that joins BBB when a stream starts,
+captures the screen, and streams it to the selected RTMP endpoint.
+•Viewer: Watches webinars via Twitch or other streaming endpoints; does not
+interact with BBB directly.
+2.3.2 Identiﬁcation of requirements
+2.3.2.1 Functional Requirements
+This section outlines the speciﬁc functionalities that the system must provide to meet user
+needs. These requirements are categorized by actor and deﬁne how the system should
+behave in response to user interactions or internal processes.
+Admin(Superadmin)
+•Authenticate.
+•Manage all users (create, delete).
+•Assign or revoke moderator roles.
+•Admin can access all system logs and analytics.
+21
+Chapter 2: System Redesign and Requirements Analysis
+•Manage user authentication and roles via Keycloak (create, assign roles, deactivate
+accounts).
+Moderator
+•Authenticate.
+•Create, update and delete events.
+•Create, update and delete channels.
+•Create, update and delete RTMP Endpoints.
+•Start a BBB session.
+•Access BBB recordings.
+•Initiate the Start Stream function, which triggers the bot. (should i keep this ?)
+Bot
+•Joins the BBB session when the moderator initiate the "Start Stream" function.
+•Captures the screen of the active BBB session.
+•Streams the captured session to a speciﬁed RTMP endpoint using FFmpeg .
+Viewer
+•Can access and watch live webinar streams via Twitch or similar platforms.
+•Can interact via live chat on the streaming platform (send and receive messages).
+2.3.2.2 Non-Functional Requirements
+Non-functional requirements describe the quality attributes and constraints of the system,
+such as performance, scalability, security, and maintainability. These requirements ensure
+that the system not only works functionally but also operates eﬃciently and reliably in
+its intended environment.
+•Performance:
+–The system must be able to handle multiple simultaneous webinar sessions
+without noticeable delay or degradation in streaming quality.
+–Stream latency should be minimal to ensure near real-time webinar experiences
+for viewers.
+22
+Chapter 2: System Redesign and Requirements Analysis
+•Scalability:
+–The platform must be horizontally scalable to accommodate a growing number
+of users and webinar sessions.
+–Kubernetes should manage the scaling of services based on demand and re-
+source usage.
+•Reliability and Availability:
+–Kubernetes should ensure high availability through automated container restarts
+and load balancing.
+–The system must be resilient to individual service or container failures.
+•Portability:
+–Docker must be used to containerize all components of the system to ensure
+consistent behavior.
+•Maintainability:
+–The microservices architecture and container-based deployment should facili-
+tate easier maintenance, updates, and debugging.
+–Conﬁguration management and monitoring tools should be integrated into the
+Kubernetes setup.
+•Security:
+–The system must enforce authentication and authorization using Keycloak.
+2.4 Use Case Diagram
+To enhance our understanding of the functional requirements of our system, we will be
+referring to use case diagram. This kind of behavioral diagrams helps us see the application
+from the users point of view.
+23
+Chapter 2: System Redesign and Requirements Analysis
+2.4.1 General use case Diagram
+The ﬁgure 2.3 illustrates the global use case diagram of our system.
+Figure 2.3: General Use Case Diagram
+24
+Chapter 2: System Redesign and Requirements Analysis
+2.4.2 Detailed use case Diagram
+In this section, we delve into detailing some use cases to provide a deeper understanding
+of the functionalities and interactions within our system.
+2.4.2.1 Use Case "Manage Users"
+The ﬁgure 2.4 illustrates the detailed use case of managing Users.
+Admin
+Manage Users
+«extend»
+Delete Users
+Edit Role
+«extend»
+Add User
+«extend»
+Manage users
+Figure 2.4: Use Case "Manage Users"
+TheAdmin is the primary actor. The goal is to manage users by adding, editing roles,
+or deleting them. The admin must be authenticated beforehand. Once completed, the
+user list reﬂects the updates. Typically, the admin accesses the user management section,
+selects an action (add, edit, or delete), and the system processes and applies the changes.
+25
+Chapter 2: System Redesign and Requirements Analysis
+2.4.2.2 Use Case "Manage Events & Channels"
+The ﬁgure 2.5 illustrates the detailed use case of managing Events and Channels.
+ModeratorManage Events & Manage
+Channels
+Manage EventsUpdate Event
+<<extend>>
+Start Event
+<<extend>> Delete Event<<extend>>
+Edit Event<<extend>>
+Share Event<<extend>>
+<<extend>>
+Create/Schedule Event<<include>>Join BBB Meeting
+Create Channel<<include>>
+<<extend>>
+<<extend>>
+<<extend>>Manage Channels
+Delete ChannelUpdate ChannelStart Stream<<extend>>
+Figure 2.5: Use Case Diagram: Manage Users & channels
+TheModerator is the primary actor. The goal is to manage the events and their
+associated channels. The moderator must be authenticated beforehand. This use case
+involves multiple steps:
+•The moderator can create or schedule a new event . During this process, the
+system checks if a channel already exists for the event. If not, it automatically
+creates one.
+•Once an event is scheduled, the moderator can start the event . Starting the event
+26
+Chapter 2: System Redesign and Requirements Analysis
+also triggers an automatic join into the associated BBB meeting.
+2.4.2.3 Use Case "Manage RTMP Endpoints"
+The ﬁgure 2.6 illustrates the detailed use case of managing RTMP Endpoints.
+Figure 2.6: Use Case Diagram: Manage RTMP Endpoints
+TheModerator is the primary actor. The goal is to manage RTMP streaming desti-
+nations like Twitch or YouTube used in the BBB plugin. The moderator must be authenti-
+cated. Upon completion, the system reﬂects the updated RTMP endpoint list. Typically,
+the moderator accesses the RTMP management interface, then creates, updates, edits, or
+deletes RTMP endpoints as needed, and the system processes the changes.
+27
+Chapter 2: System Redesign and Requirements Analysis
+2.4.2.4 Use Case "Access Recordings"
+The ﬁgure 2.7 illustrates the detailed use case of accessing the recordings.
+Figure 2.7: Use Case Diagram: Access Recordings
+TheModerator is the primary actor. The goal is to view available BBB recordings
+in the platform. The moderator mus be authenticated. Upon completion, the system
+displays the available recordings. Typically, the moderator chooses either to view all the
+recordings from the recordings section or view the recording of a speciﬁc channel.
+2.5 Conclusion
+To conclude, this chapter laid the foundation for the redesign of the SpoutBreeze plat-
+form by addressing its architectural limitations and proposing a more robust and future-
+proof solution. By identifying the systems actors and deﬁning both functional and non-
+functional requirements, we established a clear direction for development. The use-case
+diagrams provided a visual representation of the platforms core functionalities, ensuring
+that the proposed architecture aligns with user needs and system objectives. This ground-
+work sets the stage for the implementation phase, where the theoretical design will be
+translated into a practical and eﬃcient system.
+28
+Chapter 3
+BBB plugin integration and Spout-
+Breeze System Development
+Introduction
+This chapter presents the main components and implementation of the system. It starts
+with the overall architecture, then covers the authentication setup using Keycloak, fol-
+lowed by the integration of the BBB plugin. It also describes the internal logic of the
+SpoutBreeze system using Uniﬁed Modeling Language (UML) diagrams. Finally, it high-
+lights the integration steps and the use of Test-Driven Development (TDD) throughout
+the process.
+3.1 System Architecture
+In this section, we present the overall architecture of the integrated system, illustrating
+how each component interacts to deliver a seamless webinar experience. The system
+is composed of several independent yet interconnected services, reﬂecting a modular,
+scalable, and iteratively developed design.
+The core architecture consists of the following major components:
+Figure 3.1: High-level architecture of SpoutBreeze Backend, Frontend, and Keycloak.
+29
+Chapter 3: BBB plugin integration and SpoutBreeze System Development
+•Frontend : Built with Next.js , it serves as the main user interface for end users.
+•Backend API : Developed using FastAPI , this service manages core logic, API
+handling, and communication with external systems.
+•Authentication Service : Managed by Keycloak , it handles user authentication,
+role-based access control, and token management.
+•BBB Plugin : A standalone React + Webpack application embedded within BBB
+sessions, responsible for initiating live streams via API requests to the backend.
+•PostgreSQL Database : Used for storing persistent data such as users, roles,
+webinar conﬁgurations, and session information.
+The architecture also includes:
+•WebSocket Integration : Enables real-time synchronization of chat messages be-
+tween Twitch and BBB chats, implemented via FastAPI.
+•CI/CD Pipelines : Comprehensive automation pipelines are implemented using
+GitHub Actions for both backend and frontend components.
+–Continuous Integration : On every push orpull_request to the main
+branch, the system triggers automated workﬂows:
+∗For the backend (FastAPI ), multiple Python versions ( 3.9, 3.10, 3.11 )
+are tested to ensure compatibility. The codebase undergoes linting with
+flake8 , type-checking with mypy , code formatting validation with black
+and isort , and dependency installation. This guarantees code quality,
+type safety, and compliance with deﬁned coding standards.
+∗For the frontend (Next.js ), Node.js dependencies are installed, static
+analysis is performed using ESLint and TypeScript , unit tests (if avail-
+able) are executed, and a production build is generated. This ensures both
+code correctness and build stability.
+–Continuous Deployment : Upon successful merging to main , Docker images
+are automatically built for both services using docker/build-push-action ,
+tagged dynamically with the current date and commit SHA, and pushed to
+DockerHub. Environment variables and secrets are securely injected into the
+build process.
+–Kubernetes Deployment : After image creation, kubectl connects to the
+target Kubernetes cluster using a secured KUBECONFIG secret. It updates the
+deployment images for both spoutbreeze-backend andspoutbreeze-frontend
+namespaces, waits for rollout completion, and veriﬁes pod health to ensure de-
+ployment integrity and minimize downtime.
+30
+Chapter 3: BBB plugin integration and SpoutBreeze System Development
+Figure 3.2: Backend Continuous Integration Workﬂow with GitHub Actions
+Figure 3.3: Backend Continuous Delivery Workﬂow with GitHub Actions
+31
+Chapter 3: BBB plugin integration and SpoutBreeze System Development
+Figure 3.4: Backend Continuous Deployment Workﬂow with GitHub Actions
+•Dockerized Deployment : Each component is containerized using Docker to
+ensure portability, consistency, and scalability across environments.
+This modular setup enabled us to iteratively develop and integrate each part, starting
+from the authentication system, then integrating the BBB plugin, and ﬁnally expanding
+to other services and integrations.
+3.2 Iterative Development Methodology in Practice
+The development of the SpoutBreeze system and the BBB plugin followed an iterative
+and incremental methodology, as detailed in Chapter 2. This approach enabled the team
+to progressively build and integrate components while continuously testing and validating
+each feature. By structuring the work into small, manageable cycles, we were able to
+rapidly prototype, evaluate isolated functionalities, incorporate feedback, and reﬁne the
+architecture without compromising overall system stability.
+Each iteration introduced focused enhancements, contributing to the systems robust-
+ness and scalability. This method proved particularly eﬀective for managing complexity
+across diverse technologies and ensuring smooth integration of independent modules.
+Key characteristics of the iterative process applied in this chapter include:
+•Modular Development: Each system component (authentication, plugin, back-
+end, frontend) was developed independently in isolated iterations before being in-
+tegrated into the full system.
+•Progressive Integration: Features were incrementally connected and tested across
+iterations, allowing early detection of integration issues and system-level bugs.
+32
+Chapter 3: BBB plugin integration and SpoutBreeze System Development
+•Frequent Testing and Validation: ATDD approach was adopted using pytest ,
+with unit and integration tests implemented during each cycle to ensure the stability
+and correctness of newly added features.
+•Feedback-Driven Reﬁnement: Each iteration concluded with internal testing
+and feedback, which guided the next cycles priorities and improvements.
+•Continuous Deployment (CD) :GitHub Actions pipelines enabled frequent de-
+ployment and testing across environments, ensuring that every iteration was production-
+ready.
+•Flexible Design Revisions: Architecture and implementation details were regu-
+larly re-evaluated and improved based on new insights or technical challenges en-
+countered during each development phase.
+3.3 Authentication System with Keycloak
+Initially, the authentication system was planned to be implemented using Zitadel , a mod-
+ern identity management solution. However, despite multiple attempts, the integration
+process failed due to limited documentation clarity. After several iterations and evalua-
+tions, the decision was made to switch to Keycloak , which provided more comprehensive
+documentation, a robust feature set, and better community support.
+This decision reﬂects the iterative methodology applied in the project, identifying early
+issues, collecting feedback from failed attempts, and adapting the technology stack to
+ensure long-term stability and maintainability.
+3.3.1 Keycloak
+Keycloak is an open-source identity and access management solution that provides fea-
+tures such as Single Sign-On (SSO) , user federation, identity brokering, and ﬁne-grained
+access control. It supports industry-standard protocols such as OAuth 2.0, OpenID Con-
+nect, and SAML, making it a suitable choice for modern distributed systems.[ 11]
+3.3.2 Integration of Keycloak into the System
+In the context of the SpoutBreeze system, Keycloak was selected to handle user authen-
+tication, rolebased authorization, and token issuance. Its administrative interface and
+extensibility made it easy to manage users, deﬁne custom roles (e.g., admin ,moderator ),
+and securely integrate authentication across multiple services. Keycloak was deployed as
+a standalone, Dockerized service within the overall system architecture.
+33
+Chapter 3: BBB plugin integration and SpoutBreeze System Development
+The authentication process was implemented using the OAuth 2.0 Authorization Code
+ﬂow with Proof Key for Code Exchange (PKCE) , as shown in Figure 3.5.
+PKCE enhances traditional Auth Code ﬂows by adding a dynamic, per-request secret
+(the code_veriﬁer and its hash, the code_challenge ) to protect against authorization
+code interception and Cross Site Request Forgery (CSRF) attacks, even in clients that
+cannot securely store a secret. This mechanism ensures that only the client which initiated
+the authentication ﬂow can exchange the resulting code for tokens.[ 12]
+Figure 3.5: OAuth 2.0 Authentication Flow with PKCE using Keycloak
+3.3.3 Deployment and Conﬁguration
+Keycloak was deployed as a standalone Docker container with TLS enabled. A self-signed
+certiﬁcate was generated and mounted into the container to secure Hypertext Transfer
+34
+Chapter 3: BBB plugin integration and SpoutBreeze System Development
+Protocol Secure (HTTPS) communication. The container was launched with custom
+arguments to use the certiﬁcate and key ﬁles, ensuring encrypted access over port 8443 .
+Additionally, a custom realm was created to manage application-speciﬁc conﬁgurations,
+including client applications, roles (e.g., admin ,moderator ), and user attributes.
+3.3.4 Token-Based Authentication with HttpOnly Cookies
+The system employs token-based authentication using JSON Web Tokens (JWT) s issued
+by Keycloak upon successful login. To enhance security and prevent Cross-Site Scripting
+(XSS) attacks, both the access token and refresh token are stored in HttpOnly cookies .
+This ensures tokens are not accessible via JavaScript in the browser.
+3.3.5 Frontend Integration
+On the frontend (Next.js), the authentication ﬂow begins with the generation of
+acode_verifier and its hashed equivalent code_challenge , as required by the OAuth 2.0
+PKCE extension. When the user clicks the Sign In button, the browser is redirected to
+the Keycloak authorization endpoint along with the client Identiﬁcation (ID) , redirect
+Uniform Resource Identiﬁer (URI) , and the code_challenge . After the user authen-
+ticates via Keycloaks login interface, Keycloak redirects back to the frontend with an
+authorization code. This code, along with the original code_verifier and redirect URI,
+is forwarded to the backend to securely complete the authentication process.
+3.3.6 Backend Integration
+The FastAPI backend receives the authorization code and code_verifier from the fron-
+tend, then sends a request to Keycloaks token endpoint to exchange them for an access_token
+and a refresh_token . If the exchange is successful, the backend stores both tokens in
+HttpOnly cookies , enhancing security against XSS attacks. The backend also uses Key-
+cloaks public keys to validate incoming JWT s on protected routes. It extracts user roles
+from the token payload (e.g., admin ,moderator ) to apply ﬁne-grained, role-based access
+control. These roles govern access to critical functionalities such as stream initiation,
+webinar creation, and system administration. Authenticated requests from the frontend
+include the tokens automatically via cookies. When the access token expires, the frontend
+triggers a silent request to refresh it using the stored refresh_token , which the backend
+exchanges for a new token pair.
+3.3.7 Role Management and Authorization
+Keycloak’s administrative console was used to deﬁne and manage user roles within a
+dedicated realm for the system. Roles such as admin ,and moderator were created and
+35
+Chapter 3: BBB plugin integration and SpoutBreeze System Development
+assigned to users either manually through the Keycloak User Interface (UI) or dynamically
+via administrative APIs.
+These roles were embedded in the token payloads issued upon successful authentication.
+The FastAPI backend leverages this role information to enforce ﬁne-grained, role-based
+access control across its endpoints. For example, users with the admin role are authorized
+to access user management routes and perform actions such as viewing all users and
+modifying their roles.
+3.3.8 Challenges and Reﬁnements
+During integration, a major challenge was conﬁguring a Keycloak client suitable for both
+the frontend and backend. An initial attempt using two separate clients, a public client
+for the frontend and a conﬁdential client for the backend, proved diﬃcult to synchronize
+due to redirect URI and token handling issues.
+This was resolved by using a single conﬁdential client, allowing the backend to securely
+manage the OAuth 2.0 Authorization Code ﬂow with PKCE . Setting up the PKCE ﬂow
+involved generating a code_challenge on the frontend and exchanging the authorization
+code with the code_verifier on the backend, which required multiple iterations and
+close reference to the documentation.
+Token extraction and secure storage in HttpOnly cookies also required attention, par-
+ticularly in cross-domain development setups. These eﬀorts ultimately produced a stable
+and secure authentication system.
+3.4 BBB plugin integration
+3.4.1 What Is a BBB Plugin ?
+BigBlueButton supports a plugin mechanism that allows developers to extend its core
+functionality without modifying the main source code. Plugins can integrate new features,
+override existing behaviors, or provide new UIcomponents. These extensions are packaged
+as self-contained modules and can be enabled or disabled independently.
+Plugins typically include a combination of server-side logic (e.g., written in Scala or
+JavaScript), client-side UImodiﬁcations, and communication hooks that tie into the BBB
+event and messaging system. This modularity allows seamless upgrades and customization
+ofBBB deployments to match speciﬁc requirements.
+36
+Chapter 3: BBB plugin integration and SpoutBreeze System Development
+3.4.2 Why a Plugin Was Needed ?
+3.4.2.1 Limitations in BBBs Native Capabilities
+BigBlueButton, while robust for interactive video conferencing, does not natively support
+broadcasting to external platforms like YouTube or Twitch. More importantly, it oﬀers
+no built-in user interface component that allows a session moderator to initiate such
+a broadcast directly. This absence of a streaming trigger in the default UIcreated a
+functional gap for high-attendance webinars, where interactive sessions need to be relayed
+to a larger passive audience.
+3.4.2.2 Plugin Architecture in BBB 3.0
+The need for a custom plugin became particularly viable with the release of BBB version
+3.0, which introduced oﬃcial support for a plugin system [ 13]. Prior to this update, the
+only possible workaround involved injecting HTML ,Cascading Style Sheets (CSS) and
+Javascript (JS) elements directly into the BBB client, an approach that was both fragile
+and diﬃcult to maintain.
+With the plugin architecture, developers can extend BBB by hosting a plugin manifest
+(a manifest.json ﬁle) and referencing it during session creation using the pluginManifests
+parameter in the /create API. This approach allows dynamic UIand behavior injection
+without modifying BBB s core HTML5 codebase.
+3.4.2.3 Streaming Integration Features
+The following diagram illustrates the ﬂow of actions taken by a moderator to initiate a
+live stream from within a BBB session using the plugin.
+37
+Chapter 3: BBB plugin integration and SpoutBreeze System Development
+Figure 3.6: Starting stream activity workﬂow
+38
+Chapter 3: BBB plugin integration and SpoutBreeze System Development
+3.4.2.4 Twitch IRC Integration
+In addition to streaming, the plugin integrates with Twitchs Internet Relay Chat (IRC)
+protocol to enable two-way communication between the BBB chat and a Twitch livestream
+chat [ 14]. Messages sent in the Twitch chat are relayed into the BBB session, and mes-
+sages from the BBB chat are forwarded to Twitch, enabling real-time interaction across
+platforms.
+3.4.2.5 Modular and Maintainable Design
+Using a plugin rather than modifying BBB s core code was a deliberate and strategic
+choice. It conforms to the platforms extensibility model and ensures compatibility with
+future updates. Plugins can be loaded dynamically through the API :
+pluginManifests=["url": "http://<your-URL>/manifest.json"]
+or deﬁned statically via conﬁguration in /etc/bigbluebutton/bbb-web.properties
+In our case the plugin’s manifest.json is sent via /create endpoint. The loading process
+of the plugin is show in the ﬁgure 3.7.
+Figure 3.7: Plugin loading process
+3.4.3 Streaming Trigger Flow: Plugin to Backend Communica-
+tion
+The following diagram 3.8illustrates the sequence of interactions between the moderator,
+theBBB plugin, the FastAPI backend, and the broadcaster service when initiating a
+livestream from a BBB session.
+39
+Chapter 3: BBB plugin integration and SpoutBreeze System Development
+Figure 3.8: Sequence diagram modeling the start stream
+3.4.4 Technical Integration Challenges and Resolutions
+Integrating the custom plugin into BBB 3.0 presented several technical hurdles, partic-
+ularly due to the novelty of plugin support in the platform. Below, we outline the key
+challenges faced and how they were resolved.
+3.4.4.1 Plugin Registration and Recognition
+Since our team did not host the BBB server locally but relied on an instance provided by
+the company RIADVICE , the plugin had to be served externally for it to be recognized
+and loaded by the server. The plugin system in BBB 3.0 requires the plugin’s manifest
+ﬁle to be publicly accessible via HTTPS . However, during development, our plugin was
+hosted locally using a development server based on npm.
+To expose the local plugin to the external BBB server, we used ngrok , a tunneling
+tool that creates a secure public URL to a local port. This approach is also recommended
+by the oﬃcial BBB plugin documentation [ 13]. The development process involved the
+40
+Chapter 3: BBB plugin integration and SpoutBreeze System Development
+following steps:
+1.Starting the local plugin server:
+npm install
+npm start
+2.Launching ngrok to expose the local server:
+ngrok http http://172.17.0.1:4701
+3.Retrieving the public HTTPS URL provided by ngrok
+(e.g., https://<uuid>.ngrok-free.app ).
+4.Using the public manifest URL in the /create API call with the pluginManifests
+parameter:
+pluginManifests=["url": "https://<uuid>.ngrok-free.app/manifest.json"]
+This made the plugin accessible to the remote BBB server, allowing it to render properly
+in the meeting interface. Without this setup, the server would not be able to load the
+manifest or associated JavaScript ﬁles, and the plugin would silently fail to initialize.
+3.4.4.2 Plugin Not Loading in the UI
+During local plugin development, the plugin failed to load within the BBB session when
+accessed via the public ngrok URL, but only when using Firefox. Initially, this was
+misleading, as the plugin worked ﬁne on Chrome.
+After reaching out to the BBB maintainers, we discovered that Firefox’s strict cookie
+policies blocked the abuse_interstitial cookie set by ngrok’s free plan, which prevented
+the plugin from loading properly. The maintainers acknowledged the issue and updated
+their documentation with a workaround.
+To resolve the issue, we just had to adjust Firefox’s cookie settings temporarily. After
+making these changes, the plugin loaded successfully via ngrok in Firefox. This issue was
+speciﬁc to Firefox and did not occur on Chrome.[ 15]
+3.4.4.3 Backend Communication and Twitch Integration
+To visualize the communication ﬂow between the plugin, backend WebSocket server, and
+Twitch, the following sequence diagram outlines the Twitch integration process and how
+messages are relayed between Twitch chat and the BBB chat system.
+41
+Chapter 3: BBB plugin integration and SpoutBreeze System Development
+Figure 3.9: Sequence diagram modeling the twitch IRC integration
+42
+Chapter 3: BBB plugin integration and SpoutBreeze System Development
+3.4.4.4 Dockerization of the Plugin
+To ensure portability, reproducibility, and simpliﬁed deployment, the BBB plugin was fully
+Dockerized using a multi-stage Docker build. The build process starts with a Node.js-
+based stage that installs dependencies and bundles the front-end code, followed by a
+production stage based on Nginx to serve the compiled static ﬁles.
+The Dockerfile is structured into two main stages:
+•Builder Stage:
+–Based on the lightweight node:18-alpine image.
+–Installs project dependencies using npm ci for deterministic builds.
+–Updates the browserslist database to ensure modern browser compatibility.
+–Executes the plugin build process using npm run build-bundle .
+•Production Stage:
+–Uses nginx:alpine to serve the static assets built in the previous stage.
+–Installs OpenSSL to generate a self-signed certiﬁcate for HTTPS support.
+–Replaces the default Nginx conﬁguration with a custom nginx.conf to enable
+CORS, gzip compression, and static ﬁle handling.
+–Conﬁgures permissions for SSL and log directories to ensure Nginx can access
+necessary resources.
+–Deﬁnes a health check endpoint at /health , facilitating readiness and liveness
+probes in orchestrated environments.
+–Exposes ports 80and443forHypertext Transfer Protocol (HTTP) andHTTPS
+access respectively.
+The custom nginx.conf includes:
+•Multipurpose Internet Mail Extensions (MIME) type conﬁguration and caching
+headers for JavaScript, CSS, and manifest ﬁles.
+•CORS support for both regular and preﬂight OPTIONS requests, allowing cross-origin
+communication with the plugin.
+•GNU zip (Gzip) compression for optimized performance.
+•Secure HTTPS conﬁguration with strict transport security headers.
+This Dockerization strategy ensures consistent behavior across development and pro-
+duction environments, simpliﬁes CI/CD workﬂows, and makes the plugin easily deployable
+in containerized and cloud-native infrastructures.
+43
+Chapter 3: BBB plugin integration and SpoutBreeze System Development
+3.5 SpoutBreeze System Development
+3.5.1 Overview
+The SpoutBreeze system is a custom-built platform designed to manage webinar ses-
+sions and integrate them with external streaming and chat services. It is composed of a
+FastAPI backend, a Next.js 15 frontend, and a PostgreSQL database. The system serves
+as the intermediary between BigBlueButton (BBB), Twitch (via RTMP and IRC), and
+the moderator interface.
+SpoutBreeze is responsible for:
+•Managing the scheduling, creation, and termination of webinar sessions using the
+BBB API.
+•Connecting to Twitch via RTMP to enable screen capture and live broadcasting.
+•Handling Twitch IRC (WebSocket) connections to synchronize Twitch chat with
+BBBs internal chat system.
+•Providing a responsive web interface for moderators to schedule and start events.
+•Storing and retrieving user and session data using a PostgreSQL database.
+3.5.2 Three-Tier Architecture
+The system follows a classic three-tier architecture, which separates concerns across three
+logical layers:
+•Presentation Layer:
+Implemented using Next.js (frontend) and the React-based BBB plugin, this layer
+handles the user interface, user input, and communication with the backend.
+•Application (Logic) Layer:
+Managed by the FastAPI backend, this layer processes API requests, enforces busi-
+ness rules, manages session logic, and handles Twitch/Broadcaster communication.
+•Data Layer:
+Implemented using PostgreSQL , this layer stores persistent data including user pro-
+ﬁles, roles, stream metadata, and other conﬁgurations.
+This layered architecture enhances maintainability, testability, and scalability. Each
+tier can be independently developed, deployed, and scaled for example, deploying multiple
+backend instances behind a load balancer or optimizing database performance indepen-
+dently.
+44
+Chapter 3: BBB plugin integration and SpoutBreeze System Development
+Figure 3.10: Three-tier architecture
+3.5.3 Clean Architecture Pattern
+The system design follows principles inspired by Clean Architecture, promoting clear
+separation of concerns across multiple layers in both frontend and backend:
+•Domain (Model) : In the backend, domain models are deﬁned using SQLAlchemy
+for database entities and Pydantic for data validation and serialization (schemas).
+These encapsulate core business data such as users, events, and BBB meetings.
+In the frontend, model-like structures (DTOs) are represented using TypeScript
+interfaces and types.
+•Application (Service Layer) : Backend services encapsulate business logic, or-
+chestrating domain operations independently of web frameworks or UI concerns.
+This layer ensures that core use cases remain decoupled from infrastructural de-
+tails.
+•Interface (Controller Layer) : API routes in FastAPI serve as interfaces, handling
+HTTP requests, invoking appropriate services, and returning structured responses.
+On the frontend, React components, server actions (in Next.js App Router), and
+custom React hooks act as interface layers, managing user interactions, API calls,
+and state orchestration.
+•Infrastructure (Utilities and Conﬁguration) : Auxiliary layers provide sup-
+porting utilities, conﬁguration management, and integrations with external systems
+(e.g., databases, messaging platforms).
+This architectural approach ensures modularity, testability, and scalability across both
+frontend and backend codebases.
+45
+Chapter 3: BBB plugin integration and SpoutBreeze System Development
+3.5.4 General Architecture of SpoutBreeze
+SpoutBreeze System
+External ServicesFrontend
+(Next.js 15)
+Backend
+(FastAPI)
+PostgreSQL DBKeycloak
+(Auth Server)BigBlueButton
+(Webinar Server)User
+Includes plugin and
+streaming integrationsInteracts with UI
+Login/Token RequestAccess Token
+(HttpOnly Cookie)API Calls (REST) API Response
+Query/Update Create/Join BBB Meetings Callback on Meeting End
+Figure 3.11: SpoutBreeze System Architecture Overview
+TheSpoutBreeze platform follows a modular, microservice-oriented architecture that
+promotes scalability and maintainability. It integrates external services like BBB for webi-
+nar sessions and Keycloak for user authentication, while using modern web technologies
+and communication protocols.
+•Frontend: Built with Next.js 15 (App Router), the frontend provides a dynamic
+user interface with support for SSR, secure API consumption, and authentication
+via HttpOnly cookies.
+•Backend: Implemented in FastAPI , the backend exposes Representational State
+46
+Chapter 3: BBB plugin integration and SpoutBreeze System Development
+Transfer (REST) and WebSocket endpoints, manages business logic such as session
+scheduling and Twitch chat routing, and serves as the bridge to external systems.
+•Database: PostgreSQL is used for persistent data storage, supporting structured
+schema design and eﬃcient querying for user, session, and event data.
+•External Services: Integration with Keycloak ensures secure identity manage-
+ment, while BBB handles the core webinar functionality, extended via plugin-based
+enhancements.
+All components are containerized with Docker and deployed to form a decoupled, scal-
+able ecosystem optimized for real-time interactivity and extensibility.
+3.5.5 Database Design
+The database layer of the SpoutBreeze system is implemented using PostgreSQL , a
+powerful open-source relational database. It stores persistent data such as users, webinar
+sessions, and rtmp related tokens.
+The design follows normalization principles to avoid redundancy and ensure data in-
+tegrity. Tables are related using foreign keys, and constraints are applied where necessary
+to enforce business rules.
+47
+Chapter 3: BBB plugin integration and SpoutBreeze System Development
+Figure 3.12: Relational Model Diagram
+3.5.5.1 Key Tables
+•users : Stores user-related information including Keycloak integration,and personal
+details.
+•events : Represents webinar sessions with comprehensive metadata.
+•twitch_tokens : Contains Twitch authentication credentials with expiration track-
+ing and active status for RTMP streaming integration.
+•stream_endpoints : Stores streaming conﬁguration for broadcast destinations.
+•channels : Manages channels.
+48
+Chapter 3: BBB plugin integration and SpoutBreeze System Development
+•bbb_meetings : Handles BBB meeting instances with detailed conﬁguration.
+•user_event_association : Junction table managing many-to-many relationships
+between users and events for organizers tracking.
+3.5.5.2 Relationships
+•Each event is created and owned by a user .
+•Each twitch_token is associated with a speciﬁc user for personalized streaming
+authentication.
+•Each stream_endpoint belongs to a user for individualized streaming conﬁgura-
+tions.
+•Each channel is created by a user and can be associated with speciﬁc events .
+•bbb_meetings are linked to events and created by users for video conferencing
+integration.
+•user_event_association creates many-to-many relationships allowing multiple
+users to be associated with multiple events.
+3.5.6 Software Design
+3.5.6.1 Static View: Class Diagram
+The static structure of the backend is depicted in the following class diagram. It follows a
+clean separation of concerns between services, utilities, and conﬁguration logic, consistent
+with FastAPIs modular design principles.
+49
+Chapter 3: BBB plugin integration and SpoutBreeze System Development
+Services
+Utils
+ConfigAuthService
+-settings: Settings
+-keycloak_client_id: str
+-public_key: str
+-_admin_token_cache: dict
++__init__(): void
++validate_token(token: str): Dict[str, Any]
++exchange_token(code: str, redirect_uri: str, code_verifier: str): Dict[str, Any]
++refresh_token(refresh_token: str): Dict[str, Any]
++get_user_info(access_token: str): Dict[str, Any]
++update_user_profile(user_id: str, user_data: Dict[str, Any]): bool
++logout(refresh_token: str): void
++health_check(): bool
+-_get_admin_token(): str
+BBBService
+-settings: Settings
+-server_base_url: str
+-secret: str
++__init__(): void
++create_meeting(request: CreateMeetingRequest, user_id: UUID, db: AsyncSession, event_id: UUID): Dict[str, Any]
++join_meeting(request: JoinMeetingRequest): Union[Dict[str, Any], RedirectResponse]
++end_meeting(request: EndMeetingRequest, db: AsyncSession): Dict[str, Any]
++is_meeting_running(request: IsMeetingRunningRequest): Dict[str, Any]
++get_meeting_info(request: GetMeetingInfoRequest): Dict[str, Any]
++get_meetings(): Dict[str, Any]
++get_recordings(request: GetRecordingRequest): Dict[str, Any]
++get_join_url(request: JoinMeetingRequest): str
++get_is_meeting_running_url(meeting_id: str): str
++get_meeting_by_internal_id(internal_meeting_id: str, db: AsyncSession): Optional[BbbMeeting]
++update_meeting_status(meeting_id: str, db: AsyncSession, is_ended: bool): Dict[str, Any]
++meeting_ended_callback(meeting_id: str, db: AsyncSession, event_id: UUID): Dict[str, Any]
+-_call_bbb_api(api_call: str, params: dict): dict
+-_clean_up_meetings(db: AsyncSession, days: int): void
+-_clean_up_meetings_background(days: int): voidEventService
+-bbb_service: BBBService
+-channel_service: ChannelsService
+-event_helpers: EventHelpers
+-settings: Settings
+-plugin_manifests_url: str
++__init__(): void
++create_event(db: AsyncSession, event: EventCreate, user_id: UUID): EventResponse
++start_event(db: AsyncSession, event_id: UUID, user_id: UUID): Dict[str, str]
++end_event(db: AsyncSession, event_id: UUID, user_id: UUID): Dict[str, str]
++get_events_by_status(db: AsyncSession, status: EventStatus, user_id: UUID): List[EventResponse]
++get_upcoming_events(db: AsyncSession, user_id: UUID): List[EventResponse]
++get_past_events(db: AsyncSession, user_id: UUID): List[EventResponse]
++get_live_events(db: AsyncSession, user_id: UUID): List[EventResponse]
++join_event(db: AsyncSession, event_id: UUID, user_id: UUID, full_name: str): Dict[str, str]
++get_event_by_id(db: AsyncSession, event_id: UUID): EventResponse
++get_all_events(db: AsyncSession): List[EventResponse]
++get_events_by_channel_id(db: AsyncSession, channel_id: UUID): List[EventResponse]
++update_event(db: AsyncSession, event_id: UUID, event_update: EventUpdate, user_id: UUID): EventResponse
++delete_event(db: AsyncSession, event_id: UUID, user_id: UUID): bool
+-_create_event_response(event: Event): EventResponse
+-_get_or_create_channel(db: AsyncSession, channel_name: str, user_id: UUID): ChannelResponse
+-_create_bbb_meeting(db: AsyncSession, event: EventCreate, new_event: Event, user_id: UUID): Dict[str, Any]ChannelsService
++create_channel(db: AsyncSession, channel_create: ChannelCreate, user_id: UUID): ChannelResponse
++get_channels_by_user_id(db: AsyncSession, user_id: UUID): List[ChannelResponse]
++get_channel_by_id(db: AsyncSession, channel_id: UUID): Optional[ChannelResponse]
++get_channels(db: AsyncSession): List[ChannelResponse]
++get_channel_by_name(db: AsyncSession, channel_name: str, user_id: UUID): Optional[Channel]
++update_channel(db: AsyncSession, channel_id: UUID, channel_update: ChannelUpdate, user_id: UUID): Optional[ChannelResponse]
++delete_channel(db: AsyncSession, channel_id: UUID, user_id: UUID): bool
++get_channel_recordings(db: AsyncSession, channel_id: UUID, user_id: UUID): Dict[str, Any]
+-_create_channel_response(channel: Channel, creator: User): ChannelResponse
+RtmpEndpointService
++create_rtmp_endpoints(rtmp_endpoints: CreateRtmpEndpointCreate, user_id: UUID, db: AsyncSession): RtmpEndpointResponse
++get_all_rtmp_endpoints(db: AsyncSession): List[RtmpEndpointResponse]
++get_rtmp_endpoints_by_user_id(user_id: UUID, db: AsyncSession): List[RtmpEndpointResponse]
++get_rtmp_endpoints_by_id(rtmp_endpoints_id: UUID, db: AsyncSession): Optional[RtmpEndpointResponse]
++update_rtmp_endpoints(rtmp_endpoints_id: UUID, rtmp_endpoints_update: RtmpEndpointUpdate, db: AsyncSession): Optional[RtmpEndpointResponse]
++delete_rtmp_endpoints(rtmp_endpoints_id: UUID, user_id: UUID, db: AsyncSession): Optional[RtmpEndpointDeleteResponse]
+-_create_rtmp_endpoints_response(rtmp_endpoints: RtmpEndpoint, user: User): RtmpEndpointResponse
+BroadcasterService
+-settings: Settings
+-broadcaster_api_url: str
+-plugin_manifests_url: str
++__init__(): void
++start_broadcasting(meeting_id: str, rtmp_url: str, stream_key: str, password: str, bbb_service: BBBService): Dict[str, Any]
+-_call_broadcaster_service(is_meeting_running_url: str, join_url: str, rtmp_url: str, stream_key: str): Dict[str, Any]EventHelpers
++prepare_event_data(event: EventCreate, user_id: UUID, channel_id: UUID): Event
++prepare_bbb_meeting_request(event: EventCreate, new_event: Event, plugin_manifests: str): CreateMeetingRequest
++_ensure_timezone_aware(dt: datetime): datetime
+Settings
++db_url: str
++keycloak_server_url: str
++keycloak_realm: str
++keycloak_client_id: str
++bbb_server_base_url: str
++bbb_secret: str
++broadcaster_api_url: str
++plugin_manifests_url: str
++twitch_client_id: str
++twitch_client_secret: str
+ChatManager
+-active_connections: List[WebSocket]
++connect(websocket: WebSocket): void
++disconnect(websocket: WebSocket): void
++broadcast(message: str): void
+TwitchIRCClient
+-settings: Settings
++get_active_token(): str
++refresh_token_if_needed(): voidusesuses
+uses
+uses
+uses
+usesuses
+uses
+Figure 3.13: SpoutBreeze Class Diagram (Backend Static View)
+50
+Chapter 3: BBB plugin integration and SpoutBreeze System Development
+The core backend components are organized into the following layers:
+•Services : Encapsulate business logic for authentication, event management, webi-
+nar (BBB) operations, channel and RTMP endpoint management, and broadcasting.
+•Utils : Contain helper functions for preparing and formatting data used by the
+services.
+•Conﬁguration : Include environment-speciﬁc settings and runtime utilities like
+WebSocket connection management and Twitch token refresh logic.
+3.5.6.2 Dynamic View: Sequence Diagram
+Sequence Diagram Creating and Starting an Event with BBB Session
+Figure 3.14 illustrates the sequence of interactions between the authenticated user, fron-
+tend, backend, database, and BBB system for the process of creating and launching an
+event. The ﬂow begins with event creation, during which the user can either select an
+existing channel or create a new one. Once the event is stored in the database, the user
+initiates it by clicking a start button. The backend then creates a corresponding BBB
+meeting with necessary metadata, including a plugin URL and a callback URL. The join
+link is returned to the frontend, which redirects the user to the BBB session. After the
+session ends, the callback endpoint is triggered to update the events status to ENDED in
+the database.
+51
+Chapter 3: BBB plugin integration and SpoutBreeze System Development
+UserFrontend (Next.js) Backend (FastAPI)PostgreSQL DBBBB API Callback Endpoint
+ref
+Authenticated
+Event and Channel Creation
+Click "Schedule/Create Event" button
+Send createEvent(eventData)
+alt [Channel exists]
+Fetch channel by name
+Channel found
+[Channel does not exist]
+Create new channel
+Channel created
+Save event linked to channel
+Event created
+Success response
+Starting the Event
+Click "Start Event"
+Request to start event
+Check if event exists and not started
+Event valid
+Create meeting with parameters
+(pluginManifests, meta_endcallbackurl, etc)
+Meeting created
+Get join URL
+joinURL
+Return joinURL
+Redirect to joinURL
+Ending the Session
+Trigger meta_endcallbackurl
+POST /callback/event-ended
+Update event status to ENDED
+Updated
+200 OK
+Figure 3.14: Sequence diagram modeling the creation and start of an event
+3.5.7 Integration and Iteration Highlights
+The integration phase involved connecting all core components of the system, including the
+frontend (Next.js), backend (FastAPI), database (PostgreSQL), authentication provider
+(Keycloak), and the external BigBlueButton ( BBB ) service. These components were
+orchestrated using Docker to streamline development and deployment.
+52
+Chapter 3: BBB plugin integration and SpoutBreeze System Development
+The system evolved iteratively, starting from a basic prototype with static data and
+limited interactions. Early versions focused on implementing authentication and user
+session handling. Once stable, we progressively introduced BBB session management
+features, event scheduling, and channel linking. Each iteration brought enhancements in
+usability, error handling, and system robustness.
+3.5.7.1 Testing Strategy
+To ensure long-term stability, correctness, and maintainability, the backend of the Spout-
+Breeze system was developed using the Test-Driven Development (TDD) method-
+ology. This approach involved writing unit and integration tests before implementing the
+corresponding features, helping to clearly deﬁne component behavior and catch regressions
+early.
+The testing suite was built using pytest with asynchronous support provided by
+pytest-asyncio , and mocking utilities from pytest-mock . A total of 75 tests were
+executed successfully, achieving a 100% pass rate . These tests covered key modules of
+the system as shown in the Figure 3.15, including:
+•test_broadcaster_controller : Veriﬁes the broadcasting logic and automation
+ﬂow.
+•test_channels_controller : Ensures proper handling of channel creation, retrieval,
+and updates.
+•test_event_controller : Tests event scheduling, status transitions, and validation
+mechanisms.
+•test_rtmp_controller : Conﬁrms the correct setup and lifecycle of RTMP stream-
+ing sessions.
+By enforcing this rigorous testing strategy early in the development process, the project
+maintains a high level of code reliability, eases future refactoring, and provides conﬁdence
+during deployment and scaling.
+53
+Chapter 3: BBB plugin integration and SpoutBreeze System Development
+Figure 3.15: Sample Pytest output showing successful test cases.
+Conclusion
+In this chapter, we explored the structure and behavior of the system, including authen-
+tication, event handling, and integration with BBB. Using an iterative and test-driven
+approach helped ensure a stable and scalable implementation. The system components
+now work together smoothly, forming the core of the SpoutBreeze platform. In the fol-
+lowing chapter, we will shift our focus to the development of the broadcaster component
+and the deployment of the Moon automation system, which further extend the platforms
+capabilities.
+54
+Chapter 4
+Broadcaster Microservice and Moon
+Browser Automation
+Introduction
+This chapter outlines the key technical enhancements to the SpoutBreeze platform, fo-
+cusing on real-time microservices, browser automation, and scalable infrastructure. It
+introduces the Broadcaster microservice and Moon-based browser automation, highlight-
+ing the tools, design choices, and practices that support reliable and scalable deployments.
+4.1 Iterative Development Methodology in Practice
+The development of the Broadcaster microservice and Moon-based browser automation
+platform followed an iterative and incremental methodology, as outlined in the second
+chapter. This approach allowed the team to rapidly prototype features, test them in
+isolation, gather feedback, and reﬁne the design through multiple development cycles.
+Each iteration added incremental improvements while maintaining system stability.
+Key characteristics of the iterative process applied in this chapter include:
+•Incremental Feature Development : The Broadcaster microservice originated
+as a PoC leveraging Selenium scripts to automate broadcasting workﬂows. Af-
+ter validating its feasibility, we transformed the PoC into a fully structured back-
+end microservice. I led the incremental addition of critical features, beginning
+with Kubernetes-compatible health check endpoints to support seamless deploy-
+ment and monitoring. This was followed by the integration of BBB backend end-
+points for managing live session orchestration, laying the groundwork for scalable
+and production-ready broadcasting operations.
+•Test-Driven Iterations : Each new capability was preceded or followed by test
+development using Ginkgo and Gomega. Test failures and edge-case explorations
+informed reﬁnements in subsequent iterations.
+•CI/CD Feedback Loops : GitHub Actions provided automated feedback on every
+55
+Chapter 4: Broadcaster Microservice and Moon Browser Automation
+code push or pull request. Failed tests or deployment steps triggered immediate
+review and revision, creating a continuous improvement cycle.
+•Containerization in Stages : The Dockerization strategy evolved from a basic
+runtime image to a secure, multi-stage build. Iterations helped reﬁne the use of
+Alpine Linux, health checks, and environment conﬁguration handling.
+•Moon Adoption through Prototyping : Before fully integrating Moon, early
+iterations involved comparisons with Selenoid using isolated test runs. Based on
+performance, Kubernetes compatibility, and image customization needs, Moon was
+selected, and its setup was iteratively improved with FFmpeg integration and bash-
+based automation.
+•Architecture Reﬁnements : The system architecture was not ﬁxed from the be-
+ginning but evolved iteratively. Each sprint included refactoring phases to improve
+code modularity, separation of concerns, and maintainability.
+This iterative process ensured early validation of system components, encouraged fre-
+quent testing and feedback, and led to higher overall code quality and system reliability.
+Figure 4.1: High-level architecture of Broadcaster Microservice and Moon Browser Au-
+tomation.
+56
+Chapter 4: Broadcaster Microservice and Moon Browser Automation
+4.2 Backend Development: Broadcaster Microservice
+4.2.1 Overview
+To support real-time broadcasting functionalities within the SpoutBreeze ecosystem, a
+dedicated microservice named Spoutbreeze-Broadcaster was developed. This service
+is written in Golang (version 1.23) and is responsible for handling message distribution
+using a lightweight, event-driven approach.
+The microservice adheres to the principles of clean architecture , promoting separa-
+tion of concerns and scalability. It exposes REST-compliant (RESTful) endpoints built
+with the Ginframework.
+Figure 4.2: Oﬃcial logo of Gin, the lightweight Go web framework.
+4.2.2 Core Responsibilities
+•Initiating and managing real-time broadcasting sessions (e.g., BBB ).
+•Providing health and readiness endpoints for Kubernetes orchestration.
+•Maintaining a lightweight, containerized service deployable via Kubernetes.
+4.2.3 Architecture
+The Broadcaster service follows a modular architecture with the following layers:
+•Controllers : Handle HTTP requests and responses.
+•Services : Contain the business logic and orchestration between components.
+•Repositories : Abstract the interaction with Redis and other data sources.
+•Models : Deﬁne the domain entities and data structures.
+57
+Chapter 4: Broadcaster Microservice and Moon Browser Automation
+Figure 4.3: Broadcaster Sequence Diagram
+This structure allows for better testability, maintainability, and a clear separation
+between layers.
+4.2.4 Exposed API Endpoints
+4.2.4.1 Health Endpoints
+•GET /health
+Summary: Health Check
+Description: Returns the health status of the application.
+Response: 200 OK {"status": "healthy"}
+•GET /readiness
+Summary: Readiness Check
+Description: Checks if the application is ready to handle traﬃc.
+Response: 200 OK {"status": "ready"}
+4.2.4.2 Broadcasting Endpoint
+•POST /broadcaster/joinBBB
+Summary: Join BBB
+Description: Initiates a broadcasting session using BBB .
+Request Body: BroadcasterRequest
+Success Response: 200 OK
+{"message": "Broadcasting session started successfully"}
+Failure Responses: 400 Bad Request ,500 Internal Server Error
+58
+Chapter 4: Broadcaster Microservice and Moon Browser Automation
+4.2.5 Comprehensive Testing Strategy and Implementation
+The testing architecture for this project follows industry best practices, implementing a
+multi-layered testing approach that ensures code reliability, maintainability, and regres-
+sion prevention. The testing strategy encompasses unit testing, integration testing, and
+Behavior-Driven Development (BDD) principles to achieve comprehensive coverage of the
+application’s functionality.
+Figure 4.4: Logo of Ginkgo, a testing
+framework for Go (Golang).
+Figure 4.5: Logo of Gomega, a matcher
+library for writing expressive tests in Go.
+4.2.5.1 Testing Framework Architecture
+The project utilizes Ginkgo v2 as the primary testing framework, integrated with Gomega
+assertion library. This combination provides a powerful BDD -style testing environment
+that enables the creation of expressive, readable, and maintainable test suites. Ginkgo’s
+hierarchical test organization using nested describe blocks creates a natural documenta-
+tion structure that serves both as executable speciﬁcations and living documentation. [ 16]
+[17]
+The framework selection was driven by several technical considerations:[ 16] [17]
+•Parallel Execution : Ginkgo’s built-in support for parallel test execution signiﬁ-
+cantly reduces CI/CD pipeline duration.
+•Rich Reporting : Comprehensive test output with detailed failure reporting and
+stack traces.
+•Test Organization : Hierarchical test structure that mirrors the application’s be-
+havioral speciﬁcations.
+•Matcher Ecosystem : Gomega’s extensive matcher library provides precise asser-
+tions for complex data structures.
+4.2.5.2 Focused Testing on Controller Layer Functionality
+In this work, we focus primarily on Controller Layer Testing to ensure the correctness
+of the HTTP request-response lifecycle. The tests include:
+59
+Chapter 4: Broadcaster Microservice and Moon Browser Automation
+•Request parsing and validation through table-driven test cases.
+•HTTP status code veriﬁcation for both success and failure scenarios.
+•Validation of JavaScript Object Notation (JSON) response structures and adherence
+to expected schemas.
+•Veriﬁcation of HTTP headers such as Content-Type and Cross-Origin Resource
+Sharing (CORS) policies.
+•Integration with authentication middleware to verify secure endpoint access.
+These controller tests guarantee that API endpoints behave correctly under various
+input and error conditions, providing robust coverage of the application’s interface layer.
+Figure 4.6: Screenshot of successful test run summary for Controllers Suite.
+4.2.6 Dockerization
+TheBroadcaster microservice was containerized using Docker to ensure consistent and
+reproducible deployments across development, testing, and production environments. The
+containerization strategy involves a multi-stage build process to produce a minimal and
+secure runtime image.
+The Dockerfile performs the following steps:
+•Build stage : Uses the oﬃcial Golang 1.23 image to compile the application stati-
+cally for Linux, disabling CGO for portability.
+•Runtime stage : Employs a lightweight Alpine Linux image to reduce the ﬁnal
+container size and surface area.
+•Copies the compiled binary and environment conﬁguration ﬁle from the build stage.
+•Deﬁnes a HEALTHCHECK instruction to enable container health monitoring by peri-
+odically checking the service’s ‘/health‘ endpoint.
+60
+Chapter 4: Broadcaster Microservice and Moon Browser Automation
+•Exposes port 1323 to allow external traﬃc to reach the HTTP server.
+•Speciﬁes the default command to run the compiled application.
+This containerized service can be easily orchestrated and scaled using Kubernetes or
+other container orchestration platforms, improving deployment consistency and opera-
+tional reliability.
+4.2.7 Continuous Integration and Continuous Deployment with
+GitHub Actions
+To fully automate the build, testing, containerization, and deployment processes, a ( CI/CD )
+pipeline has been conﬁgured using GitHub Actions . This pipeline ensures that every code
+change pushed to the main branch or submitted via pull requests undergoes automated
+veriﬁcation and is subsequently deployed seamlessly to the production environment.
+TheCI/CD pipeline is divided into two main workﬂows:
+4.2.7.1 Continuous Integration Workﬂow
+The Continuous Integration workﬂow validates the integrity of the codebase through build
+and test automation:
+1.Checkout the codebase : Retrieves the latest source code from the repository.
+2.Set up the Go environment : Installs the speciﬁed Go version ( 1.22.12 ) to
+maintain build consistency.
+3.Build the application : Compiles the Go project to detect any build-time errors
+early.
+4.Install Ginkgo : Installs the Ginkgo test framework for running the test suites.
+5.Run tests : Executes the full test suite using the make test command.
+This stage acts as a quality gate, ensuring that only code that successfully builds and
+passes all tests is eligible for deployment.
+61
+Chapter 4: Broadcaster Microservice and Moon Browser Automation
+Figure 4.7: Continuous Integration Workﬂow in GitHub Actions
+4.2.7.2 Continuous Deployment Workﬂow
+The Continuous Deployment workﬂow is automatically triggered upon successful push
+events to the main branch. It performs the following steps:
+1.Checkout the repository : Retrieves the latest code version.
+2.Authenticate with Docker Hub : Logs into Docker Hub using securely stored
+credentials.
+3.Set environment variables : Conﬁgures runtime and deployment parameters us-
+ing GitHub Secrets.
+4.Build and tag Docker image : Builds the Docker image using Buildx, tags it
+with the current date and short Git commit SHA for traceability.
+5.Push Docker image : Uploads the tagged Docker image to Docker Hub.
+6.Deploy to Kubernetes :
+•Conﬁgures kubectl using the Kubernetes conﬁguration stored in GitHub Se-
+crets.
+•Updates the running deployment in the moon namespace to use the newly built
+Docker image.
+62
+Chapter 4: Broadcaster Microservice and Moon Browser Automation
+•Waits for the rollout to complete and veriﬁes the successful deployment.
+This fully automated deployment process guarantees rapid, consistent, and reliable
+delivery of new application versions into the production environment.
+Figure 4.8: Continuous Deployment Workﬂow in GitHub Actions
+4.2.7.3 Beneﬁts of CI/CD
+The established CI/CD pipeline ensures:
+•Early detection of integration and regression issues.
+•Consistent build and deployment artifacts.
+•Reduced manual intervention and deployment time.
+•Reliable and reproducible production deployments.
+4.3 Broadcaster : Moon browser automation tool
+In this section, we detail the development process of the broadcaster component using the
+Moon browser automation tool.
+4.3.1 Moon vs. Selenoid
+Selenoid andMoon are two browser automation solutions developed by Aerokube.
+While both initially served similar purposes, they have diverged signiﬁcantly in terms
+of capabilities and long-term support.[ 18][19]
+63
+Chapter 4: Broadcaster Microservice and Moon Browser Automation
+Figure 4.9: Logo of Aerokube, the founders of Moon and Selenoid,
+featuring the shared oﬃcial emblem.
+Overview
+Selenoid was created as a lightweight, open-source tool to run Selenium sessions in-
+side Docker containers, while Moon evolved as a robust, enterprise-grade platform for
+Kubernetes-native browser automation.[ 18][19]
+Table 4.1: Feature comparison between Selenoid and Moon
+Feature Selenoid Moon
+Deployment Environ-
+mentDocker-based, local use Kubernetes-native, cloud-
+scale
+Session Management Manual setup Dynamic, auto-scaling
+Video Recording Not natively supported Built-in support
+Infrastructure Man-
+agementManual conﬁguration re-
+quiredQuota, authentication, and
+monitoring included
+Availability / EOL
+StatusEOL since Dec 17, 2024; no
+longer maintainedActively maintained with
+commercial support
+Why Moon?
+Given the discontinuation and End-of-Life (EOL) status of Selenoid , which is no longer
+maintained, and our need for scalable, Kubernetes-native browser automation with min-
+imal operational overhead, Moon is the clear choice. Its dynamic session management,
+built-in video recording, and advanced infrastructure abstraction make it well-suited for
+modern CI/CD environments.
+4.3.2 FFmpeg Integration
+FFmpeg is a comprehensive, open-source multimedia framework capable of decoding, en-
+coding, transcoding, muxing, demuxing, streaming, ﬁltering, and playing virtually any
+media format. Initially released in 2000, FFmpeg has grown to become the de facto
+standard for media processing across platforms and industries due to its ﬂexibility, per-
+formance, and active community.
+64
+Chapter 4: Broadcaster Microservice and Moon Browser Automation
+Today, FFmpeg is widely used in broadcasting, video conferencing, real-time streaming,
+and content creation. Its command-line interface and extensive codec support make it a
+crucial tool for developers and system integrators working with audio and video processing.
+[20]
+Figure 4.10: Oﬃcial FFmpeg logo representing the open-source multimedia framework.
+Iterative Integration of FFmpeg in Our Project
+In line with our iterative development methodology, the integration of FFmpeg into our
+browser automation pipeline underwent multiple phases of reﬁnement and experimenta-
+tion:
+1.Initial Research and Understanding: The integration began with extensive
+research across the oﬃcial FFmpeg documentation, Twitch and YouTube streaming
+community guides, and community support on StackOverﬂow. This phase was
+crucial to understanding FFmpeg ’s streaming capabilities and usage nuances in
+containerized environments.
+2.Architecture Overview: Moon dynamically launches browser pods, which consist
+of ﬁve containers by default. When video recording is enabled through Moon’s
+capabilities, a sixth containerresponsible for video captureis added to the pod. To
+customize the video streaming process, we extracted the video recorder containers
+contents into a Tape Archive (TAR) archive, unpacked it inside a separate Alpine-
+based Docker image, and injected a custom Bash script containing the FFmpeg
+command. All necessary dependencies were installed through a tailored Dockerﬁle.
+3.Streaming Challenges: Over the course of this phase, we built and tested more
+than 50 diﬀerent Docker images, all attempting to stream video output directly to
+YouTube. Despite various conﬁgurations and encoding optimizations, all attempts
+to stream to YouTube failed due to platform-speciﬁc requirements and authentica-
+tion limitations.
+4.Switching to Twitch: As an alternative, we directed the FFmpeg stream to
+Twitch. With minimal changes, the same FFmpeg script succeeded, conﬁrming
+that the setup and architecture were functional but that YouTubes constraints were
+the bottleneck.
+65
+Chapter 4: Broadcaster Microservice and Moon Browser Automation
+5.Optimizing Architecture and Preparing for Audio Support: To streamline
+the pipeline and prepare for future audio integration, we moved the FFmpeg script
+from the dedicated video recorder container into the main browser container. This
+change involved building a custom browser image with FFmpeg pre-installed and
+executing the script as part of the containers startup process. While audio streaming
+is not yet functional, our investigation into Moon’s audio handling and FFmpeg ’s
+audio capture options lays the groundwork for upcoming enhancements. As a result
+of this optimization, the Moon-managed pod now consists of ﬁve containers instead
+of six, simplifying resource management and improving maintainability.
+6.Final Result: After building over 100 Docker images and systematically reﬁn-
+ing our approach, we achieved a robust, high-quality browser streaming solution
+to Twitch. This ﬁnal conﬁguration delivers excellent video quality and integrates
+seamlessly with our Kubernetes-based automation environment.
+The successful FFmpeg integration was the result of persistent experimentation, itera-
+tive reﬁnement, and deep technical exploration. It signiﬁcantly enhanced the observability
+and broadcasting capabilities of our automation system.
+4.3.3 Iterative Feature Development
+Following an iterative development methodology, we incrementally built the broadcaster
+feature, reﬁning it over multiple stages:
+1.Initial Browser Session Launch : We began by writing a Selenium script in Go
+to communicate with Moons API and launch a browser pod. This validated our
+ability to initiate browser automation within a Kubernetes environment.
+2.Video Recording Integration : Next, we enabled Moons built-in video recording
+capabilities to capture browser sessions. This feature was critical for debugging and
+post-session analysis.
+3.Basic Page Navigation : With video recording in place, we extended the Go script
+to perform simple navigation to a random web page. This conﬁrmed that actual
+browser interactions were functioning correctly and being recorded.
+4.Custom Container Modiﬁcations : To further customize browser behavior, we
+accessed the ephemeral containers managed by Moon and modiﬁed the browser
+image. We injected Bash scripts that leveraged FFmpeg to process the video stream
+inside the container.
+5.Conﬁguration via Redis : Initially, all environment variables and conﬁguration
+keys were hardcoded within the Bash scripts. To improve ﬂexibility and decouple
+66
+Chapter 4: Broadcaster Microservice and Moon Browser Automation
+conﬁguration, we deployed a Redis instance within the Kubernetes cluster to serve as
+an intermediary between the broadcaster backend and Moon. This allowed dynamic
+injection of session parameters and improved overall architecture.
+6.Native Environment Variable Support via Moon : After further exploration,
+we discovered that Moon supports native injection of environment variables into
+browser containers via its API. This eliminated the need for Redis as an intermediary
+and signiﬁcantly simpliﬁed the conﬁguration process.
+7.Enhanced Video Processing : Once the system was fully functional, we optimized
+theFFmpeg scripts to improve video stream quality. This included tuning encoding
+parameters, frame rate settings, and bitrates to ensure a better user experience.
+This iterative approach allowed for early validation of each component and continuous
+enhancement based on practical feedback and technical discovery.
+Conclusion
+This chapter presented the development of the Broadcaster microservice and the integra-
+tion of Moon -based browser automation within SpoutBreeze. The solution demonstrates
+a scalable, maintainable system for real-time broadcasting and automated browser control.
+By leveraging Kubernetes, containerization, and tools like FFmpeg , the platform
+achieves reliable performance and enhanced video processing. These improvements pro-
+vide a strong foundation for future growth and more complex broadcasting features.
+67
+Chapter 5
+Kubernetes Cluster and Monitoring
+Introduction
+Container orchestration is essential in modern cloud-native architectures, with Kuber-
+netes as the leading platform. This chapter details the setup of a Kubernetes cluster
+on four virtual machines, simulating a production environment with high availability.
+It also covers a full-stack monitoring solution to ensure observability and performance.
+The implementation emphasizes key deployment considerations and the importance of
+monitoring for system reliability.
+5.1 Kubernetes Cluster Architecture
+Kubernetes is an open-source container orchestration platform designed to automate the
+deployment, scaling, and management of containerized applications. It has become the
+industry standard for managing modern cloud-native workloads, oﬀering a rich ecosystem
+of tools and APIs that support declarative conﬁguration and desired state management.
+5.1.1 Cluster Version and Tooling
+The Kubernetes cluster runs version v1.33.0 , the latest stable release at the time of
+deployment, ensuring compatibility with current cloud-native standards and access to the
+most recent enhancements. The cluster is managed using kubectl v1.33.0 , with built-in
+support for Kustomize v5.6.0 to handle declarative resource conﬁgurations.
+5.1.2 Container Runtime Environment
+To support containerized workloads, the following container runtimes were installed on
+all nodes:
+•Docker : Used primarily for development and image building workﬂows.
+•containerd : A high-performance, industry-standard runtime that interfaces di-
+rectly with Kubernetes via the Container Runtime Interface ( Container Runtime
+68
+Chapter 5: Kubernetes Cluster and Monitoring
+Interface (CRI) ). It is the primary runtime used by kubelet for managing container
+lifecycles.
+This dual-runtime setup allows for ﬂexibility in image creation and runtime execution
+while conforming to Kubernetes evolving architecture and support roadmap.
+5.1.3 Cluster Setup
+The Kubernetes cluster was provisioned using kubeadm , a robust tool that simpliﬁes the
+process of bootstrapping a secure and production-ready Kubernetes cluster. kubeadm
+was used to initialize the control plane, conﬁgure networking, and join the worker nodes,
+ensuring a streamlined and standardized setup aligned with Kubernetes best practices.
+5.1.4 Cluster Architecture Diagram
+Figure 5.1: Kubernetes Cluster Architecture.
+5.1.5 Cluster Design and Topology
+The cluster design adheres to Kubernetes best practices with a dedicated control plane
+and a set of worker nodes. The topology consists of the following:
+•1 Control Plane Node : Handles cluster orchestration, scheduling, and manage-
+ment functions. It runs all core control plane components, including the Kubernetes
+API server, controller manager, scheduler, and the etcd datastore.
+69
+Chapter 5: Kubernetes Cluster and Monitoring
+•3 Worker Nodes : Responsible for running application workloads in isolated con-
+tainers managed by Kubernetes. Each node runs the container runtime, kubelet,
+and kube-proxy.
+Figure 5.2: kubectl get nodes output showing cluster topology.
+This architecture provides high availability, workload distribution, and future scalabil-
+ity by allowing additional worker nodes to be integrated without altering control plane
+operations.
+5.1.6 Core Components
+The deployment includes all fundamental Kubernetes components:
+•kube-apiserver : Central management entity that exposes the Kubernetes APIand
+acts as the front-end for the cluster.
+•etcd : A distributed, reliable key-value store used as Kubernetes’ backing store for
+all cluster data.
+•kube-scheduler : Assigns newly created pods to nodes based on resource availabil-
+ity and constraints.
+•kube-controller-manager : Runs a set of controllers that monitor and reconcile
+the state of the cluster.
+•kubelet : An agent running on each node that ensures containers are running as
+expected.
+•kube-proxy : Maintains network rules and handles routing for pod-to-pod and
+pod-to-service communication.
+Each component plays a critical role in maintaining the desired state of the system and
+ensuring workload orchestration across the cluster.
+70
+Chapter 5: Kubernetes Cluster and Monitoring
+5.1.7 Networking Architecture
+A robust networking setup is crucial in Kubernetes. In this cluster:
+•Calico Container Network Interface (CNI) Plugin : Used as the primary
+Container Network Interface ( CNI). Calico provides scalable, high-performance net-
+working and network policy enforcement through Border Gateway Protocol (BGP)
+andInternet Protocol (IP) -in-IPencapsulation.
+•Pod Networking : Each pod receives a unique IPaddress, and network communi-
+cation is handled without Network Address Translation (NAT) , in compliance with
+the Kubernetes networking model.
+•Service Networking : Kubernetes Services provide stable virtual IPs for accessing
+sets of pods, including ClusterIP (internal access), NodePort (external access via
+nodes), and LoadBalancer (cloud integration).
+•Ingress Controller : Enables external HTTP /HTTPS traﬃc routing to services
+within the cluster, allowing ﬁne-grained routing and TLS termination.
+Calico was selected over other CNI plugins such as Flannel due to its advanced policy
+capabilities, better performance, and compatibility with service mesh implementations
+such as Istio.
+5.1.8 Infrastructure Speciﬁcations
+•Base Operating System (OS): Ubuntu 24.04 Long-Term Support (LTS) is in-
+stalled on all virtual machines, ensuring stability, security, and long-term support.
+•CPU Allocation: Each virtual machine is allocated 6 virtual CPUs (vCPUs),
+provisioned from a host machine equipped with an Intel Core i9-13900K processor.
+This provides suﬃcient computational power for running the deployed services and
+managing workloads.
+•Memory: The host system oﬀers a total of 128 GB of Random Access Memory
+(RAM), which is dynamically allocated across the diﬀerent virtual machines accord-
+ing to resource requirements and load balancing needs.
+•Storage: Each virtual machine is provisioned with a dedicated 32 GB disk for
+storage, used for operating system ﬁles, application binaries, logs, and local data
+storage.
+•Virtualization Platform: All virtual machines are hosted on a single physical
+server that supports hardware-assisted virtualization, allowing eﬃcient resource iso-
+lation and management.
+71
+Chapter 5: Kubernetes Cluster and Monitoring
+5.1.9 Helm Package Manager
+Helm the Kubernetes package managerwas also installed to streamline application de-
+ployment and lifecycle management. Helm enables:
+•Easy installation of complex applications via Helm charts
+•Reusability and versioning of Kubernetes conﬁgurations
+•Conﬁguration templating and environment-speciﬁc overrides
+The inclusion of Helm simpliﬁes the deployment and maintenance of production-ready
+software stacks such as Prometheus, Grafana, Istio, and Kiali.
+5.2 Monitoring and Observability
+Monitoring is critical for maintaining cluster health and performance. The implemented
+solution combines multiple open-source tools providing comprehensive observability across
+all cluster components.
+Figure 5.3: Prometheus and Grafana-based monitoring stack for collecting and visualizing
+cluster metrics.
+72
+Chapter 5: Kubernetes Cluster and Monitoring
+Figure 5.4: Istio service mesh with Kiali for traﬃc management and service observability.
+5.2.1 Observability
+In a microservices architecture, observability is essential for maintaining reliable and
+high-performing distributed applications. This section examines the importance of ob-
+servability, which provides deep visibility into service interactions and enables eﬃcient
+troubleshooting and performance tuning. Well discuss the core components and best
+practices that help monitor and analyze the complexities of microservices, leading to a
+more resilient and scalable system. To achieve these insights in our environment, we
+implemented Istio, enhancing our observability capabilities and improving overall control.
+5.2.2 The Strategic Advantages of Istio for Observability
+Adopting Istio for observability provides organizations with a powerful toolkit to monitor,
+analyze, and optimize microservices architectures. By delivering real-time visibility into
+service interactions, traﬃc ﬂows, and system performance, Istio enables teams to detect
+anomalies swiftly, troubleshoot eﬃciently, and proactively mitigate risks before they esca-
+late. Its advanced observability features, including distributed tracing, metrics collection,
+and log aggregation facilitate a deeper understanding of application behavior, allowing for
+data-driven optimizations that enhance both performance and reliability. This proactive
+observability framework not only minimizes downtime but also reduces operational costs,
+ensuring a resilient and high-performing microservices ecosystem.
+5.2.2.1 Enhancing Microservices with Istios Service Mesh
+Istio’s service mesh acts as a dedicated infrastructure layer that integrates seamlessly with
+microservices, augmenting their capabilities without requiring application-level modiﬁca-
+tions. By abstracting cross-cutting concerns such as traﬃc management, security, and
+73
+Chapter 5: Kubernetes Cluster and Monitoring
+observability, Istio provides ﬁne-grained control over service-to-service communication.
+Key functionalities include:
+•Intelligent Traﬃc Management Dynamic request routing, load balancing, and
+canary deployments to optimize traﬃc distribution.
+•Resilience Testing Fault injection and chaos engineering policies to validate system
+robustness under failure conditions.
+•Enhanced Security Mutual TLS (Mutual Transport Layer Security (mTLS) ) en-
+cryption and policy-based access controls to secure inter-service communication.
+With Istio, organizations gain a scalable and transparent mechanism to enforce oper-
+ational policies, improve system resilience, and streamline observability–all while main-
+taining a decoupled and agile architecture. [ 21]
+Figure 5.5: Istio Architecture.
+5.2.2.2 Deploying Istio
+We deployed Istio using istioctl with a production-oriented conﬁguration proﬁle. The
+installation targeted speciﬁc namespaces critical to our monitoring infrastructure: we la-
+beled the moon ,spoutbreeze (our primary microservice), postgresdb , and monitoring
+namespaces for automatic sidecar injection. After verifying the control plane components,
+we conﬁgured the Kubernetes Gateway API CRD s and deployed our observability stack.
+The spoutbreeze microservice was instrumented with the full Istio service mesh capa-
+bilities, while maintaining connectivity to its PostgreSQL backend and monitoring com-
+ponents. We validated the deployment by conﬁrming proper sidecar injection (2/2 ready
+74
+Chapter 5: Kubernetes Cluster and Monitoring
+containers) across all labeled namespaces and established traﬃc ﬂow metrics through Kiali
+dashboards.
+5.2.2.3 Kiali Observability Console
+Kiali serves as the primary observability interface for Istio service meshes, oﬀering compre-
+hensive monitoring and mesh conﬁguration capabilities. The console provides real-time
+visualization of service topology, traﬃc ﬂows, and health metrics across all mesh compo-
+nents. Key features include:
+•Interactive service graph visualization with traﬃc ﬂow analysis
+•Detailed metrics collection and display for services, workloads, and Istio conﬁgura-
+tions
+•Built-in validation of Istio resources (VirtualServices, DestinationRules, etc.)
+•Seamless Grafana integration for extended metric analysis and dashboards
+•Distributed tracing integration with Jaeger for request-level observability
+Through its intuitive interface, Kiali enables operators to quickly identify anomalies,
+validate conﬁgurations, and troubleshoot service communication issues. The tool’s health
+assessment capabilities automatically detect and highlight problematic services based on
+error rates, latency thresholds, and other critical performance indicators. [ 22]
+5.2.2.4 Kiali architecture
+Kiali is composed of two components: a back-end application running in the container
+application platform, and a user-facing front-end application. Kiali depends on external
+services and components provided by the container application platform and Istio. The
+following diagram illustrates the components involved in Kiali and its interactions: Kiali
+architecture [ 22]
+75
+Chapter 5: Kubernetes Cluster and Monitoring
+Figure 5.6: Kiali Architecture and Integration Points with Istio Components
+5.2.2.5 Kiali Dashboard
+The Kiali dashboard provides a comprehensive operational interface for monitoring and
+managing Istio service meshes. As shown in Figure 5.7, it oﬀers real-time visualization of
+service topology, traﬃc ﬂows, and system health through several specialized views:
+•Graph View : Interactive namespace-wide dependency graph with traﬃc metrics
+•Workloads View : Detailed metrics for individual deployments and pods
+•Services View : Service-level metrics and inbound/outbound traﬃc analysis
+•Traces View : Integrated distributed tracing visualization
+•Validations View : Conﬁguration analysis and policy compliance checks
+Kiali’s dashboard aggregates data from Prometheus, Jaeger, and the Kubernetes API
+to provide a uniﬁed operational view with conﬁgurable refresh intervals and metric display
+thresholds [ 22].
+76
+Chapter 5: Kubernetes Cluster and Monitoring
+Figure 5.7: Kiali Dashboard Overview Showing Service Topology and Traﬃc Flow
+5.2.3 Monitoring Approach
+Our monitoring solution leverages a comprehensive observability stack consisting of:
+•Istio for service mesh telemetry collection
+•Prometheus for time-series metric storage and alerting
+•Grafana for metric visualization and dashboarding
+•Kiali for service mesh topology visualization
+This integrated approach provides full-stack visibility from infrastructure metrics to application-
+level performance monitoring.
+5.2.3.1 Rationale for Prometheus Adoption
+In Figure 5.8, we present the Prometheus architecture implemented within our Kubernetes
+cluster.[ 23]
+77
+Chapter 5: Kubernetes Cluster and Monitoring
+Figure 5.8: Prometheus Monitoring Architecture and Data Flow
+Prometheus scrapes metrics from instrumented jobs, either directly or via an interme-
+diary push gateway for short-lived jobs. It stores all scraped samples locally and runs
+rules over this data to either aggregate and record new time series from existing data or
+generate alerts. Grafana or other API consumers can be used to visualize the collected
+data.
+5.2.3.2 Deploying Prometheus
+To facilitate robust monitoring within a Kubernetes cluster, Prometheus is widely
+adopted due to its powerful metrics collection and querying capabilities. Helm, a package
+manager for Kubernetes, provides a convenient method to deploy Prometheus using pre-
+deﬁned charts. The following Helm command installs Prometheus into the monitoring
+namespace using the community-maintained Helm chart:
+helm install prometheus prometheus-community/prometheus -n monitoring
+This command performs the following actions:
+•Fetches the Prometheus Helm chart from the prometheus-community repository.
+•Installs the chart with the release name prometheus .
+•Deploys the resources into the monitoring namespace.
+Ensure the monitoring namespace exists beforehand using:
+kubectl create namespace monitoring
+78
+Chapter 5: Kubernetes Cluster and Monitoring
+With Prometheus deployed, it will begin scraping metrics from Kubernetes components
+and any conﬁgured targets, serving as the foundation for a comprehensive monitoring
+stack.
+5.2.3.3 Visualization Approach with Grafana
+Grafana is a powerful observability platform widely used for visualizing and analyzing
+metrics from diverse sources. It simpliﬁes understanding complex systems by oﬀering rich,
+interactive dashboards. When integrated with Prometheus, Grafana connects seamlessly
+as a data source, enabling real-time monitoring and insightful visualization of Kubernetes
+cluster metrics, including CPU usage, memory consumption, and pod activity. [ 24] In our
+setup, Grafana was deployed using Helm for better ﬂexibility and maintainability. The
+following command was used to install Grafana in the monitoring namespace:
+helm install grafana-release oci://registry-1.docker.io/bitnamicharts/
+grafana -n monitoring After deployment, Grafana was conﬁgured to use Prometheus
+as a data source. This enabled the creation of dashboards that provide clear insights
+into the health and performance of the Kubernetes environment. Figure 5.9illustrates an
+example Grafana dashboard visualizing Kubernetes metrics.
+Figure 5.9: Grafana dashboard visualizing Kubernetes metrics
+79
+Chapter 5: Kubernetes Cluster and Monitoring
+Conclusion
+This chapter presented a production-ready Kubernetes cluster architecture with inte-
+grated observability. The deployment leveraged kubeadm for cluster initialization, Calico
+for networking, and Helm for package management. A comprehensive monitoring stack-
+combining Istio, Prometheus, Grafana, and Kialiwas implemented to provide real-time
+metrics, distributed tracing, and service topology visualization. The solution demon-
+strates how Kubernetes, when properly conﬁgured with robust monitoring tools, can
+deliver a scalable, observable, and maintainable platform for cloud-native applications.
+80
+Chapter 6
+Realization
+Introduction
+This chapter presents the implementation phase of our project. We begin by outlining
+the software and hardware environments that provide the essential foundation for our sys-
+tem’s development and deployment. Following this, we delve into the core graphical user
+interfaces of the microservices, showcasing the key functionalities that have been imple-
+mented. Through this comprehensive overview, we aim to illustrate how each component
+contributes to the overall architecture, ensuring a seamless and eﬃcient user experience.
+6.1 Development environment
+6.1.1 Hardware Environment
+The foundation of the deployment environment consists of a set of virtual machines as
+mentioned in the previous chapter. The detailed speciﬁcations of the virtual machines
+are as follows:
+•Base Operating System (OS): Ubuntu 24.04 LTS.
+•CPU Allocation: 6 virtual CPUs (vCPUs) per VM, provisioned from an Intel
+Core i9-13900K host.
+•Memory: 128 GB of total host Random Access Memory (RAM).
+•Storage: 32 GB disk space per VM.
+•Virtualization Platform: Hosted on a single physical server with virtualization
+support.
+6.1.2 Software Environment
+The software environment consists of multiple microservices and components, each utiliz-
+ing speciﬁc technologies and frameworks tailored to their responsibilities. The following
+sections detail the technology stack used for each service.
+81
+Chapter 6: Realization
+6.1.2.1 Spoutbreeze-Backend
+Thespoutbreeze-backend microservice is responsible for handling the application’s core
+business logic and serving API requests. The following technologies were used:
+•FastAPI: A modern, high-performance web framework for building RESTful APIs
+with Python.
+Figure 6.1: FastAPI Logo
+•Swagger: Provides interactive API documentation automatically generated from
+the FastAPI code.
+Figure 6.2: Swagger UI Logo
+•Keycloak: An open-source identity and access management solution used to handle
+authentication, authorization, and user management within the system.
+Figure 6.3: Keycloak Logo
+•Pytest: A testing framework for writing and executing unit tests and integration
+tests.
+Figure 6.4: Pytest framework Logo
+82
+Chapter 6: Realization
+•PostgreSQL: A powerful, open-source object-relational database system used for
+data storage and management.
+Figure 6.5: PostgreSQL Logo
+•SQLAlchemy: A powerful SQL toolkit and Object-Relational Mapping (ORM)
+library for Python, used to interact with the database.
+Figure 6.6: SQLAlchemy Logo
+•BigBlueButton (BBB): An open-source video conferencing platform into which
+this plugin is embedded, allowing interaction with live sessions.
+Figure 6.7: BigBlueButton Logo
+6.1.2.2 Fpoutbreeze-Frontend
+Thespoutbreeze-frontend microservice is responsible for delivering the client-side in-
+terface and ensuring a seamless user experience. The following technologies were used:
+•Next.js: A React-based web development framework providing server-side render-
+ing, static site generation, and API routes.
+Figure 6.8: Next.js Logo
+83
+Chapter 6: Realization
+•TypeScript: A statically typed superset of JavaScript that adds types and im-
+proves developer experience for large-scale frontend applications.
+Figure 6.9: TypeScript Logo
+Material UI: A popular React component library implementing Google’s Material Design
+system.
+Figure 6.10: Material UI Logo
+Tailwind CSS: A utility-ﬁrst CSS framework for rapidly building custom user interfaces.
+Figure 6.11: Tailwind CSS Logo
+Figma: A collaborative design tool used for creating UI/UX designs, prototypes, and
+design systems.
+Figure 6.12: Figma Logo
+6.1.2.3 BBB plugin
+TheBBB plugin is a standalone web application designed to interact with the BBB
+system by extending its functionality. The following technologies were used:
+•React: A JavaScript library for building interactive user interfaces.
+84
+Chapter 6: Realization
+Figure 6.13: React Logo
+•Webpack: A powerful module bundler used to compile and package the plugin’s
+JavaScript and assets for browser use.
+Figure 6.14: Webpack Logo
+•CSS: Standard Cascading Style Sheets were used to style and layout the plugin’s
+user interface.
+Figure 6.15: CSS Logo
+6.1.2.4 Spoutbreeze-Broadcaster
+Thespoutbreeze-broadcaster microservice is responsible for real-time communication,
+video streaming, and broadcasting operations. The following technologies were used:
+•Selenium: An automated testing framework used for end-to-end testing of the
+broadcaster’s web-based functionalities.
+Figure 6.16: Selenium Logo
+85
+Chapter 6: Realization
+6.1.2.5 Moon
+•Bash: A Unix shell and command language used for scripting automation tasks
+within the microservice.
+Figure 6.17: Bash Logo
+6.1.2.6 DevOps and Monitoring
+TheDevOps and Monitoring stack ensures continuous integration, deployment, and
+observability of the system. The following technologies were used:
+•Docker: A platform used to containerize the application, ensuring consistent and
+portable deployments.
+Figure 6.18: Docker Logo
+•Kubernetes: A container orchestration system used to automate deployment, scal-
+ing, and management of containerized applications.
+Figure 6.19: Kubernetes Logo
+•Helm: A package manager for Kubernetes used to deﬁne, install, and upgrade
+complex Kubernetes applications.
+Figure 6.20: Helm Logo
+86
+Chapter 6: Realization
+•GitHub Actions: Used for continuous integration and continuous deployment
+(CI/CD), allowing automated building, testing, and deployment of applications
+directly from the GitHub repository.
+Figure 6.21: GitHub Actions Logo
+•Istio: A service mesh used for traﬃc management, security, and observability within
+the microservices architecture.
+Figure 6.22: Istio Logo
+•Kiali: Provides observability into the Istio service mesh with topology, metrics, and
+traﬃc ﬂow visualization.
+Figure 6.23: Kiali Logo
+•Prometheus: An open-source monitoring system with powerful querying and alert-
+ing capabilities.
+Figure 6.24: Prometheus Logo
+•Grafana: A visualization tool used to analyze metrics collected by Prometheus and
+display dashboards.
+87
+Chapter 6: Realization
+Figure 6.25: Grafana Logo
+•Ingress NGINX: Acts as an ingress controller for routing external traﬃc to ser-
+vices within the Kubernetes cluster.
+Figure 6.26: Ingress NGINX Logo
+6.1.3 Project Deployment Overview
+6.1.3.1 User Interface Overview
+This section will focus on introducing the application interfaces:
+SpoutBr ee z e is a pr of essional platf or m that simplifies hosting, at t ending, and managing w ebinar s. 
+W ith se amless br o adcasting and int er ac tiv e t ools, w e help y ou deliv er imp ac tful vir tual e xper ienc es.
+Host smooth, high- qualit y
+liv e sessions without a hit c h.Deliv er c ont ent tailor ed
+t o y our audienc eSt or e, manage, and shar e
+p ast w ebinar s ef f or tlessly .L et the br ee z e car r y y our thoughts loud, c le ar , and f ar .Sign inSpoutBr ee z eWher e Ide as T ak e the L e a d
+Se amless Str e amingP ersonaliz ed Sp ac esC or e f e atur es
+Smar t Rec or dingsT ools buil t t o po w er e v er y session.
+Figure 6.27: Landing page
+88
+Chapter 6: Realization
+Figure 6.28: Keycloak login page
+Dashboard Page
+The home page is divided into four main sections: Dashboard, Endpoints, Channels, and
+Recordings. In the Dashboard section, users can see upcoming and past events. They
+can also schedule new events using the Schedule button, start the event from three dots
+button and copy the event link easily.
+Figure 6.29: Dashboard page
+89
+Chapter 6: Realization
+RTMP Endpoint Page
+On the RTMP Endpoint page, users can view all the existing RTMP endpoints. They
+can also create a new one by clicking the Add Endpoint button. This action opens a
+modal window where the user can ﬁll in the required information to add the new RTMP
+endpoint, as shown in Figure 6.31.
+Figure 6.30: RTMP Endpoints Page
+Figure 6.31: Add RTMP Endpoints Modal
+90
+Chapter 6: Realization
+Channels Page
+The Channels page displays the list of channels created by the user, either manually or
+during event creation. When a user opens a channel, they can view upcoming events and
+past recordings related to that channel, as shown in Figure 6.33. Additionally, the user
+can create an event like shown in the Figure 6.34 or start a new event directly from the
+channel page.
+Figure 6.32: Channels Page
+Figure 6.33: Single Channel Page
+91
+Chapter 6: Realization
+Figure 6.34: Create event form page
+Sharing the event links
+The Figure 6.35 represents a modal where the user can copy either the attendee link or
+the moderator link.
+Figure 6.35: Copy join URL modal
+92
+Chapter 6: Realization
+BBB Session and Twitch Stream
+When a user joins a BBB session, they can start streaming by clicking the Start Stream
+button provided by the plugin. This opens a modal (Figure 6.36) where the user selects
+an available RTMP endpoint. Once conﬁrmed, the Moon Bot joins the session and starts
+broadcasting it live to Twitch, as shown in Figure 6.37.
+Figure 6.36: Start Stream Modal in BBB
+Figure 6.37: Live Session on Twitch
+93
+Chapter 6: Realization
+Twitch Chat Integration
+As shown in Figure 6.38, messages can be sent and received between the Twitch chat and
+the BBB session. This real-time integration allows seamless communication between the
+audience and the presenter.
+Figure 6.38: Twitch and BBB Chat Message Exchange
+Access Control
+Figure 6.39 shows the Access Control section, which is accessible only to admin users.
+From this page, administrators can manage user accounts across the platform, including
+assigning roles.
+Figure 6.39: Admin access control page
+94
+Chapter 6: Realization
+Keycloak client
+The Figure 6.40 shows the keycloak client created inside the SpoutBreeze realm.
+Figure 6.40: Keycloak client page
+6.1.3.2 Kubernetes Workloads Overview
+The following ﬁgures present the deployed workloads across the diﬀerent namespaces of
+the Kubernetes cluster used for the SpoutBreeze platform:
+Figure 6.41: Workloads deployed in the spoutbreeze namespace.
+95
+Chapter 6: Realization
+Figure 6.42: Workloads deployed in the moon namespace.
+Figure 6.43: Workloads deployed in the postgresdb namespace.
+Figure 6.44: Workloads deployed in the monitoring namespace.
+96
+Chapter 6: Realization
+Figure 6.45: Workloads deployed in the istio-system namespace.
+6.1.3.3 Keycloak Docker Container
+The Keycloak identity and access management service is running as a standalone Docker
+container on the host machine. The following ﬁgure shows the output of the docker ps
+command, conﬁrming the containers status and conﬁguration.
+Figure 6.46: Output of docker ps showing the running Keycloak Docker container.
+97
+Conclusion and Perspectives
+The development of SpoutBreeze oﬀered us the valuable opportunity to act as con-
+tributors to a real-world, open-source solution It allowed us to put into practice the
+comprehensive software engineering knowledge we accumulated throughout our academic
+journey, as well as the insights gained from self-driven projects. From initial planning
+to ﬁnal deployment, the project followed modern engineering practices and architectural
+principles, resulting in a modular, scalable microservices-based system. We designed and
+implemented over a dozen interconnected components, using a technology stack that in-
+cluded more than 25 modern tools and frameworks. On the frontend, we used Next.js
+to build a responsive and accessible user interface. The backend was developed using
+FastAPI , chosen for its performance and support for asynchronous operations. Together,
+this stack oﬀered a fast, intuitive, and modern user experience for managing webinars and
+livestreams.
+We used infrastructure and DevOps tools such as Docker ,Kubernetes ,Helm , and
+GitHub Actions for continuous integration and deployment. This allowed us to learn
+how to containerize and orchestrate complex applications in real-world environments,
+implement robust deployment workﬂows using GitOps principles, and monitor, scale, and
+manage cloud-native services eﬀectively.
+More than a technical challenge, SpoutBreeze was a transformative team experience.
+It improved our collaboration, communication, and problem-solving skills. Working in
+an iterative way and ﬂexible environment helped us navigate technical obstacles, make
+informed decisions, and iterate rapidly. We frequently encountered and overcame complex
+real-world problems, which signiﬁcantly strengthened our research capabilities, particu-
+larly in the areas of systems integration, observability, and open-source development.
+We also recognized the value of continuous user feedback to align the platform with
+real-world needs. Establishing a feedback loop will be essential for ongoing reﬁnement
+and feature evolution. SpoutBreeze represents not just the culmination of our academic
+eﬀorts, but the beginning of a larger open-source initiative. We hope that the community
+will contribute to its evolution, helping it grow into a fully-featured, community-driven
+solution for large-scale virtual communication.
+Looking ahead, we envision future contributors expanding SpoutBreeze with features
+like audio support and AI-driven recommendations. This is just the beginningthe projects
+roadmap remains open for continuous improvement and innovation.
+98
+Bibliography
+[1]RIADVICE. About us - RIADVICE [Internet]; 2019. https://riadvice.tn/fr/
+about-us/ .
+[2]BigBlueButton Developers. Issue #8295: Support for broadcasting to a CDN [Inter-
+net]; 2023. https://github.com/bigbluebutton/bigbluebutton/issues/8295 .
+[3]Zoom Video Communications, Inc . Zoom Webinars [Internet]; 2025. https://www.
+zoom.com/en/products/webinars/ .
+[4]GoTo. GoTo Webinar [Internet]; 2025. https://www.goto.com/webinar .
+[5]Jitsi. Jitsi Handbook [Internet]; 2025. https://jitsi.github.io/handbook/docs/
+intro/ .
+[6]OBS Project. Open Broadcaster Software (OBS) [Internet]; 2025. https://
+obsproject.com/ .
+[7]Streamlabs. Streamlabs [Internet]; 2025. https://streamlabs.com/ .
+[8]Wirecast. Wirecast Live Video Streaming Software [Internet]; 2025. https://www.
+wirecast.io/en/ .
+[9]Hossain MI. Software Development Life Cycle (SDLC) Methodologies for Information
+Systems Project Management. International Journal For Multidisciplinary Research.
+2023 Sep;5(5).
+[10] Abdelrahman Y, Mostafa R, Sulaiman R. Exploring Eﬀectiveness in Software De-
+velopment: A Comparative Review of System Analysis and Design Methodologies.
+International Journal of Computer Theory and Engineering. 2024 mar;17(1):36-43.
+[11] Keycloak Project. Keycloak Documentation [Internet]; 2025. https://www.
+keycloak.org/ .
+[12] OAuth 2 0. Using PKCE (Proof Key for Code Exchange) [Internet]; 2025. https:
+//www.oauth.com/oauth2-servers/pkce/ .
+[13] BigBlueButton. BigBlueButton Plugin System [Internet]; 2025. https://docs.
+bigbluebutton.org/plugins/ .
+[14] Twitch Developers. Twitch IRC Chat Documentation [Internet]; 2025. https://dev.
+twitch.tv/docs/chat/irc/ .
+99
+BIBLIOGRAPHY
+[15] Developers B. bigbluebutton-html-plugin-sdk; 2025. https://github.com/
+bigbluebutton/bigbluebutton-html-plugin-sdk .
+[16] onsi. Ginkgo Documentation [Internet]; 2025. https://onsi.github.io/ginkgo/ .
+[17] onsi. Gomega Documentation [Internet]; 2025. https://onsi.github.io/gomega/ .
+[18] Aerokube. Moon Documentation [Internet]; 2025. https://aerokube.com/moon/
+latest/ .
+[19] Aerokube. Selenoid Documentation [Internet]; 2025. https://aerokube.com/
+selenoid/latest/ .
+[20] FFmpeg Developers. FFmpeg Documentation [Internet]; 2025. https://ffmpeg.
+org/ffmpeg.html .
+[21] Istio Authors. Istio Documentation [Internet]; 2025. https://istio.io/latest/
+docs/ .
+[22] Project K. Kiali Documentation; 2021. Available from: https://kiali.io/docs/ .
+[23] Prometheus Authors. Prometheus Documentation [Internet]; 2025. https://
+prometheus.io/docs .
+[24] Grafana Labs. Grafana Documentation [Internet]; 2025. https://grafana.com/
+docs/ .
+100

@@ -24,7 +24,7 @@ data:
   PORT: "3000"
   KEYCLOAK_URL: "http://keycloak.ai-application.svc.cluster.local:8080"
   KEYCLOAK_REALM: "newRealm"
-  CORS_ORIGIN: "http://localhost,http://localhost:5173,http://localhost:8000"
+  CORS_ORIGIN: "http://localhost,http://127.0.0.1,http://localhost:5173,http://127.0.0.1:5173,http://localhost:8000"
   REDIS_URL: "redis://redis.ai-data.svc.cluster.local:6379/0"
   OPA_ENABLED: "true"
   OPA_URL: "http://opa.ai-application.svc.cluster.local:8181"

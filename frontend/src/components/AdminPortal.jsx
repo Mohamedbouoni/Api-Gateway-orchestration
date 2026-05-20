@@ -1,6 +1,7 @@
- import { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import api from "../api/client";
 import useIntent from "../hooks/useIntent";
+import { formatApiError } from "../utils/apiError";
 
 const AdminPortal = ({ token, onClose }) => {
   const [activeTab, setActiveTab] = useState("dashboard"); // "dashboard", "mappings", "services", "policies"
@@ -80,19 +81,23 @@ const AdminPortal = ({ token, onClose }) => {
   }, [activeTab]);
 
   const fetchPolicies = async () => {
+    if (!token) {
+      setError("Not signed in. Reload the page and log in at http://localhost.");
+      return;
+    }
     setLoading(true);
+    setError(null);
     try {
-      const headers = { Authorization: `Bearer ${token}`, };
+      const headers = { Authorization: `Bearer ${token}` };
       const [policiesResp, statusResp] = await Promise.all([
         api.get("/admin/policies", { headers }),
-        axios
-          .get("/api/admin/policies/status", { headers })
-          .catch(() => ({ data: null })),
+        api.get("/admin/policies/status", { headers }).catch(() => ({ data: null })),
       ]);
       setPolicies(policiesResp.data);
       setPolicySyncStatus(statusResp.data);
     } catch (err) {
-      setError("Failed to fetch policies");
+      setError(formatApiError(err, "Failed to fetch policies"));
+      console.error("fetchPolicies:", err.response?.status, err.response?.data);
     } finally {
       setLoading(false);
     }

@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kubernetes Multi-Namespace Architecture</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f1f5f9;
+            padding: 30px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .ns-box {
+            border: 2px dashed #94a3b8;
+            border-radius: 16px;
+            padding: 24px;
+            position: relative;
+            background-color: #ffffff;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05);
+        }
+        .ns-title {
+            position: absolute;
+            top: -14px;
+            left: 24px;
+            background: #ffffff;
+            padding: 0 12px;
+            font-weight: 800;
+            font-size: 13px;
+            color: #0f172a;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+        }
+        .deploy-box {
+            border: 1.5px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 40px 16px 16px 16px;
+            position: relative;
+            background-color: #f8fafc;
+            min-width: 240px;
+        }
+        .deploy-title {
+            position: absolute;
+            top: 10px;
+            left: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 700;
+            font-size: 10px;
+            color: #475569;
+            text-transform: uppercase;
+        }
+        .pod-box {
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            border-radius: 20px;
+            width: 60px;
+            height: 90px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .pod-logo {
+            width: 28px;
+            height: 28px;
+            object-fit: contain;
+            margin-bottom: 4px;
+        }
+        .port-pill {
+            background-color: #0284c7;
+            color: white;
+            font-size: 8px;
+            font-weight: 700;
+            padding: 1px 8px;
+            border-radius: 8px;
+        }
+        .svc-box {
+            border: 1.5px solid #bae6fd;
+            border-radius: 10px;
+            padding: 12px;
+            background-color: #f0f9ff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-width: 200px;
+        }
+        .svc-port {
+            background-color: #38bdf8;
+            color: white;
+            font-size: 8px;
+            font-weight: 700;
+            padding: 1px 12px;
+            border-radius: 8px;
+            margin-bottom: 4px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="flex flex-col gap-8 max-w-[1300px] w-full">
+    
+    <!-- Title Header -->
+    <div class="flex justify-between items-center bg-slate-900 text-white p-6 rounded-2xl shadow-xl">
+        <div>
+            <h1 class="text-2xl font-extrabold tracking-tight">Kubernetes Enterprise Topology Map</h1>
+            <p class="text-xs text-slate-400 mt-1">Horizontal Pod Autoscaling & Secure Namespace Segregation</p>
+        </div>
+        <div class="flex gap-4 items-center">
+            <span class="px-3 py-1 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-full text-xs font-bold">PROD ACTIVE</span>
+            <span class="px-3 py-1 bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded-full text-xs font-bold">5 NAMESPACES</span>
+        </div>
+    </div>
+
+    <!-- Cluster Grid -->
+    <div class="grid grid-cols-2 gap-8">
+        
+        <!-- 1. Namespace: ai-gateway -->
+        <div class="ns-box">
+            <div class="ns-title text-blue-600">Namespace: ai-gateway</div>
+            <div class="flex flex-col gap-6">
+                <!-- Deployments Row -->
+                <div class="flex gap-4">
+                    <!-- Kong Gateway Deploy -->
+                    <div class="deploy-box flex-1">
+                        <div class="deploy-title">
+                            <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+                            DEPLOY: kong-gateway
+                        </div>
+                        <div class="flex justify-around gap-2">
+                            <div class="pod-box">
+                                <img src="file:///c:/Users/USER/Desktop/Kong-project/Api-gateways/images/logos/kong.png" class="pod-logo">
+                                <span class="text-[9px] font-bold text-slate-500">POD-1</span>
+                                <span class="port-pill">8000</span>
+                            </div>
+                            <div class="pod-box">
+                                <img src="file:///c:/Users/USER/Desktop/Kong-project/Api-gateways/images/logos/kong.png" class="pod-logo">
+                                <span class="text-[9px] font-bold text-slate-500">POD-2</span>
+                                <span class="port-pill">8000</span>
+                            </div>
+                            <div class="pod-box">
+                                <img src="file:///c:/Users/USER/Desktop/Kong-project/Api-gateways/images/logos/kong.png" class="pod-logo">
+                                <span class="text-[9px] font-bold text-slate-500">POD-3</span>
+                                <span class="port-pill">8000</span>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- OPA Deploy -->
+                    <div class="deploy-box flex-1">
+                        <div class="deploy-title">
+                            <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
+                            DEPLOY: opa-governance
+                        </div>
+                        <div class="flex justify-around gap-2">
+                            <div class="pod-box">
+                                <img src="file:///c:/Users/USER/Desktop/Kong-project/Api-gateways/images/logos/opa.png" class="pod-logo">
+                                <span class="text-[9px] font-bold text-slate-500">POD-1</span>
+                                <span class="port-pill">8181</span>
+                            </div>
+                            <div class="pod-box">
+                                <img src="file:///c:/Users/USER/Desktop/Kong-project/Api-gateways/images/logos/opa.png" class="pod-logo">
+                                <span class="text-[9px] font-bold text-slate-500">POD-2</span>
+                                <span class="port-pill">8181</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Services Row -->
+                <div class="flex gap-4">
+                    <div class="svc-box flex-1">
+                        <span class="svc-port">8000</span>
+                        <div class="text-[10px] font-extrabold text-blue-800">NodePort Service</div>
+                        <div class="text-[11px] font-bold text-slate-800">svc/kong-ingress</div>
+                    </div>
+                    <div class="svc-box flex-1">
+                        <span class="svc-port">8181</span>
+                        <div class="text-[10px] font-extrabold text-indigo-800">ClusterIP Service</div>
+                        <div class="text-[11px] font-bold text-slate-800">svc/opa-decision</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Namespace: ai-application -->
+        <div class="ns-box">
+            <div class="ns-title text-emerald-600">Namespace: ai-application</div>
+            <div class="flex flex-col gap-6">
+                <!-- Deployments Row -->
+                <div class="flex gap-4">
+                    <!-- React Deploy -->
+                    <div class="deploy-box flex-1">
+                        <div class="deploy-title">
+                            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                            DEPLOY: react-frontend
+                        </div>
+                        <div class="flex justify-around gap-2">
+                            <div class="pod-box">
+                                <img src="file:///c:/Users/USER/Desktop/Kong-project/Api-gateways/images/logos/react.png" class="pod-logo">
+                                <span class="text-[9px] font-bold text-slate-500">POD-1</span>
+                                <span class="port-pill">5173</span>
+                            </div>
+                            <div class="pod-box">
+                                <img src="file:///c:/Users/USER/Desktop/Kong-project/Api-gateways/images/logos/react.png" class="pod-logo">
+                                <span class="text-[9px] font-bold text-slate-500">POD-2</span>
+                                <span class="port-pill">5173</span>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- FastAPI Deploy -->
+                    <div class="deploy-box flex-1">
+                        <div class="deploy-title">
+                            <span class="w-2 h-2 rounded-full bg-teal-500"></span>
+                            DEPLOY: fastapi-orchestrator
+                        </div>
+                        <div class="flex justify-around gap-2">
+                            <div class="pod-box">
+                                <img src="file:///c:/Users/USER/Desktop/Kong-project/Api-gateways/images/logos/fastapi.png" class="pod-logo">
+                                <span class="text-[9px] font-bold text-slate-500">POD-1</span>
+                                <span class="port-pill">3000</span>
+                            </div>
+                            <div class="pod-box">
+                                <img src="file:///c:/Users/USER/Desktop/Kong-project/Api-gateways/images/logos/fastapi.png" class="pod-logo">
+                                <span class="text-[9px] font-bold text-slate-500">POD-2</span>
+                                <span class="port-pill">3000</span>
+                            </div>
+                            <div class="pod-box">
+                                <img src="file:///c:/Users/USER/Desktop/Kong-project/Api-gateways/images/logos/fastapi.png" class="pod-logo">
+                                <span class="text-[9px] font-bold text-slate-500">POD-3</span>
+                                <span class="port-pill">3000</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Services Row -->
+                <div class="flex gap-4">
+                    <div class="svc-box flex-1">
+                        <span class="svc-port">5173</span>
+                        <div class="text-[10px] font-extrabold text-emerald-800">ClusterIP Service</div>
+                        <div class="text-[11px] font-bold text-slate-800">svc/web-ui</div>
+                    </div>
+                    <div class="svc-box flex-1">
+                        <span class="svc-port">3000</span>
+                        <div class="text-[10px] font-extrabold text-teal-800">ClusterIP Service</div>
+                        <div class="text-[11px] font-bold text-slate-800">svc/orchestrator-backend</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Namespace: ai-data -->
+        <div class="ns-box">
+            <div class="ns-title text-purple-600">Namespace: ai-data</div>
+            <div class="flex flex-col gap-6">
+                <!-- Deployments Row -->
+                <div class="flex gap-4">
+                    <!-- Postgres StatefulSet -->
+                    <div class="deploy-box flex-1">
+                        <div class="deploy-title">
+                            <span class="w-2 h-2 rounded-full bg-purple-500"></span>
+                            STATEFULSET: postgres-sovereign
+                        </div>
+                        <div class="flex justify-around gap-2">
+                            <div class="pod-box">
+                                <img src="file:///c:/Users/USER/Desktop/Kong-project/Api-gateways/images/logos/postgresql.png" class="pod-logo">
+                                <span class="text-[9px] font-bold text-slate-500">POD-0</span>
+                                <span class="port-pill">5432</span>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Redis Deploy -->
+                    <div class="deploy-box flex-1">
+                        <div class="deploy-title">
+                            <span class="w-2 h-2 rounded-full bg-pink-500"></span>
+                            DEPLOY: redis-cache-quota
+                        </div>
+                        <div class="flex justify-around gap-2">
+                            <div class="pod-box">
+                                <img src="file:///c:/Users/USER/Desktop/Kong-project/Api-gateways/images/logos/redis.png" class="pod-logo">
+                                <span class="text-[9px] font-bold text-slate-500">POD-1</span>
+                                <span class="port-pill">6379</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Services Row -->
+                <div class="flex gap-4">
+                    <div class="svc-box flex-1">
+                        <span class="svc-port">5432</span>
+                        <div class="text-[10px] font-extrabold text-purple-800">ClusterIP Service</div>
+                        <div class="text-[11px] font-bold text-slate-800">svc/db-persistent</div>
+                    </div>
+                    <div class="svc-box flex-1">
+                        <span class="svc-port">6379</span>
+                        <div class="text-[10px] font-extrabold text-pink-800">ClusterIP Service</div>
+                        <div class="text-[11px] font-bold text-slate-800">svc/redis-cache</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. Namespace: ai-monitoring -->
+        <div class="ns-box">
+            <div class="ns-title text-orange-600">Namespace: ai-monitoring</div>
+            <div class="flex flex-col gap-6">
+                <!-- Deployments Row -->
+                <div class="flex gap-4">
+                    <!-- Prometheus Deploy -->
+                    <div class="deploy-box flex-1">
+                        <div class="deploy-title">
+                            <span class="w-2 h-2 rounded-full bg-orange-500"></span>
+                            DEPLOY: prometheus-tsdb
+                        </div>
+                        <div class="flex justify-around gap-2">
+                            <div class="pod-box">
+                                <img src="file:///c:/Users/USER/Desktop/Kong-project/Api-gateways/images/logos/prometheus.png" class="pod-logo">
+                                <span class="text-[9px] font-bold text-slate-500">POD-1</span>
+                                <span class="port-pill">9090</span>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Grafana Deploy -->
+                    <div class="deploy-box flex-1">
+                        <div class="deploy-title">
+                            <span class="w-2 h-2 rounded-full bg-yellow-500"></span>
+                            DEPLOY: grafana-visuals
+                        </div>
+                        <div class="flex justify-around gap-2">
+                            <div class="pod-box">
+                                <img src="file:///c:/Users/USER/Desktop/Kong-project/Api-gateways/images/logos/grafana.png" class="pod-logo">
+                                <span class="text-[9px] font-bold text-slate-500">POD-1</span>
+                                <span class="port-pill">3000</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Services Row -->
+                <div class="flex gap-4">
+                    <div class="svc-box flex-1">
+                        <span class="svc-port">9090</span>
+                        <div class="text-[10px] font-extrabold text-orange-800">ClusterIP Service</div>
+                        <div class="text-[11px] font-bold text-slate-800">svc/prometheus-server</div>
+                    </div>
+                    <div class="svc-box flex-1">
+                        <span class="svc-port">3000</span>
+                        <div class="text-[10px] font-extrabold text-yellow-800">NodePort Service</div>
+                        <div class="text-[11px] font-bold text-slate-800">svc/grafana-dashboard</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Bottom Row: Docker External Keycloak Server -->
+    <div class="flex gap-8 items-center bg-white p-6 rounded-2xl border border-slate-200 shadow-sm justify-between">
+        <div class="flex items-center gap-4">
+            <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/docker/docker-original.svg" class="w-12 h-12">
+            <div>
+                <h2 class="text-sm font-bold text-slate-800">External Shared Services Layer</h2>
+                <p class="text-xs text-slate-500">Dockerized Identity Provider on Host Network Bridge</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-6 border-l pl-8 border-slate-200">
+            <img src="file:///c:/Users/USER/Desktop/Kong-project/Api-gateways/images/logos/keycloak.png" class="h-8 object-contain">
+            <div class="text-right">
+                <span class="px-2 py-0.5 bg-slate-100 text-slate-700 rounded text-[10px] font-bold">PORT 8080</span>
+                <div class="text-xs font-bold text-slate-800">Keycloak IAM Server</div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+</body>
+</html>

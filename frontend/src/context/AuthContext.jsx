@@ -1,5 +1,6 @@
 import { createContext, useEffect, useState, useRef } from "react";
 import Keycloak from "keycloak-js";
+import { setApiAuthToken } from "../api/client";
 
 export const AuthContext = createContext();
 
@@ -35,13 +36,39 @@ export const AuthProvider = ({ children }) => {
         }).then((authenticated) => {
             setIsLogin(authenticated);
             setToken(client.token);
+            setApiAuthToken(client.token);
             setRoles(client.realmAccess?.roles || []);
         }).catch(err => {
             console.error("Keycloak init failed:", err);
         });
     }, []);
 
+    useEffect(() => {
+        if (!clientRef.current || !isLogin) return;
+
+        const client = clientRef.current;
+        const refresh = () => {
+            client
+                .updateToken(30)
+                .then((refreshed) => {
+                    if (refreshed && client.token) {
+                        setToken(client.token);
+                        setApiAuthToken(client.token);
+                    }
+                })
+                .catch(() => {
+                    setApiAuthToken(null);
+                    client.logout();
+                });
+        };
+
+        refresh();
+        const id = setInterval(refresh, 30_000);
+        return () => clearInterval(id);
+    }, [isLogin]);
+
     const logout = () => {
+        setApiAuthToken(null);
         if (clientRef.current) {
             clientRef.current.logout();
         }

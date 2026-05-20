@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-fastapi
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: fastapi
+    project: enterprise-ai-gateway
+    release: {{ .Release.Name }}
+spec:
+  replicas: {{ .Values.fastapi.replicaCount }}
+  selector:
+    matchLabels:
+      app: fastapi
+      release: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: fastapi
+        release: {{ .Release.Name }}
+    spec:
+      containers:
+        - name: fastapi
+          image: "{{ .Values.fastapi.image.repository }}:{{ .Values.fastapi.image.tag }}"
+          imagePullPolicy: {{ .Values.fastapi.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.fastapi.service.port }}
+          env:
+            - name: ENVIRONMENT
+              value: {{ .Values.global.environment | quote }}
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
