@@ -1,0 +1,147 @@
+% ================================================================
+%  CHAPTER 6 - RELEASE 3: OBSERVABILITY & DEPLOYMENT
+% ================================================================
+\chapter{Release 3: Observability \& Deployment}
+
+\section{Introduction}
+
+The final release of the Deterministic Enterprise AI Orchestration Platform focuses on transitioning the system from a secure, governed backend into a fully operational and observable production environment. Release 3 introduces the observability stack, providing administrators with real-time insights into platform health, API usage, and security events. Additionally, this release covers the final deployment strategy, detailing how the containerized microservices are orchestrated in a production Kubernetes cluster. The work included in this release encompasses the final sprint (Sprint 5) and the deployment phase.
+
+% ──────────────────────────────────────────────────────────────────
+\section{Release 3 Plan}
+% ──────────────────────────────────────────────────────────────────
+
+The development plan for Release 3 focuses on visibility, administration, and production deployment:
+
+\begin{enumerate}
+    \item \textbf{Sprint 5: Observability \& Launch} - Implements Prometheus metrics endpoints across all services, integrates Grafana for real-time dashboarding, and completes the administrative portal for managing edge security plugins and reviewing audit logs.
+    
+    \item \textbf{Deployment Phase} - Details the containerization of the application, the Azure/Kubernetes infrastructure deployment, and the final CI/CD automation for continuous delivery.
+\end{enumerate}
+
+By completing these objectives, the platform achieves operational maturity, allowing enterprise teams to monitor, manage, and scale their AI infrastructure with confidence.
+
+% ──────────────────────────────────────────────────────────────────
+\section{Release 3 Backlog}
+% ──────────────────────────────────────────────────────────────────
+
+The following table outlines the backlog items identified for Sprint 5.
+
+\begin{table}[H]
+\centering
+\renewcommand{\arraystretch}{1.3}
+\footnotesize
+\begin{tabularx}{\textwidth}{| >{\raggedright\arraybackslash}p{3.5cm} | c | >{\raggedright\arraybackslash}X | c |}
+\hline
+\rowcolor{rowgray}
+\textbf{Feature} & \textbf{ID} & \textbf{User Stories} & \textbf{Priority} \\
+\hline
+Metrics Dashboard & 34 & As an admin, I want a real-time metrics dashboard. & + + + \\
+\hline
+UI Plugin Management & 35 & As an admin, I want Kong plugin management from the UI. & + + + \\
+\hline
+Security Auditing & 36 & As an admin, I want a security events log. & + + + \\
+\hline
+Prometheus Endpoints & 37 & As an operator, I want Prometheus metrics endpoints. & + + + \\
+\hline
+UI Theming & 38 & As a developer, I want light/dark theme toggle. & + + \\
+\hline
+\end{tabularx}
+\caption{Release 3 Backlog (Sprint 5)}
+\label{tab:release3_backlog}
+\end{table}
+
+
+% ══════════════════════════════════════════════════════════════════
+%  SPRINT 5: OBSERVABILITY & LAUNCH
+% ══════════════════════════════════════════════════════════════════
+\section{Sprint 5: Observability \& Launch}
+
+The goal of this sprint is to eliminate operational blindness. Without centralized logs and metrics, administrators cannot audit AI usage or diagnose system bottlenecks. This sprint integrates the Prometheus and Grafana observability stack and delivers the final administrative portal.
+
+\subsection{Software Design}
+
+\subsubsection{Static View: Observability Architecture}
+
+Complete lifecycle observability is achieved by instrumenting both the edge gateway and the core orchestration engine.
+
+\begin{itemize}
+    \item \textbf{Kong Prometheus Plugin:} Extracts real-time metrics at the network edge, tracking ingress request rates, HTTP status codes, and API latency before traffic reaches the backend.
+    \item \textbf{FastAPI Metrics Middleware:} Exposes custom application-level metrics, such as intent classification distribution, average token generation speed, and OPA policy evaluation latency.
+    \item \textbf{Centralized Audit Ledger:} Every transaction, including policy decisions and security interventions, is recorded in an immutable PostgreSQL audit table.
+\end{itemize}
+
+These data sources are continuously scraped by a Prometheus instance and visualized through centralized Grafana dashboards, allowing administrators full visibility into AI usage and platform health.
+
+\subsection{Showcase}
+\label{subsec:sprint5_showcase}
+
+The following figures demonstrate the observability, administration, and user experience capabilities delivered in this final sprint.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{images/grafana_dashboard.png}
+    \caption{Centralized Grafana dashboard visualizing API latency, token consumption, and platform health metrics.}
+    \label{fig:grafana_dashboard}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{images/admin_security_events.png}
+    \caption{Admin Portal displaying real-time AI threat patterns and security event monitoring.}
+    \label{fig:admin_security_events}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{images/plugin_marketplace.png}
+    \caption{Kong Plugin Marketplace interface enabling one-click gateway plugin configuration.}
+    \label{fig:plugin_marketplace}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{images/chat_theme.png}
+    \caption{Enterprise AI Chat interface with premium dark theme and real-time quota tracking.}
+    \label{fig:chat_theme}
+\end{figure}
+
+
+% ══════════════════════════════════════════════════════════════════
+%  DEPLOYMENT
+% ══════════════════════════════════════════════════════════════════
+\section{Deployment}
+
+With the software development lifecycle complete, the final phase focuses on packaging and deploying the orchestration platform into a production-ready environment.
+
+\subsection{Containerizing the Application}
+
+To guarantee environment consistency across development, staging, and production, every microservice within the platform is containerized using Docker. Multi-stage Dockerfiles were engineered to minimize image sizes and reduce the attack surface by omitting unnecessary build tools from the final production images.
+
+\begin{itemize}
+    \item \textbf{Frontend Image:} A lightweight Nginx Alpine container serving the compiled React build.
+    \item \textbf{Backend Image:} A Python slim container running the FastAPI application via the Uvicorn ASGI server.
+    \item \textbf{Gateway Image:} A custom Kong image pre-loaded with declarative configuration files (decK) and custom Lua plugins.
+\end{itemize}
+
+\subsection{Kubernetes Infrastructure}
+
+The containerized applications are orchestrated using Kubernetes, ensuring high availability, fault tolerance, and horizontal scalability. The deployment topology segregates the platform into independent microservices within the \texttt{ai-gateway-namespace}.
+
+\begin{itemize}
+    \item \textbf{Stateful Deployments:} PostgreSQL and Redis are deployed using StatefulSets to ensure data persistence and stable network identities.
+    \item \textbf{Stateless Deployments:} The Kong API Gateway and FastAPI backend are deployed as scalable ReplicaSets. Kubernetes Horizontal Pod Autoscalers (HPA) automatically provision additional Pods in response to CPU utilization spikes or increased API traffic.
+    \item \textbf{Secrets Management:} Sensitive configurations, such as database credentials and API keys, are securely injected into the Pods at runtime using Kubernetes Secrets, synchronized with HashiCorp Vault.
+\end{itemize}
+
+\subsection{CI/CD Pipeline Post-Deployment}
+
+The automated CI/CD pipeline, managed via GitHub Actions, ensures continuous delivery. Following successful code integration, test execution, and image building, the pipeline utilizes Kubernetes declarative manifests to perform zero-downtime rolling updates. This ensures that new features and security patches can be deployed to the live enterprise environment without interrupting active AI streams.
+
+
+% ──────────────────────────────────────────────────────────────────
+\section*{Conclusion}
+\addcontentsline{toc}{section}{Conclusion}
+% ──────────────────────────────────────────────────────────────────
+
+This chapter marked the culmination of the project, focusing on operational maturity and production deployment. In Sprint 5, we integrated a comprehensive observability stack, leveraging Prometheus and Grafana to provide real-time insights into system health and AI usage. The development of the admin portal further empowered operators to manage governance and security directly from the UI. Finally, we detailed the containerization and Kubernetes deployment strategy, ensuring the platform is highly available, scalable, and ready for enterprise adoption. The Deterministic Enterprise AI Orchestration Platform is now fully realized, bridging the gap between innovative AI capabilities and rigorous corporate governance.

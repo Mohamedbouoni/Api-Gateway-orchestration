@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Architecture Platform Portrait</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leader-line/1.0.7/leader-line.min.js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background: #ffffff; padding: 60px 40px; margin: 0; min-height: 100vh; display: flex; flex-direction: column; align-items: center; }
+        .layer-box { border-radius: 12px; border: 2px solid rgba(0,0,0,1); padding: 16px; position: relative; display: flex; flex-direction: column; align-items: center; box-shadow: 6px 6px 0px rgba(0,0,0,1); margin-bottom: 40px; width: 100%; max-width: 600px; z-index: 10; }
+        .layer-title { font-weight: 800; font-size: 1.25rem; margin-bottom: 16px; color: #000; text-align: center; text-transform: uppercase; letter-spacing: 0.05em; }
+        .sub-box { background: #ffffff; border: 2px solid #000; border-radius: 8px; padding: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; font-size: 0.95rem; font-weight: 700; color: #000; width: 100%; margin-bottom: 8px; }
+        .sub-text { font-size: 0.75rem; font-weight: 600; color: #4b5563; margin-top: 2px; }
+        
+        /* Colors */
+        .bg-client { background-color: #dcfce7; }
+        .bg-edge { background-color: #fed7aa; }
+        .bg-idp { background-color: #fef08a; }
+        .bg-orch { background-color: #bfdbfe; }
+        .bg-data { background-color: #e9d5ff; }
+        .bg-ai { background-color: #fecdd3; }
+        .bg-obs { background-color: #cffafe; }
+        .bg-sec { background-color: #94a3b8; }
+        
+        .icon-sm { width: 28px; height: 28px; object-fit: contain; margin-bottom: 4px; }
+        .icon { width: 40px; height: 40px; object-fit: contain; margin-bottom: 8px; }
+        
+        h1 { text-align: center; font-size: 1.75rem; font-weight: 900; color: #000; margin-bottom: 60px; line-height: 1.2; max-width: 500px; }
+        
+        .k8s-cluster { border: 3px dashed #326ce5; border-radius: 20px; padding: 40px; position: relative; width: 100%; max-width: 800px; display: flex; flex-direction: column; align-items: center; background: rgba(50, 108, 229, 0.02); }
+        .k8s-label { position: absolute; top: -18px; left: 40px; background: #326ce5; color: #fff; padding: 4px 16px; border-radius: 20px; font-weight: 800; font-size: 0.9rem; display: flex; align-items: center; gap: 8px; }
+        
+        /* LeaderLine overrides */
+        .leader-line text { font-family: 'Inter', sans-serif !important; font-weight: 700 !important; font-size: 12px !important; }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <h1>DETERMINISTIC ENTERPRISE AI ORCHESTRATION PLATFORM</h1>
+
+    <div class="k8s-cluster">
+        <div class="k8s-label">
+            <svg viewBox="0 0 100 100" class="w-5 h-5 fill-current"><path d="M49.9 0l-45 19.3V74l45 26 45.1-26V19.3L49.9 0zm24 67.3l-24 13.9-24.1-13.9V45.2l24.1-13.9 24 13.9v22.1z"/></svg>
+            KUBERNETES CLUSTER BOUNDARY
+        </div>
+
+        <!-- Layer 1: Client -->
+        <div id="layer-client" class="layer-box bg-client">
+            <div class="layer-title">Client Layer</div>
+            <div class="flex gap-4 w-full">
+                <div class="sub-box flex-1">
+                    <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/react/react-original.svg" class="icon-sm">
+                    React Frontend
+                    <span class="sub-text">(Vite UI)</span>
+                </div>
+                <div class="flex flex-col flex-1 gap-2">
+                    <div class="sub-box py-2">AI Chat Interface</div>
+                    <div class="sub-box py-2 text-xs">Admin Dashboard</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Layer 2: Edge & Identity (Side by Side in one row to save height) -->
+        <div class="flex gap-6 w-full max-w-[600px] mb-[40px]">
+            <!-- Edge Security -->
+            <div id="layer-edge" class="layer-box bg-edge mb-0 flex-1">
+                <div class="layer-title text-sm">Edge Security</div>
+                <div class="sub-box py-2">
+                    <img src="https://konghq.com/wp-content/uploads/2018/05/kong-logo-blue.png" class="h-4 w-auto mb-1">
+                    Kong Gateway
+                </div>
+                <div class="sub-box py-2 text-[10px]">WAF / JWT / OPA</div>
+            </div>
+            <!-- Identity -->
+            <div id="layer-idp" class="layer-box bg-idp mb-0 flex-1">
+                <div class="layer-title text-sm">Identity Provider</div>
+                <div class="sub-box py-2">
+                    <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/auth0/auth0-original.svg" class="icon-sm">
+                    Keycloak SSO
+                </div>
+                <div class="sub-box py-2 text-[10px]">OAuth 2.0 PKCE</div>
+            </div>
+        </div>
+
+        <!-- Layer 3: Orchestrator (The centerpiece) -->
+        <div id="layer-orch" class="layer-box bg-orch py-6">
+            <div class="layer-title">Orchestration Engine (FastAPI)</div>
+            <div class="grid grid-cols-2 gap-3 w-full px-4">
+                <div class="sub-box text-xs h-16">Intent Classifier<br><span class="sub-text">HuggingFace</span></div>
+                <div class="sub-box text-xs h-16">Policy Engine<br><span class="sub-text">OPA / Rego</span></div>
+                <div class="sub-box text-xs h-16">Quota Service<br><span class="sub-text">Redis backed</span></div>
+                <div class="sub-box text-xs h-16">Prompt Scanner<br><span class="sub-text">Injection Defense</span></div>
+                <div class="sub-box text-xs h-16">PII Inspector<br><span class="sub-text">Inbound</span></div>
+                <div class="sub-box text-xs h-16">PII Redactor<br><span class="sub-text">Outbound</span></div>
+            </div>
+        </div>
+
+        <!-- Layer 4: Providers & Data (Grid 2x2) -->
+        <div class="grid grid-cols-2 gap-6 w-full max-w-[600px]">
+            <!-- Data -->
+            <div id="layer-data" class="layer-box bg-data mb-0">
+                <div class="layer-title text-sm">Persistence</div>
+                <div class="flex gap-2 w-full">
+                    <div class="sub-box flex-1 text-[10px] py-1">Postgres</div>
+                    <div class="sub-box flex-1 text-[10px] py-1">Redis</div>
+                </div>
+                <div class="sub-box py-2 text-[9px] mt-2">RLS Isolation</div>
+            </div>
+            <!-- AI -->
+            <div id="layer-ai" class="layer-box bg-ai mb-0">
+                <div class="layer-title text-sm">AI Provider</div>
+                <div class="sub-box py-2">
+                    <img src="https://ollama.com/public/ollama.png" class="h-6 w-auto mb-1">
+                    Ollama Runtime
+                </div>
+                <div class="sub-box py-2 text-[10px]">Model Streaming</div>
+            </div>
+            <!-- Obs -->
+            <div id="layer-obs" class="layer-box bg-obs mb-0">
+                <div class="layer-title text-sm">Observability</div>
+                <div class="flex gap-2 w-full">
+                    <div class="sub-box flex-1 text-[9px] py-1">Grafana</div>
+                    <div class="sub-box flex-1 text-[9px] py-1">Loki</div>
+                </div>
+            </div>
+            <!-- Secrets -->
+            <div id="layer-sec" class="layer-box bg-sec mb-0">
+                <div class="layer-title text-sm text-white">Security</div>
+                <div class="sub-box py-2 text-[10px]">HashiCorp Vault</div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        window.addEventListener('load', function() {
+            const opts = { color: '#000', size: 3, path: 'grid', endPlug: 'arrow1', endPlugSize: 1.5 };
+            
+            // Client to Edge
+            new LeaderLine(
+                document.getElementById('layer-client'),
+                document.getElementById('layer-edge'),
+                { ...opts, middleLabel: LeaderLine.pathLabel('HTTPS', {fontSize: '11px'}) }
+            );
+
+            // Edge <-> IDP
+            new LeaderLine(
+                LeaderLine.pointAnchor(document.getElementById('layer-edge'), {x: '100%', y: '40%'}),
+                LeaderLine.pointAnchor(document.getElementById('layer-idp'), {x: '0%', y: '40%'}),
+                { ...opts, path: 'straight', middleLabel: LeaderLine.pathLabel('VERIFY', {fontSize: '10px'}) }
+            );
+
+            // Edge to Orch
+            new LeaderLine(
+                document.getElementById('layer-edge'),
+                document.getElementById('layer-orch'),
+                { ...opts, middleLabel: LeaderLine.pathLabel('PROXY', {fontSize: '11px'}) }
+            );
+
+            // Orch to Data
+            new LeaderLine(
+                document.getElementById('layer-orch'),
+                document.getElementById('layer-data'),
+                { ...opts, startSocket: 'bottom', endSocket: 'top', middleLabel: LeaderLine.pathLabel('AUDIT', {fontSize: '10px'}) }
+            );
+
+            // Orch to AI
+            new LeaderLine(
+                document.getElementById('layer-orch'),
+                document.getElementById('layer-ai'),
+                { ...opts, startSocket: 'bottom', endSocket: 'top', middleLabel: LeaderLine.pathLabel('INFER', {fontSize: '10px'}) }
+            );
+        });
+    </script>
+</body>
+</html>

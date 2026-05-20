@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Architecture Platform</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leader-line/1.0.7/leader-line.min.js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background: #ffffff; padding: 40px; margin: 0; min-height: 100vh; overflow-x: hidden; }
+        .layer-box { border-radius: 12px; border: 2px solid rgba(0,0,0,0.8); padding: 16px; position: relative; display: flex; flex-direction: column; align-items: center; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+        .layer-title { font-weight: 700; font-size: 1.1rem; margin-bottom: 12px; color: #000; z-index: 10; position: relative; text-align: center; }
+        .sub-box { background: #ffffff; border: 1.5px solid rgba(0,0,0,0.8); border-radius: 8px; padding: 12px 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; font-size: 0.9rem; font-weight: 600; color: #1e293b; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .sub-text { font-size: 0.75rem; font-weight: 500; color: #475569; margin-top: 4px; }
+        
+        /* Specific Colors */
+        .bg-client { background-color: #dcfce7; }
+        .bg-edge { background-color: #fed7aa; }
+        .bg-idp { background-color: #fef08a; }
+        .bg-orch { background-color: #bfdbfe; }
+        .bg-data { background-color: #e9d5ff; }
+        .bg-ai { background-color: #fecdd3; }
+        .bg-obs { background-color: #cffafe; }
+        .bg-sec { background-color: #94a3b8; }
+        
+        .grid-container { display: grid; gap: 40px; justify-content: center; margin-top: 40px; }
+        
+        /* Icon styles */
+        .icon { width: 32px; height: 32px; object-fit: contain; margin-bottom: 8px; }
+        .icon-sm { width: 24px; height: 24px; object-fit: contain; margin-bottom: 4px; }
+        
+        h1 { text-align: center; font-size: 2rem; font-weight: 800; color: #0f172a; margin-bottom: 40px; }
+        
+        .leader-line text { font-family: 'Inter', sans-serif !important; font-weight: 600 !important; font-size: 13px !important; }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <h1>Deterministic Enterprise AI Orchestration Platform</h1>
+
+    <!-- ROW 1: Client, Edge, IDP -->
+    <div class="flex justify-center items-start gap-12 w-full max-w-7xl mx-auto mb-16 relative z-10">
+        
+        <!-- Client Layer -->
+        <div id="layer-client" class="layer-box bg-client w-72">
+            <div class="layer-title">Client Layer</div>
+            <div class="sub-box w-full mb-3">
+                <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/react/react-original.svg" class="icon-sm">
+                <span>React Frontend (Vite)</span>
+                <span class="sub-text">(Frontend Microservice)</span>
+            </div>
+            <div class="flex gap-3 w-full">
+                <div class="sub-box flex-1 px-2">AI Chat Interface</div>
+                <div class="sub-box flex-1 px-2">Admin Portal</div>
+            </div>
+        </div>
+
+        <!-- Edge Security Layer -->
+        <div id="layer-edge" class="layer-box bg-edge w-80">
+            <div class="layer-title">Edge Security Layer<br><span class="text-sm font-medium text-orange-800">(ai-gateway namespace)</span></div>
+            <div class="sub-box w-full mb-3 flex-row gap-3">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/16/Security_shield.svg/512px-Security_shield.svg.png" class="icon-sm">
+                <div class="text-left">
+                    <span>OWASP ModSecurity WAF</span>
+                </div>
+            </div>
+            <div class="sub-box w-full">
+                <img src="https://konghq.com/wp-content/uploads/2018/05/kong-logo-blue.png" class="icon" style="height: 24px; width: auto;">
+                <span>Kong API Gateway</span>
+                <span class="sub-text">(Edge Microservice)</span>
+                <div class="text-[10px] text-slate-600 mt-2 font-medium">Rate Limiting | CORS | IP Restriction</div>
+            </div>
+        </div>
+
+        <!-- Identity Provider -->
+        <div id="layer-idp" class="layer-box bg-idp w-72">
+            <div class="layer-title">Identity Provider<br><span class="text-sm font-medium text-yellow-800">(ai-security namespace)</span></div>
+            <div class="sub-box w-full mb-3 py-6">
+                <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/auth0/auth0-original.svg" class="icon">
+                <span>Keycloak SSO</span>
+            </div>
+            <div class="flex justify-between w-full text-xs font-semibold text-slate-700 px-2 mt-2">
+                <span>OIDC Flow</span>
+                <span>JWT Issuer</span>
+                <span>Realm Config</span>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ROW 2: Orchestration Engine -->
+    <div class="flex justify-center w-full max-w-7xl mx-auto mb-16 relative z-10">
+        <div id="layer-orch" class="layer-box bg-orch w-full max-w-4xl py-8">
+            <div class="flex items-center gap-2 mb-6">
+                <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/fastapi/fastapi-original.svg" class="icon" style="margin:0;">
+                <div class="layer-title" style="margin:0; font-size:1.3rem;">Orchestration Engine — FastAPI <span class="text-lg font-medium text-blue-800 ml-2">(Core Microservice)</span></div>
+            </div>
+            
+            <div class="grid grid-cols-3 gap-6 w-full px-8">
+                <div class="sub-box h-24">
+                    <span>Intent Classifier</span>
+                    <span class="sub-text">(HuggingFace Zero-Shot)</span>
+                </div>
+                <div class="sub-box h-24">
+                    <span>Policy Engine</span>
+                    <span class="sub-text">(Open Policy Agent)</span>
+                </div>
+                <div class="sub-box h-24">
+                    <span>Quota Service</span>
+                </div>
+                <div class="sub-box h-24">
+                    <span>Prompt Injection Scanner</span>
+                </div>
+                <div class="sub-box h-24">
+                    <span>PII Content Inspector</span>
+                </div>
+                <div class="sub-box h-24">
+                    <span>Output PII Redactor</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ROW 3: Data, AI, Obs, Secrets -->
+    <div class="flex justify-center items-start gap-8 w-full max-w-7xl mx-auto relative z-10 pb-20">
+        
+        <!-- Data Layer -->
+        <div id="layer-data" class="layer-box bg-data w-80">
+            <div class="layer-title">Data Layer<br><span class="text-sm font-medium text-purple-800">(ai-data namespace)</span></div>
+            <div class="flex gap-4 w-full mb-4">
+                <div class="flex flex-col items-center flex-1 text-center">
+                    <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/postgresql/postgresql-original.svg" class="icon">
+                    <span class="font-bold text-slate-800 text-sm mb-1">PostgreSQL 15</span>
+                    <span class="text-[10px] font-semibold text-slate-600 leading-tight">RLS | Audit Logs<br>Usage Tracking</span>
+                </div>
+                <div class="flex flex-col items-center flex-1 text-center">
+                    <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/redis/redis-original.svg" class="icon">
+                    <span class="font-bold text-slate-800 text-sm mb-1">Redis</span>
+                    <span class="text-[10px] font-semibold text-slate-600 leading-tight">Token Quotas<br>& Cache</span>
+                </div>
+            </div>
+            <div class="sub-box w-full py-2">
+                <span>Log Retention</span>
+                <span class="sub-text">(K8s CronJob)</span>
+            </div>
+        </div>
+
+        <!-- AI Provider -->
+        <div id="layer-ai" class="layer-box bg-ai w-60">
+            <div class="layer-title">AI Provider<br><span class="text-sm font-medium text-pink-800">(ai-execution namespace)</span></div>
+            <div class="flex flex-col items-center mt-2 mb-4">
+                <img src="https://ollama.com/public/ollama.png" class="icon" style="width:48px; height:48px;">
+                <span class="font-bold text-slate-800 text-center mt-2">Ollama LLM Runtime<br><span class="text-sm">(AI Microservice)</span></span>
+            </div>
+            <div class="w-full text-center">
+                <span class="text-[11px] font-semibold text-slate-700">Model Inference<br>(SSE Streaming)</span>
+            </div>
+        </div>
+
+        <!-- Observability Stack -->
+        <div id="layer-obs" class="layer-box bg-obs w-64">
+            <div class="layer-title">Observability Stack</div>
+            <div class="flex gap-4 w-full justify-center mb-4 mt-2">
+                <div class="flex flex-col items-center">
+                    <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/prometheus/prometheus-original.svg" class="icon">
+                    <span class="font-bold text-slate-800 text-xs">Prometheus</span>
+                </div>
+                <div class="flex flex-col items-center">
+                    <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/grafana/grafana-original.svg" class="icon">
+                    <span class="font-bold text-slate-800 text-xs text-center">Grafana<br>Dashboards</span>
+                </div>
+            </div>
+            <div class="w-full text-center mt-2">
+                <span class="text-xs font-semibold text-slate-800">Loki + Promtail<br><span class="font-medium text-slate-600">for log aggregation</span></span>
+            </div>
+        </div>
+
+        <!-- Secrets -->
+        <div id="layer-sec" class="layer-box bg-sec w-40">
+            <div class="layer-title text-white">Secrets</div>
+            <div class="flex flex-col items-center mt-4">
+                <svg viewBox="0 0 400 400" class="icon" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M199.98 0L38.41 93.31L48.24 306.67L199.98 400L351.72 306.67L361.55 93.31L199.98 0ZM199.98 33.56L317.06 101.12L309.28 274.62L199.98 341.67L90.68 274.62L82.9 101.12L199.98 33.56Z" fill="black"/><path d="M199.98 56.4L105.15 111.14L111.41 249.7L199.98 303.41L288.55 249.7L294.81 111.14L199.98 56.4Z" fill="black"/></svg>
+                <span class="font-bold text-white mt-2 text-center text-sm">HashiCorp<br>Vault</span>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Initialization for LeaderLine (Arrows) -->
+    <script>
+        window.addEventListener('load', function() {
+            // Colors and styling for lines
+            const lineOptions = {
+                color: '#1e293b',
+                size: 2,
+                path: 'straight',
+                startPlug: 'behind',
+                endPlug: 'arrow1',
+                endPlugSize: 2,
+            };
+            
+            const lineOptsDashed = { ...lineOptions, dash: {animation: false}, path: 'grid', startSocket: 'right', endSocket: 'top' };
+            const lineOptsStraight = { ...lineOptions, path: 'straight' };
+
+            // Client to Edge
+            new LeaderLine(
+                document.getElementById('layer-client'),
+                document.getElementById('layer-edge'),
+                { ...lineOptsStraight, middleLabel: LeaderLine.pathLabel('HTTPS Request', {color: '#1e293b', outlineColor: '#fff', fontSize: '13px', fontWeight: 'bold'}) }
+            );
+
+            // Edge to IDP (Right)
+            new LeaderLine(
+                LeaderLine.pointAnchor(document.getElementById('layer-edge'), {x: '100%', y: '30%'}),
+                LeaderLine.pointAnchor(document.getElementById('layer-idp'), {x: '0%', y: '30%'}),
+                { ...lineOptsStraight, middleLabel: LeaderLine.pathLabel('Validated Request', {color: '#1e293b', outlineColor: '#fff', fontSize: '13px', fontWeight: 'bold'}) }
+            );
+
+            // IDP to Edge (Left)
+            new LeaderLine(
+                LeaderLine.pointAnchor(document.getElementById('layer-idp'), {x: '0%', y: '70%'}),
+                LeaderLine.pointAnchor(document.getElementById('layer-edge'), {x: '100%', y: '70%'}),
+                { ...lineOptsStraight, middleLabel: LeaderLine.pathLabel('JWT Token Validation', {color: '#1e293b', outlineColor: '#fff', fontSize: '13px', fontWeight: 'bold'}) }
+            );
+
+            // Edge to Orchestrator
+            new LeaderLine(
+                document.getElementById('layer-edge'),
+                document.getElementById('layer-orch'),
+                { ...lineOptsStraight, middleLabel: LeaderLine.pathLabel('Proxied Request', {color: '#1e293b', outlineColor: '#fff', fontSize: '13px', fontWeight: 'bold'}) }
+            );
+
+            // Orchestrator to Data
+            new LeaderLine(
+                LeaderLine.pointAnchor(document.getElementById('layer-orch'), {x: '30%', y: '100%'}),
+                document.getElementById('layer-data'),
+                { ...lineOptsStraight, middleLabel: LeaderLine.pathLabel('Persist & Audit', {color: '#1e293b', outlineColor: '#fff', fontSize: '13px', fontWeight: 'bold'}) }
+            );
+
+            // Orchestrator to AI (Down)
+            new LeaderLine(
+                LeaderLine.pointAnchor(document.getElementById('layer-orch'), {x: '50%', y: '100%'}),
+                LeaderLine.pointAnchor(document.getElementById('layer-ai'), {x: '50%', y: '0%'}),
+                { ...lineOptsStraight, startSocket: 'bottom', endSocket: 'top', middleLabel: LeaderLine.pathLabel('AI Inference Request', {color: '#1e293b', outlineColor: '#fff', fontSize: '12px', fontWeight: 'bold', lineOffset: 15}) }
+            );
+
+            // AI to Orchestrator (Up)
+            new LeaderLine(
+                LeaderLine.pointAnchor(document.getElementById('layer-ai'), {x: '60%', y: '0%'}),
+                LeaderLine.pointAnchor(document.getElementById('layer-orch'), {x: '60%', y: '100%'}),
+                { ...lineOptsStraight, startSocket: 'top', endSocket: 'bottom', middleLabel: LeaderLine.pathLabel('Streamed Tokens', {color: '#1e293b', outlineColor: '#fff', fontSize: '12px', fontWeight: 'bold', lineOffset: 15}) }
+            );
+
+            // Orchestrator to Obs
+            new LeaderLine(
+                LeaderLine.pointAnchor(document.getElementById('layer-orch'), {x: '75%', y: '100%'}),
+                document.getElementById('layer-obs'),
+                { ...lineOptsStraight, middleLabel: LeaderLine.pathLabel('Metrics Exposition', {color: '#1e293b', outlineColor: '#fff', fontSize: '13px', fontWeight: 'bold'}) }
+            );
+
+            // Secrets to Orchestrator (Dashed)
+            new LeaderLine(
+                document.getElementById('layer-sec'),
+                LeaderLine.pointAnchor(document.getElementById('layer-orch'), {x: '95%', y: '100%'}),
+                { ...lineOptsDashed, middleLabel: LeaderLine.pathLabel('Dynamic Secrets', {color: '#1e293b', outlineColor: '#fff', fontSize: '13px', fontWeight: 'bold'}) }
+            );
+
+            // Orchestrator to Client (SSE Stream - Long path up left)
+            new LeaderLine(
+                LeaderLine.pointAnchor(document.getElementById('layer-orch'), {x: '0%', y: '50%'}),
+                LeaderLine.pointAnchor(document.getElementById('layer-client'), {x: '30%', y: '100%'}),
+                { ...lineOptions, path: 'grid', startSocket: 'left', endSocket: 'bottom', middleLabel: LeaderLine.pathLabel('SSE Token Stream', {color: '#1e293b', outlineColor: '#fff', fontSize: '13px', fontWeight: 'bold'}) }
+            );
+        });
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-intent-classifier
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: intent-classifier
+    project: enterprise-ai-gateway
+    release: {{ .Release.Name }}
+spec:
+  selector:
+    app: intent-classifier
+    release: {{ .Release.Name }}
+  ports:
+    - port: {{ .Values.intentClassifier.service.port }}
+      targetPort: {{ .Values.intentClassifier.service.port }}
+  type: ClusterIP

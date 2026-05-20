@@ -5,10 +5,12 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
+import time
 from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import RedirectResponse
 
 from app.api.admin.intent_mappings import router as admin_intent_mappings_router
 from app.api.admin.services import router as admin_services_router
@@ -18,10 +20,17 @@ from app.api.admin.security_patterns import router as admin_security_patterns_ro
 from app.api.admin.gateway_plugins import router as admin_gateway_plugins_router
 from app.api.admin.quotas_admin import router as admin_quotas_router
 from app.api.admin.security_events_admin import router as admin_security_events_router
+from app.api.admin.log_retention import router as admin_log_retention_router
 from app.api.ai import router as ai_router
 from app.api.governance import router as governance_router
+from app.api.health import router as health_router
 from app.core.config import settings
-from app.core.middleware import verify_kong_header
+from app.core.error_handlers import register_error_handlers
+from app.core.middleware import (
+    CorrelationIdMiddleware,
+    SecurityHeadersMiddleware,
+    verify_kong_header,
+)
 from app.core.security import get_current_user
 from app.core.logging import setup_logging
 from app.infrastructure.ai_provider.ollama_client import chat as _, close_client as _close_ollama_client  # noqa: F401
@@ -86,6 +95,8 @@ def _build_intent_mappings_service() -> IntentMappingsService:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Record startup time for the health check uptime calculation
+    app.state.startup_time = time.time()
     # Seeding and Synchronization path
     import os
     import yaml
@@ -163,6 +174,7 @@ def create_app() -> FastAPI:
     """Create the FastAPI application instance."""
     app = FastAPI(
         title="Kong AI Proxy Platform (FastAPI)",
+        version="1.0.0",
         lifespan=lifespan,
     )
 
@@ -173,6 +185,14 @@ def create_app() -> FastAPI:
     app.state.quota_service = quota_service
     app.state.prompt_security_service = prompt_security_service
 
+    # ── Middleware Stack (order matters: outermost first) ────────────────
+    # 1. Security Headers — inject OWASP headers on every response
+    app.add_middleware(SecurityHeadersMiddleware)
+
+    # 2. Correlation ID — read from Kong or generate UUID, propagate to logs
+    app.add_middleware(CorrelationIdMiddleware)
+
+    # 3. CORS — must be after custom middleware for proper preflight handling
     cors_origins = [o.strip() for o in settings.cors_origin.split(",") if o.strip()]
     app.add_middleware(
         CORSMiddleware,
@@ -182,28 +202,43 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
-    # Register Domain Routers (Fastest match)
-    app.include_router(ai_router, prefix="/api")
-    app.include_router(admin_intent_mappings_router, prefix="/api")
-    app.include_router(admin_services_router, prefix="/api")
-    app.include_router(admin_policies_router, prefix="/api")
-    app.include_router(admin_metrics_router, prefix="/api")
-    app.include_router(admin_security_patterns_router, prefix="/api")
-    app.include_router(admin_gateway_plugins_router, prefix="/api")
-    app.include_router(admin_quotas_router, prefix="/api")
-    app.include_router(admin_security_events_router, prefix="/api")
-    app.include_router(governance_router, prefix="/api")
+    # ── Global Error Handlers ───────────────────────────────────────────
+    register_error_handlers(app)
+
+    # ── API v1 Routers ──────────────────────────────────────────────────
+    # All domain routers are versioned under /api/v1 for enterprise compatibility.
+    # Backward-compatible /api/ redirect is provided below.
+    app.include_router(ai_router, prefix="/api/v1")
+    app.include_router(admin_intent_mappings_router, prefix="/api/v1")
+    app.include_router(admin_services_router, prefix="/api/v1")
+    app.include_router(admin_policies_router, prefix="/api/v1")
+    app.include_router(admin_metrics_router, prefix="/api/v1")
+    app.include_router(admin_security_patterns_router, prefix="/api/v1")
+    app.include_router(admin_gateway_plugins_router, prefix="/api/v1")
+    app.include_router(admin_quotas_router, prefix="/api/v1")
+    app.include_router(admin_security_events_router, prefix="/api/v1")
+    app.include_router(governance_router, prefix="/api/v1")
+    app.include_router(admin_log_retention_router, prefix="/api/v1")
+
+    # ── Unversioned Routes (Health + Metrics) ───────────────────────────
+    # Health check and Prometheus metrics are intentionally unversioned.
+    app.include_router(health_router, prefix="/api")
 
     # Instrument for Prometheus
     Instrumentator().instrument(app).expose(app)
 
     @app.get("/", tags=["Health"])
     async def root() -> dict:
-        return {"message": "FastAPI AI Platform Backend is running. Access via /api/"}
+        return {"message": "FastAPI AI Platform Backend is running. Access via /api/v1/"}
 
     @app.get("/api/", tags=["Health"])
     async def api_root() -> dict:
-        return {"message": "hello world from Python (FastAPI)!"}
+        return {
+            "message": "Nextora AI Platform API",
+            "current_version": "v1",
+            "docs": "/docs",
+            "health": "/api/health",
+        }
 
     @app.get(
         "/api/documents",

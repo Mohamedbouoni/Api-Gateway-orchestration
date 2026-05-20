@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-fastapi
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: fastapi
+    project: enterprise-ai-gateway
+    release: {{ .Release.Name }}
+spec:
+  selector:
+    app: fastapi
+    release: {{ .Release.Name }}
+  ports:
+    - port: {{ .Values.fastapi.service.port }}
+      targetPort: {{ .Values.fastapi.service.port }}
+  type: ClusterIP

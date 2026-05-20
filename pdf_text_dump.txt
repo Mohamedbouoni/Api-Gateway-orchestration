@@ -1,0 +1,1922 @@
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+N°
+ 
+d’ordre :
+ 
+ 
+ 
+End
+ 
+Of
+ 
+Studies
+ 
+Project
+ 
+Report
+ 
+ 
+ 
+Presented
+ 
+in
+ 
+order
+ 
+to
+ 
+obtain
+ 
+the
+ 
+ 
+ 
+National
+ 
+Bachelor’s
+ 
+Degree
+ 
+in
+ 
+Computer
+ 
+Science
+ 
+ 
+Major :
+ 
+Software
+ 
+Engineering
+ 
+and
+ 
+Information
+ 
+Systems
+ 
+ 
+By
+ 
+ 
+Mohamed
+ 
+Ben
+ 
+MASSOUDA
+ 
+ 
+ 
+Automated
+ 
+Data
+ 
+Integrity
+ 
+and
+ 
+Error
+ 
+Alerting
+ 
+System
+ 
+ 
+ 
+Defended
+ 
+on
+  
+23/06/2025
+ 
+in
+ 
+front
+ 
+of
+ 
+the
+ 
+jury
+ 
+composed
+ 
+of
+ 
+:
+ 
+ 
+ 
+Academic
+ 
+Year:
+ 
+2024
+ 
+/
+ 
+2025
+ 
+Ms. :
+ 
+Maha
+ 
+KHEMAJA
+ 
+President
+ 
+ 
+Ms. :
+ 
+Houda
+ 
+BECHIR
+ 
+Reporter
+ 
+Ms. :
+ 
+Asma
+ 
+MANSOUR
+ 
+Academic
+ 
+Supervisor
+ 
+Mr. :
+ 
+Talel
+ 
+ROMDHAN
+ 
+Professional
+ 
+Supervisor
+ 
+ 
+ 
+
+
+Privacy notice
+In order to safeguard sensitive information, specific sections have been
+intentionally blurred to uphold confidentiality.
+Additionally, we strictly enforce a non-disclosure policy regarding code
+sharing. Consequently, any code produced during the internship remains
+confidential and will not be disseminated to external parties.
+Your cooperation and understanding are greatly valued.
+Dedication
+“ To those whose unwavering support, encouragement, and guidance
+have been constants in my life’s journey,
+To my dearest parents, Najeh andMiniar , who have always believed
+in me and whose endless love has been my greatest strength.
+To my wonderful sisters, Balkis andSarra , who make my world
+brighter and better every day.
+To all my cousins and friends, your friendship is a treasure I hold
+dear.
+To my company supervisors, Mr. Talel Romdhan , whose guidance
+and support were instrumental in the success of this internship.
+And a heartfelt dedication to the all the teams at Harvest Group,
+whose support and collaboration have greatly contributed to my
+growth and success.
+To all of you.. Thank you!
+Mohamed ”
+3
+Acknowledgments
+Firstly, I thank Almighty Allah for giving me the courage and patience to complete this work
+successfully.
+I express my heartfelt gratitude to my supervisor Mr. Talel Romdhan , whose attentive
+mentoring, thoughtful feedback, and unwavering support have immensely contributed to my
+development and the positive outcomes of this project.
+I would like to thank my academic supervisor Mrs. Asma Mansour , whose insightful ad-
+vice, continuous encouragement, and critical perspective have significantly shaped this report
+and deepened my academic growth.
+I also would like to express my sincere appreciation to my teachers at HORIZON , whose
+guidance and dedication have supported me throughout my university years.
+I would like to thank the honorable members of the evaluation committee for their valu-
+able time, thoughtful feedback, and expert evaluation of my work.
+Finally, I extend my sincere gratitude to everyone who contributed, directly or indirectly, to
+the completion of this work.
+Abstract
+This end-of-study project was carried out at Harvest Group Tunisia as part of the require-
+ments for obtaining the Bachelor degree in Software Engineering and Information Systems from
+Horizon School of Digital Technologies.
+Given the large volume of data processed daily, maintaining data integrity is increasingly
+challenging. This project implements an automated system called Argus to ensure data integrity
+and reliability through continuous monitoring and alerting within the data pipeline. Argus au-
+tomatically detects job failures or delays, compares data across stages to verify consistency,
+performs reruns when necessary, and immediately alerts teams to resolve persistent issues.
+Keywords: Data Integrity, Automation, Monitoring, Argus.
+Résumé
+Ce projet de fin d’études a été réalisé au sein de Harvest Group Tunisie dans le cadre des
+exigences pour l’obtention du diplôme de Licence en Génie Logiciel et Systèmes d’Information
+à Horizon School of Digital Technologies.
+Étant donné le grand volume de données traitées quotidiennement, maintenir l’intégrité des
+données devient de plus en plus difficile. Ce projet met en œuvre un système automatisé appelé
+Argus pour assurer l’intégrité et la fiabilité des données grâce à une surveillance et des alertes
+continues au sein du pipeline de données. Argus détecte automatiquement les échecs ou les
+retards des tâches, compare les données à chaque étape pour vérifier leur cohérence, effectue
+des relances si nécessaire, et alerte immédiatement les équipes concernées afin de résoudre les
+problèmes persistants.
+Mots-clés : Intégrité des données, Automatisation, Surveillance, Argus.
+Table of Contents
+Glossary 12
+General Introduction 1
+1 Project Context 3
+1.1 Presentation of the host company . . . . . . . . . . . . . . . . . . . . . . . . . 3
+1.1.1 Overview . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 3
+1.1.2 Harvest Group Tunisia . . . . . . . . . . . . . . . . . . . . . . . . . . 4
+1.1.3 Foreman . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 5
+1.1.4 Azure Blob Storage . . . . . . . . . . . . . . . . . . . . . . . . . . . . 5
+1.1.5 Apache Airflow . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 6
+1.1.6 DBT (Data Build Tool) . . . . . . . . . . . . . . . . . . . . . . . . . . 6
+1.1.7 Snowflake . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 6
+1.2 General Concepts . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 7
+1.2.1 Application Programming Interface (API) . . . . . . . . . . . . . . . . 7
+1.2.2 Data Pipeline . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 7
+1.2.3 Data Integrity . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 7
+1.2.4 RESTful API Communication . . . . . . . . . . . . . . . . . . . . . . 7
+1.2.5 Cron Expression . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 7
+1.2.6 Adaptive Card . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 8
+1.2.7 Azure Blob Tags . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 8
+1.2.8 Stuck Job . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 8
+1.3 Project Presentation . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 8
+1.3.1 Problematic . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 9
+1.3.2 State of the art analysis . . . . . . . . . . . . . . . . . . . . . . . . . . 10
+1.3.3 Proposed Solution . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 11
+1.3.4 Work Methodology: Agile Scrum . . . . . . . . . . . . . . . . . . . . 13
+2 Requirements Specifications 14
+2.1 Identification of actors . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 14
+2.2 Identification of requirements . . . . . . . . . . . . . . . . . . . . . . . . . . . 14
+2.2.1 Functional requirements . . . . . . . . . . . . . . . . . . . . . . . . . 14
+2.2.2 Non-functional requirements . . . . . . . . . . . . . . . . . . . . . . . 15
+2.3 Use Case Diagram . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 16
+2.3.1 General case Diagram . . . . . . . . . . . . . . . . . . . . . . . . . . . 16
+6
+Table of Contents
+2.3.2 Detailed use case diagrams . . . . . . . . . . . . . . . . . . . . . . . . 16
+2.4 Product Backlog . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 19
+2.4.1 Sprint Planning . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 21
+3 Architecture And Used Technologies 22
+3.1 System Architecture . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 22
+3.2 Argus Architecture . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 23
+3.3 Technology Stack . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 24
+3.3.1 Backend . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 24
+3.3.2 Database . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 26
+3.3.3 Version Control . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 26
+3.3.4 Communication & Collaboration Platforms . . . . . . . . . . . . . . . 26
+3.3.5 Cloud . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 27
+3.3.6 Devops Tools / Technologies . . . . . . . . . . . . . . . . . . . . . . . 27
+3.4 Deployment Tools . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 28
+4 Release 1: Automated Monitoring and Alerting 30
+4.1 Introduction . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 30
+4.2 Release 1 Plan . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 30
+4.3 Release 1 Backlog . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 31
+4.4 Sprint 1: Alerting System & Authentication . . . . . . . . . . . . . . . . . . . 31
+4.4.1 Sprint 1 Software Design . . . . . . . . . . . . . . . . . . . . . . . . . 32
+4.5 Sprint 2 & 3: Foreman Job Failure Alerting . . . . . . . . . . . . . . . . . . . 33
+4.5.1 Database Design . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 33
+4.5.2 Software Design . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 34
+4.5.3 Showcase . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 37
+4.6 Sprint 4: Categorize Foreman Job Failure . . . . . . . . . . . . . . . . . . . . 38
+4.6.1 Software Design . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 38
+4.6.2 Foreman Job Failure Algorithm . . . . . . . . . . . . . . . . . . . . . 39
+4.6.3 Showcase . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 42
+4.7 Sprint 5: Monitor Foreman Exceptions and Stuck Jobs . . . . . . . . . . . . . 43
+4.7.1 Database Design . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 43
+4.7.2 Software Design . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 44
+4.8 Impact and Early Results . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 51
+5 Release 2: Automated Data Integrity 53
+5.1 Introduction . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 53
+5.2 Release 2 Plan . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 53
+5.3 Backlog for the release . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 54
+5.4 Sprint 6: Foreman to Azure Blob Storage . . . . . . . . . . . . . . . . . . . . 54
+5.4.1 Database Design . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 55
+5.4.2 Software Design . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 56
+5.5 Sprint 7: Airflow to Snowflake Raw . . . . . . . . . . . . . . . . . . . . . . . 62
+7
+Table of Contents
+5.5.1 Software Design . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 62
+5.5.2 Showcase . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 64
+6 Deployment 66
+6.1 Introduction . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 66
+6.2 Containerizing the Application . . . . . . . . . . . . . . . . . . . . . . . . . . 66
+6.3 Azure Infrastructure Setup . . . . . . . . . . . . . . . . . . . . . . . . . . . . 66
+6.3.1 Resource Group . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 66
+6.3.2 App Registration and Authentication . . . . . . . . . . . . . . . . . . . 67
+6.3.3 Azure Database for PostgreSQL . . . . . . . . . . . . . . . . . . . . . 67
+6.3.4 Azure Container Apps . . . . . . . . . . . . . . . . . . . . . . . . . . 67
+6.3.5 Key Vault and Secrets Management . . . . . . . . . . . . . . . . . . . 69
+6.3.6 Application Insights . . . . . . . . . . . . . . . . . . . . . . . . . . . . 69
+6.3.7 Container Registry . . . . . . . . . . . . . . . . . . . . . . . . . . . . 70
+6.4 CI/CD Pipeline . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 70
+6.4.1 Azure AD Setup . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 70
+6.4.2 Github Secrets . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 71
+6.4.3 Github Action Workflow . . . . . . . . . . . . . . . . . . . . . . . . . 71
+6.5 Post-Deployment Verification . . . . . . . . . . . . . . . . . . . . . . . . . . . 72
+6.6 Conclusion . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 72
+Conclusion and Perspectives 73
+8
+List of Figures
+1.1 Harvest Group logo . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 3
+1.2 Our office locations . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 4
+1.3 Foreman logo . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 5
+1.4 Azure Blob Storage logo . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 5
+1.5 Apache Airflow . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 6
+1.6 DBT . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 6
+1.7 Snowflake . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 7
+1.8 The current data pipeline of Harvest Group . . . . . . . . . . . . . . . . . . . . 9
+1.9 The updated data pipeline . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 12
+1.10 Scrum Process . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 13
+2.1 General use case diagram . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 16
+2.2 Use case diagram: Manage Alert Configurations . . . . . . . . . . . . . . . . . 17
+2.3 Use case diagram: Manage Stuck Threshold Use Case . . . . . . . . . . . . . . 18
+2.4 User Story . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 19
+3.1 Modular Monolith Architecture . . . . . . . . . . . . . . . . . . . . . . . . . . 22
+3.2 Argus Architecture . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 23
+3.3 .NET Logo . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 25
+3.4 C# Logo . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 25
+3.5 Quartz NET Logo . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 25
+3.6 Postman Logo . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 26
+3.7 PostgreSQL Logo . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 26
+3.8 Git logo . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 26
+3.9 Github logo . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 26
+3.10 Collaboration tools . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 27
+3.11 Azure Logo . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 27
+3.12 Docker Logo . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 27
+3.13 Github Actions Logo . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 28
+3.14 CI/CD Pipeline . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 29
+4.1 Plan of Release 1 . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 30
+4.2 Alerting Class Diagram . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 32
+4.3 Alerting Sequence Diagram . . . . . . . . . . . . . . . . . . . . . . . . . . . . 33
+4.4 Logical Data Model . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 34
+4.5 Process Failed Job Runs Class Diagram . . . . . . . . . . . . . . . . . . . . . 35
+9
+List of Figures
+4.6 Process Failed Job Runs Sprint 2 Sequence Diagram . . . . . . . . . . . . . . . 36
+4.7 Failure Alert Example: AI Analysis . . . . . . . . . . . . . . . . . . . . . . . 37
+4.8 Process Failed Job Runs Sprint 4 Sequence Diagram . . . . . . . . . . . . . . . 39
+4.9 Failure Alert Example: Authentication . . . . . . . . . . . . . . . . . . . . . . 42
+4.10 Logic Data Model . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 43
+4.11 Process Foreman Exceptions Class . . . . . . . . . . . . . . . . . . . . . . . . 44
+4.12 Process Foreman Exceptions Sequence Diagram . . . . . . . . . . . . . . . . . 44
+4.13 Foreman Exception Alert Example . . . . . . . . . . . . . . . . . . . . . . . . 45
+4.14 Check Stuck Job Run Class Diagram . . . . . . . . . . . . . . . . . . . . . . . 46
+4.15 Check Stuck Job Run Sequence Diagram . . . . . . . . . . . . . . . . . . . . . 47
+4.16 Stuck Job Alert Example . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 49
+4.17 Stuck Jobs Report Sequence Diagram . . . . . . . . . . . . . . . . . . . . . . 50
+4.18 Stuck Jobs Report Example . . . . . . . . . . . . . . . . . . . . . . . . . . . . 51
+4.19 Stuck Jobs Report Blob Directory . . . . . . . . . . . . . . . . . . . . . . . . 51
+5.1 Plan of Release 2 . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 53
+5.2 Logical Data Model . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 56
+5.3 Sprint 6 Class Diagram . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 57
+5.4 Foreman Add Blob Tags Sequence Diagram . . . . . . . . . . . . . . . . . . . 58
+5.5 Blob with Tags Example . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 58
+5.6 Complete Process Job Runs Sequence Diagrams . . . . . . . . . . . . . . . . . 59
+5.7 Data Integrity Alert Stage Foreman to Azure . . . . . . . . . . . . . . . . . . . 61
+5.8 Sprint 7 Class Diagram . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 62
+5.9 Process Dag Runs Sequence Diagrams . . . . . . . . . . . . . . . . . . . . . . 63
+5.10 Data Integrity Alert Stage Azure to Airflow . . . . . . . . . . . . . . . . . . . 64
+6.1 Docker Compose Dev Env . . . . . . . . . . . . . . . . . . . . . . . . . . . . 66
+6.2 Argus Resource Group . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 67
+6.3 Argus App Registration . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 67
+6.4 Argus Scheduler Container App . . . . . . . . . . . . . . . . . . . . . . . . . 68
+6.5 Argus API Container App . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 69
+6.6 Argus Key Vault . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 69
+6.7 Argus Application Insights . . . . . . . . . . . . . . . . . . . . . . . . . . . . 70
+6.8 Container Registry . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 70
+6.9 GitHub Federated Credential . . . . . . . . . . . . . . . . . . . . . . . . . . . 71
+6.10 GitHub Actions workflow for build, migrate, and deploy. . . . . . . . . . . . . 72
+6.11 Argus Application Insights Stats. . . . . . . . . . . . . . . . . . . . . . . . . . 72
+10
+List of Tables
+1.1 Comparative Analysis of Monitoring and Data Integrity Solutions . . . . . . . 11
+2.1 Textual description of the use case Manage Alert Configuration . . . . . . . . . 17
+2.2 Textual description of the use case: Manage Stuck Threshold . . . . . . . . . . 18
+2.3 Product Backlog . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 20
+4.1 Release 1 Backlog . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 31
+4.2 Sprint 1 Backlog . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 32
+4.3 Sprint 2 & 3 Backlog . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 33
+4.4 Sprint 4 Backlog . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 38
+4.5 Sprint 5 Backlog . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 43
+5.1 Release 2 Backlog . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 54
+5.2 Sprint 6 Backlog . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 55
+6.1 Github Secretes . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 71
+11
+Glossary
+Technical terms used in the context of the project:
+•Job Templates : Job templates are collections of configurations defining how a specific
+job should execute. They include information such as the cron expression, which specifies
+when a job should run.
+•Job: A Job is a scheduled process with a specific configuration designed to generate
+reports from the retailer data source and download them for further processing.
+•JobRun : A Job represents the definition of the process described above, and it can have
+multiple executions based on the cron expression defined in its configuration. These
+individual executions are referred to as JobRuns in Foreman. Each time the job runs, it
+creates a new JobRun.
+•Job Run Status : A Job Run status describes the state of the job run. It can be in one of
+the following states:
+– Future : The initial state before the job run starts.
+– Enqueued : Indicates that the scheduled execution time defined by the cron expres-
+sion has arrived, and the job run has been enqueued for execution.
+– Failed : Means that an issue occurred during the execution.
+– Partially Failed : Means that one or more data runs have failed.
+– Completed : The execution was successful and all data runs were completed suc-
+cessfully.
+•DataRun : A Data run is the actual process that makes the requests needed to get the data
+back from the source.
+•Data Run Status : A Data Run status describes the state of the data run. It can be in one
+of the following states:
+– New : The initial state after the creation or queuing of the job run.
+– No Data Found : Means that the uploaded file contains no data.
+– Failed : Means that an issue occurred during the execution.
+– Completed : The execution was successful and the data has been downloaded.
+12
+Glossary
+•LogEntry : A Log Entry is something the data run creates that will contain a certain
+message the developer specifies.
+•Harvester : A Harvester is a class developed by Foreman Developers containing instruc-
+tions used by the Job Template to collect data from a specific source.
+•Credentials : Credentials are data that grant Harvest Group permission to access various
+data sources on behalf of clients to carry out the manual data retrieval process. These cre-
+dentials may include sensitive information such as passwords, refresh tokens, and other
+authentication details.
+•Blob directory : A blob directory is the name of a directory present in Azure Blob Stor-
+age.
+•DAG : A DAG[1] is a model that encapsulates everything needed to execute a workflow.
+Some DAG attributes include the following:
+– Schedule : When the workflow should run.
+– Tasks : tasks are discrete units of work that are run on workers.
+– Task Dependencies : The order and conditions under which tasks execute.
+•Pattern Matching : Pattern matching[2] is a technique where you test an expression to
+determine if it has certain characteristics.
+13
+General Introduction
+Ensuring data integrity is critical for companies that handle large amounts of data, as inaccu-
+racies can disrupt workflows and reduce organizational efficiency. Traditionally, inconsistencies
+are often unnoticed until much later, usually when a client complains about inaccurate or miss-
+ing data or a team member discovers a problem. Because it involves manually examining every
+step of the data pipeline to determine the problem’s origin, determining the root cause through
+traditional methods is time consuming and prone to errors. Using this approach delays resolu-
+tion and risks overlooking critical issues.
+To address these challenges, this project aims to propose an automated data integrity and
+error alert system. This system is designed to continuously validate data across all stages of the
+pipeline, identify inconsistencies in real time, and automatically notify the appropriate teams
+when errors occur. Additionally, it incorporates a job monitoring tool that tracks the execution
+of data processing tasks. If a job fails or remains stuck in the same state for too long, the system
+will either attempt an automatic rerun or alert the team. By automating data integrity checks,
+the system aims to enhance data accuracy, reduce inconsistencies, and minimize job failures
+throughout the pipeline.
+This internship is part of the end-of-studies project for the Bachelor of Software Engineer-
+ing at the Private University - Horizon School of Digital Technologies for the academic year
+2024/2025, and was carried out within the company Harvest Group .
+This report outlines the work completed during this internship and is organized into six chap-
+ters as follows:
+Project Context: This chapter provides an introduction to the host company and an overview
+of the current approach. It explores the challenges the teams encounter when ensuring data
+integrity and the increasing demand for an automated solution as the company grows.
+Requirements Specifications: This chapter provides detailed specifications and functional
+requirements for the automated data integrity and error alert system.
+Design and Architecture: This chapter outlines the design and architectural framework
+of the automated data integrity and error alert system. It discusses the overall architecture,
+emphasizing principles that guide the structure and organization of the system. Additionally,
+it covers the key design patterns and logic implemented throughout. This section provides
+a comprehensive understanding of the design considerations, ensuring a robust and efficient
+1
+General Introduction
+implementation.
+Release 1: Automated Monitoring and Alerting: This chapter focuses on the first release
+of Argus. It showcases the core modules built and the initial step to ensure data integrity through
+monitoring the source of data (Foreman).
+Release 2: Automated Data Integrity: Building upon the foundation established in Release
+1, this chapter details the implementation of automated integrity checks across every stage of
+the data pipeline.
+Deployment: This final chapter describes the deployment strategy and infrastructure setup
+used for Argus, covering the cloud setup, and the CI/CD pipeline that automates updates and
+ensures continuous delivery.
+Lastly, we conclude this report with an overall summary of the project’s achievements and
+provide insights into potential future enhancements for our project.
+2
+Chapter 1: Project Context
+Introduction
+This chapter aims to establish the general context of our project. In the first section, we will
+be presenting the host company, including an overview of its activities and departments. The
+next section will focus on presenting a broad project outline, including the problem statement,
+an analysis of the current situation, and the proposed solution.
+1.1 Presentation of the host company
+1.1.1 Overview
+Being one of the leading retail consulting organizations, Harvest Group [3], based in Arkansas,
+USA, provides analysis services for businesses dealing with retailers. Bill Waitsman and Ross
+Cully formed Harvest Group in 2006 to assist businesses in expanding their operations.
+Figure 1.1: Harvest Group logo
+These departments make up Harvest’s corporate headquarters:
+•Account Management : Offering account managers who have experience in traditional
+street businesses, digital commerce, and retail media.
+•Digital Commerce : Demonstrating extensive knowledge in digital commerce along with
+technology-driven advertising capabilities, backed by over 17 years of experience in the
+retail sector
+•Insights and Analytics : Utilizing data as the foundation of all operations to develop
+a truly integrated omnichannel retail strategy that encompasses physical stores, digital
+commerce, and advertising.
+•Retail Media : Engaging consumers at or near their purchasing decision points, or when
+choosing between competing brands or products. Common strategies include in-store
+promotions, online advertising, product sampling, loyalty programs, and the use of coupons
+or vouchers.
+3
+Chapter 1. Project Context
+•Supply Chain Management : Overseeing the movement of goods and services to and
+from a business.
+1.1.2 Harvest Group Tunisia
+In 2016, Harvest Group established a new branch in Sousse, Tunisia, aiming to improve data
+operations for its clients. The main goal was to guarantee the availability of vital data at the
+Arkansas headquarters by the beginning of the American workday, thereby enabling timely re-
+port generation. Sousse was chosen strategically because of its favorable time zone difference;
+Tunisia is approximately six hours ahead of Arkansas, creating an important opportunity to
+carry out necessary activities like data extraction, updates, and other operations before the start
+of the US business day.
+Figure 1.2: Our office locations
+Harvest Group Tunisia is composed of four departments:
+•Application Development(APP DEV): This team develops IT solutions and tools to au-
+tomate tasks and manipulate data for internal departments and clients. It comprises three sub-
+teams: Foreman, Lantern, and Vector. I am part of this team at Harvest Group.
+•Data Operations(DO): The Data Operations team is responsible for overseeing efficient
+data management and usage following the company’s business goals. Their duties encompass
+the administration of data repositories, the maintenance of data quality, the integration of data
+from multiple sources, the supervision of data infrastructure, and the delivery of insights and
+analytics to facilitate data-informed decision-making.
+•Data Architecture(DA): The Data Architecture team is responsible for monitoring, im-
+proving, and maintaining the data infrastructure. Their responsibilities include optimizing query
+4
+Chapter 1. Project Context
+performance, managing expenses within the data ecosystem, and investigating new technolo-
+gies and data modeling methods to advance database systems.
+•Data Acquisition(DACQ): The main responsibility of the Data Acquisition team is to
+collect data from multiple sources for all Harvest Group clients. This includes manual data
+collection as well as using automation tools developed by the Application Development team.
+•Information Technology (IT): The IT department is dedicated to ensuring a seamless end-
+user experience by addressing technology issues. Their responsibilities include and not limited
+to managing tickets, updating software, monitoring network performance, and onboarding new
+hires with the necessary technology.
+1.1.3 Foreman
+Foreman is an application created by Harvest Group that automates the process of pulling
+and transforming data from multiple sources. It simplifies data retrieval and can output results in
+formats like JSON, CSV , or Excel. By reducing the need for manual data handling, it minimizes
+errors and enhances data accuracy, ultimately saving both time and resources. Our project will
+primarily utilize Foreman for these tasks.
+Figure 1.3: Foreman logo
+1.1.4 Azure Blob Storage
+Azure Blob Storage is a cloud based object storage solution from Microsoft, specifically
+designed to handle large quantities of files. It’s built for scalability, durability, and easy access.
+At Harvest Group, Azure Blob Storage serves as an intermediate stage, where files generated
+by Foreman are stored before being transferred to Snowflake by Apache Airflow.
+Figure 1.4: Azure Blob Storage logo
+5
+Chapter 1. Project Context
+1.1.5 Apache Airflow
+Apache Airflow is an open-source tool to programmatically author, schedule, and monitor
+workflows. It is one of the most robust platforms used by Data Engineers for orchestrating
+workflows or pipelines.[4]
+At Harvest Group, the Data Operations team leverages Apache Airflow to automate the
+transfer of files from Azure Blob Storage to Snowflake. In this process, files are moved into
+Snowflake’s raw tables without any alteration, preserving their original format and file type.
+Figure 1.5: Apache Airflow
+1.1.6 DBT (Data Build Tool)
+dbt allows your team to prepare data for analysis in a way that’s centralized, modular, and
+entirely open — all inside your cloud data platform. [5]
+At Harvest Group, the Data Architecture team utilizes DBT to extract data from Snowflake’s
+raw tables, apply necessary transformations, such as cleaning, filtering, and aggregating, and
+then stores the refined data into target tables within Snowflake.
+Figure 1.6: DBT
+1.1.7 Snowflake
+Snowflake’s Data Cloud is powered by an advanced data platform provided as a self-managed
+service. Snowflake enables data storage, processing, and analytic solutions that are faster, easier
+to use, and far more flexible than traditional offerings. [6]
+At Harvest Group, Snowflake serves as the central data warehouse.
+6
+Chapter 1. Project Context
+Figure 1.7: Snowflake
+1.2 General Concepts
+1.2.1 Application Programming Interface (API)
+APIs[7], or Application Programming Interfaces, are sets of definitions and protocols that
+enable communication between two software components.
+An API consists mainly of the following components:
+•Technical Specification: Describes potential methods for data exchange, using request
+formats and processing protocols.
+•Software Interface: Implements the defined specifications, providing a concrete struc-
+ture for communication between applications.
+1.2.2 Data Pipeline
+A data pipeline is a series of processes and tools designed to automate the movement and
+transformation of data from various sources to a destination, such as a data warehouse or data
+lake, where it can be effectively analyzed and utilized.
+1.2.3 Data Integrity
+Data integrity[8] is a concept and process that ensures the accuracy, completeness, con-
+sistency, and validity of an organization’s data. By following the process, organizations not
+only ensure the integrity of the data but guarantee they have accurate and correct data in their
+database.
+1.2.4 RESTful API Communication
+RESTful APIs define stateless communication between the frontend and backend using
+HTTP methods such as GET, POST, PUT, and DELETE. Each API endpoint corresponds to
+a resource, and data is exchanged using structured formats such as JSON. This approach en-
+ables efficient interaction, allowing the frontend to perform actions like fetching, updating, or
+deleting data from the backend.
+1.2.5 Cron Expression
+A cron expression[9] is a string of characters that specifies the cron job schedule by defining
+exact times, dates, or recurring patterns.
+7
+Chapter 1. Project Context
+A cron expression usually has five standard fields that represent time intervals like minutes,
+hours, or days, which dictate when the cron job will be executed.
+1.2.6 Adaptive Card
+Adaptive Cards are platform-agnostic snippets of UI, authored in JSON, that apps and ser-
+vices can openly exchange. When delivered to a specific app, the JSON is transformed into na-
+tive UI that automatically adapts to its surroundings. It helps design and integrate light-weight
+UI for all major platforms and frameworks. [10]
+1.2.7 Azure Blob Tags
+Blob index tags categorize data in your storage account using key-value tag attributes. These
+tags are automatically indexed and exposed as a searchable multi-dimensional index to easily
+find data. This article shows you how to set, get, and find data using blob index tags. [11]
+1.2.8 Stuck Job
+A stuck job is a Foreman job run that has been running for an extended period in the same
+state.
+1.3 Project Presentation
+This section introduces our data integrity monitoring project at Harvest Group. We begin by
+clearly defining the problem statement, highlighting challenges in data validation and integrity
+across multiple stages of the data pipeline. Following this, we outline the scope of our monitor-
+ing service, detailing the specific components and boundaries of our project. We then present
+our key objectives, emphasizing timely detection of data discrepancies and ensuring reliability
+across the data lifecycle. Finally, we explain the methodology adopted, including tools, tech-
+niques, and processes implemented to achieve robust data validation and integrity.
+The following figure (1.8) illustrates the data pipeline used at Harvest Group. The data flow
+begins with Foreman, a custom-built tool by Harvest Group, which either pulls data directly
+from various retailers (e.g., Amazon, Walmart, Target) or receives files manually uploaded by
+the Data Acquisition (DAcq) team. Foreman then uploads this data to Azure Blob Storage.
+Apache Airflow subsequently transfers the data unchanged from Azure Blob Storage into the
+Snowflake Raw Tables. Finally, DBT transforms and processes the data from the Snowflake
+Raw Tables into structured Snowflake Tables, tailored specifically to meet the requirements set
+by Harvest’s client teams.
+8
+Chapter 1. Project Context
+Figure 1.8: The current data pipeline of Harvest Group
+1.3.1 Problematic
+Since Harvest Group helps businesses grow through retail strategy, digital commerce, and
+data analytics, it requires reliable access to retailer client data. This data is either collected
+automatically through APIs or manually retrieved, as some retailers do not offer APIs due to
+security constraints or other limitations.
+However, this data pull process often encounters challenges. Data pulls may fail or remain
+stuck in the processing queues for extended periods, causing significant delays and gaps in
+data availability. Moreover, even successful data pulls must pass through multiple stages in the
+pipeline before reaching their final form, as mentioned above in 1.8. At each of these stages,
+the data risks becoming corrupted or lost if it fails to transition from one stage to the next.
+Currently, without an automated data integrity and error system, issues are often identified
+only after significant delays, typically when the client team at Harvest Group highlight missing
+or incorrect data. Manually diagnosing these problems by reviewing each stage of the pipeline
+is inefficient, time consuming, and prone to human error.
+Consequently, the absence of an automated system for ensuring data integrity and timely
+9
+Chapter 1. Project Context
+error detection leads to:
+• Undetected data inconsistencies.
+• Delays in identifying and resolving failures/issues.
+• Inefficient manual troubleshooting consumes valuable resources.
+• Increased risk of data loss or corruption during transfers.
+• Loss of trust in the Technology team by the Client team.
+To address these challenges, our project aims to implement an automated data integrity and
+alerting system.
+1.3.2 State of the art analysis
+In this section, we will breakdown how the team monitors data flow and the operation of the
+job.
+1.3.2.1. DO Monitoring Dashboard
+The current solution utilized involves a monitoring tool built by the DO team internally to
+oversee DAG executions and track data movement. This tool primarily detects inconsistencies
+when data transfers do not occur during recent DAG runs. However, the existing monitoring
+solution is insufficient for several reasons:
+•Delayed Issue Detection : The monitoring system only identifies problems when no data
+flow is detected in recent runs. It overlooks that data pulls can become stuck or fail
+silently without being noticed for extended periods.
+•No Data Validation : The current tool focuses exclusively on verifying if a data file has
+been moved in the DAG run. They do not perform thorough validation to ensure data
+integrity.
+•Absence of Alerting : The most important flaw is the lack of automated alerts. Issues are
+only noticed when a DO member checks the dashboard, leading to delayed resolution.
+•Lack of Cross team Communication : As the current tool is built and used exclusively
+by the Data Operations (DO) team, other teams must rely on the DO team to discuss,
+investigate, or resolve any issue that occurs, causing delays and waste of valuable time.
+10
+Chapter 1. Project Context
+1.3.2.2. Comparative Study
+Table 1.1: Comparative Analysis of Monitoring and Data Integrity Solutions
+Feature
+Job & Pipeline Monitoring ✓ ✓ ✓ ✓
+Data Integrity Validation ✓ ✗ ✗ ✗
+Alerting & Notification ✓ ✓ ✓ Partial
+Automated Retry / Rerun ✓ ✗ ✗ ✓
+Integration Across Pipeline Stages ✓ Partial Partial Partial
+Custom Rule-Based Alerts ✓ ✓ ✓ ✗
+Failure Categorization (AI-Assisted) ✓ ✗ ✗ ✗
+Due to the highly specific requirements of the team, it was not feasible to adopt existing
+third-party solutions, as they lacked compatibility with internal tools and processes. Moreover,
+Harvest Group promotes a strong "do-it-yourself" (DIY) culture, making the development of a
+customized internal tool preferable over integrating external systems that might not fully meet
+their precise needs.
+1.3.3 Proposed Solution
+To address the challenges related to data integrity and the timely detection of data pipeline
+issues at Harvest Group, our project objectives are outlined as follows:
+•Automated Data Integrity Checks : Implement an automated system that verifies data
+integrity at every stage of the pipeline, ensuring consistent and accurate data transfers.
+•Real-time Monitoring and Alerting : Develop a tool capable of real-time monitoring
+of data extraction jobs, promptly alerting the responsible teams in case of failures or
+prolonged delays.
+•Error Handling and Job Reruns : Automate the identification of stuck jobs and resolu-
+tion of common job failures through automatic reruns, minimizing manual intervention
+and downtime.
+•Enhanced Visibility and Analytics : Provide teams with actionable insights for ongoing
+improvement by offering comprehensive analysis and in-depth reports on job statuses,
+failure rates, and data flow issues.
+The following figure (1.9) illustrates the updated data pipeline after integrating Argus.
+11
+Chapter 1. Project Context
+Figure 1.9: The updated data pipeline
+The proposed updates to the data pipeline introduce "Argus," a dedicated monitoring and
+data integrity service designed to enhance data integrity. Argus integrates into the existing
+pipeline, continuously verifying data integrity from the source "Foreman" to the final structured
+tables in Snowflake and ensuring the Consumers are using the data.
+In order for Argus to guarantee data integrity, we would need a way to monitor Foreman job
+runs to make sure that the source of data is functioning correctly before tracking the data down.
+Argus will:
+• Identify Foreman Job Run Failures.
+• Detect Stuck jobs runs early.
+• Monitor Foreman internal Exceptions.
+12
+Chapter 1. Project Context
+• Validate Foreman jobs, ensuring that the data files are correctly uploaded to Azure Blob
+Storage.
+• Track and confirm successful insertion of data by Apache Airflow into Snowflake’s raw
+tables.
+• Verify DBT’s successful transformation of data from raw to tables.
+Integrating Argus helps us find data problems early, reduce time fixing errors. Argus also
+helps to distinguish between issues with the data itself or with the tools. Ultimately, these
+improvements make our data pipelines more dependable and give us a clearer understanding of
+how they are operating.
+These goals are intended to greatly increase operational effectiveness and data reliability,
+allowing Harvest Group to promptly detect, resolve, and avoid data pipeline problems as they
+arise.
+1.3.4 Work Methodology: Agile Scrum
+At its core, Scrum in Agile methodology is an iterative and incremental framework that
+helps teams deliver high-quality products in a timely manner. It is based on the principles of
+transparency, inspection, and adaptation, and provides a flexible and collaborative approach to
+project management. [12]
+Figure 1.10: Scrum Process
+Conclusion
+In this chapter, we offered a broad overview of the project by discussing the host organi-
+zation ”Harvest Group Tunisia,” fundamental concepts, project structure, problems, proposed
+solutions, and goals. In the next chapter, we will further analyze the software requirements for
+our project.
+13
+Chapter 2: Requirements Specifications
+Introduction
+Throughout this chapter, our goal is to identify the various actors involved in our system,
+examine the functional and non-functional requirements specified by the client, and determine
+the primary features of our software through use-case diagrams.
+2.1 Identification of actors
+Actors are human users or computer systems that interact within our software. We will try
+to identify the different primary actors involved in our system.
+•Harvest Team Member : This user utilizes our automated system to receive alerts, en-
+able/disable certain alerts, and configure how they would like to be alerted.
+•Developers : As the team responsible for developing the tool, we have comprehensive
+control over its design, maintenance, and updates. While we actively address issues and
+respond to new feature requests, we do not play an active role in the use case scenarios or
+diagrams, thus, we will not be highlighted in these representations
+2.2 Identification of requirements
+2.2.1 Functional requirements
+The features and capabilities of our system, as well as how it should behave in response to
+different inputs, are described as following:
+•Scheduled Executions : The system must include a scheduler capable of executing pre-
+defined jobs based cron expressions.
+•Job Monitoring : The system must monitor the status of JobRuns and DataRuns from
+Foreman and accurately track their state transitions and alert incase of failure or stuck in
+a state for a long period and rerun the job if required.
+•Monitor Foreman Exceptions : When an exception occurs the system must alert back in
+time with a detailed description of the exception and the cause.
+•Data Integrity Checks : For each JobRun, the system must verify the existence and cor-
+rectness of the resulting data at each pipeline stage (Foreman upload, Azure Blob Storage,
+Airflow, and DBT).
+14
+Chapter 2. Requirements Specifications
+•Configurable Alert Management : Users should be able to enable, disable, and cus-
+tomize alerts according to their preferences or specific monitoring needs.
+•Historical Tracking : It must record historical validation results to allow for future anal-
+ysis, such as identifying recurring issues at particular pipeline stages.
+2.2.2 Non-functional requirements
+Some of the non-functional requirements our tool must ensure are :
+Performance :
+• Given that Foreman handles thousands of JobRuns per day, the system should monitor
+all, and taking a longer time to resolve one issue will mean that issues will take longer to
+be noticed.
+Security :
+• Harvest is legally required to protect client data, which drives our focus on security. We
+restrict access to authorized personnel and use Azure Key Vaults to securely store sen-
+sitive keys and information. Additionally, we used Azure Active Directory (Azure AD)
+for authentication and Role-Based Access Control (RBAC), allowing users to access and
+utilize features based on their roles. These measures ensure compliance with legal obli-
+gations and build client trust.
+Reusability and Extensibility :
+• Since this project will interact with all parts of the Harvest Group data pipeline, ensur-
+ing a modular and independent architecture is required. This approach makes it easy
+to integrate new components or stages into the monitoring system without the need for
+large changes. Additionally, designing the monitoring and validation mechanisms sep-
+arately enables us to integrate them across various data pipelines or similar use cases
+within Harvest Group, significantly reducing future development effort and enhancing
+maintainability.
+Scalability :
+• With the team growing and new clients continually arriving, we have ensured that our
+system can effectively handle team expansion and accommodate additional task groups.
+This proactive approach enables us to scale seamlessly, meeting the evolving needs of
+both the team and the expanding client base.
+Summarizing Alert Message :
+• Alert messages must be as descriptive as possible, clearly stating the specific issue and
+the information needed to identify the issue easily, and the exact location within the data
+pipeline. This ensures that the responsible team can understand the nature of the problem,
+its impact, and quickly start taking action without additional clarification.
+15
+Chapter 2. Requirements Specifications
+2.3 Use Case Diagram
+Although this system is entirely automated and does not require human intervention, we
+designed it to be interactive when needed. To represent the potential interactions users can have
+with the system, I will present these requirements using Unified Modeling Language (UML) by
+showcasing a general use case diagram.
+2.3.1 General case Diagram
+Figure 2.1 presents the global use case diagram of our system, offering an overview of its
+operations. Describes the interactions between the system and its users.
+Figure 2.1: General use case diagram
+2.3.2 Detailed use case diagrams
+After presenting the general use case diagram. We will dive into details of some use cases of
+our application.
+2.3.2.1. Manage Alert Configurations
+The figure 2.2 illustrates the detailed use case of managing alert configurations, accompanied
+by a textual description presented in 2.1
+16
+Chapter 2. Requirements Specifications
+Figure 2.2: Use case diagram: Manage Alert Configurations
+Title Manage Alert Configurations
+Primary Actor Argus User
+Objective Argus Users manage the Alert Configuration.
+Precondition The user must be authenticated.
+Post Condition The system confirms the Alert Configuration has been created or up-
+dated successfully.
+Nominal Scenario 1) The user fills the JSON form
+2) The system checks that the sent data is correct.
+3) System checks whether the configuration already exists, other-
+wise, it creates a new instance.
+4) The user may enable or disable the Alert Configuration as needed
+5) The user can optionally edit the cooldown period, used by the
+alert configuration as the duration to wait before sending consecu-
+tive alerts.
+Table 2.1: Textual description of the use case Manage Alert Configuration
+2.3.2.2. Manage Stuck Threshold
+The figure 2.3 demonstrates the options that the user can use to update the stuck threshold
+for one or multiple jobs, accompanied by a textual description presented in 2.2
+17
+Chapter 2. Requirements Specifications
+Figure 2.3: Use case diagram: Manage Stuck Threshold Use Case
+Title Manage Stuck Threshold
+Primary Actor Argus User
+Objective Update the threshold value used by the system to determine when a
+job is considered stuck.
+Precondition 1. The user must be authenticated.
+Postcondition The system updates the value of one or more jobs when Harvester
+name is used.
+Nominal Scenario 1) Argus user inputs an integer value, and either a specific Job ID or
+the Harvester name, depending on whether the update should apply
+to an individual job or multiple jobs that use that Harvester.
+2) The system updates the value for one or multiple jobs.
+3) When updating the threshold per Harvester, the system saves the
+value to apply automatically for any future synced jobs that use the
+Harvester.
+Table 2.2: Textual description of the use case: Manage Stuck Threshold
+18
+Chapter 2. Requirements Specifications
+2.4 Product Backlog
+In the Scrum framework, the Scrum product backlog is a structured and carefully maintained
+list used by the Scrum product owner to guide the development team’s tasks. Keep everything
+in one issue tracker–don’t use multiple systems to track bugs, requirements, and engineering
+work items.[13]
+The backlog contains the work to do in a form called user stories that make up the desired
+product.
+A user story is as follows:
+Figure 2.4: User Story
+For each user story, we assign a rank of importance, a description, and a story point as the
+estimated time needed to finish implementing the user story.
+In the product backlog presented in 6.1, we specify the product features and then identify the
+different sprints.
+19
+Chapter 2. Requirements Specifications
+Table 2.3: Product Backlog
+Feature ID User Stories Priority
+Alerting 1- As a user, I want to receive alert notification in
+Microsoft Teams.
+- As a user, I don’t want to receive redundant or
+repeated alerts.+ + +
+Authentication 2- As a Technology Team member, I want to be
+able to authenticate myself when using the API.+ + +
+Foreman Job Failure
+Alerting3- As a user, I want Argus to detect Foreman job
+failures and send an alert with a summary from
+AI.+ + +
+Categorize Foreman Job
+Failure4- As a user, I want Argus to categorize Foreman
+failures.+ + +
+Monitor Foreman
+Exceptions5- As a Foreman Developer, I want Argus to
+monitor Foreman exceptions and alert when
+critical exceptions occur.+ +
+Foreman Stuck Job
+Alerting6- As a user, I want Argus to automatically iden-
+tify Foreman jobs that are stuck or running
+longer than expected.
+- As a user, I want to receive timely alerts when
+jobs become stuck.+ +
+Stuck Jobs Report
+Generation7- As a Data Operations Developer, I want Argus
+to generate a daily report containing all stuck
+jobs and relevant information about them.+
+Foreman: Add Blob Tags 8- When uploading a file to Azure Blob Storage
+in Foreman, add unique identifiers as indexed
+tags.+ + +
+Foreman to Azure Blob
+Storage Verification9- As a user, I want Argus to verify that the file(s)
+Foreman pulled has been uploaded to Azure
+Blob Storage.+ + +
+Airflow to Snowflake Raw
+Verification10- As a user, I want Argus to verify the existence
+and data completion of the file(s) Airflow up-
+loaded to Snowflake Raw a.+ + +
+DBT to Snowflake Tables
+Verification11- As a user, I want Argus to validate that the
+final table(s) reflects the new data.+ + +
+20
+Chapter 2. Requirements Specifications
+2.4.1 Sprint Planning
+The Sprint Planning Meeting is the most important event in SCRUM. The purpose of this
+meeting is to identify the Sprint Backlog and assign story points. At the start of the internship,
+we had a meeting to identify required features and structure them into defined sprints.
+We adopted a two week sprint duration and structured our development work into two main
+releases:
+1. Release 1: Automated Monitoring and Alerting
+(a) Sprint 1: Alerting & Authentication.
+(b) Sprint 2 & 3: Foreman Job Failure Alerting.
+(c) Sprint 4: Categorize Foreman Failures.
+(d) Sprint 5: Monitor Foreman Exceptions and Stuck Jobs.
+2. Release 2: Automated Data Integrity
+(a) Sprint 6: Foreman to Azure Blob Storage.
+(b) Sprint 7: Airflow to Snowflake Raw.
+(c) Sprint 8: DBT to Snowflake Tables.
+These releases and their associated sprints were strategically structured to incrementally de-
+velop and validate core functionalities, ensuring continuous progress. Each release and sprint
+will be detailed in the following chapters.
+Conclusion
+This chapter covered the specification of project requirements, starting with actor identifi-
+cation, followed by a description of functional and nonfunctional requirements, detailed break-
+down of use case diagrams, and product backlog. The following chapter will analyze the internal
+structure of the application.
+21
+Chapter 3: Architecture And Used Technologies
+Introduction
+Having identified and analyzed the user requirements and system needs in the previous chap-
+ter, this chapter explains the technical implementation of our project, Argus. We begin by out-
+lining the overall system architecture, followed by a detailed exploration of the core modules
+and their interactions.
+3.1 System Architecture
+To ensure that Argus remains adaptable and capable of integrating new features, it is cru-
+cial to build each component with scalability and extensibility in mind. We adopted a modular
+coding approach, selecting the Modular Monolithic architecture to structure our project. This
+approach provides a clear separation of concerns, simplifying maintenance, updates, and en-
+hancements.
+Figure 3.1: Modular Monolith Architecture
+A modular architecture breaks down an application into smaller, more manageable modules
+or components, each responsible for a specific set of functionality. These modules are designed
+to be loosely coupled, allowing for easier development, testing, and maintenance. [14]
+The Modular Monolithic Architecture divides the implementation into the following subdi-
+visions:
+22
+Chapter 3. Architecture And Used Technologies
+•Segregation of Modules : Each module is independent and includes its own set of appli-
+cation layers. Modules are autonomously developed, tested, and deployed.
+•Modularity : Modules maintain high internal cohesion and low external coupling. Com-
+munication between modules is done using well-defined interfaces, preferably asynchronously.
+•Unified database : All modules share a single database schema.
+•Monolith Deployment : The application is deployed as a single unit, although modules
+can be distributed across multiple hosts.
+•Unified Application Process : The entire application runs as one unified process, scaling
+on demand.
+3.2 Argus Architecture
+Argus is designed following a modular monolithic architecture, emphasizing modularity,
+scalability, and maintainability. The architecture is centered around a scheduler that executes
+jobs based on a cron expression.
+Figure 3.2: Argus Architecture
+The main components of Argus are:
+1.Scheduler Module : Utilizes Quartz.Net to execute jobs based on a configurable cron
+expression. It periodically triggers different system jobs, such as detecting failures, veri-
+fying data integrity, or generating reports.
+2.Job Execution Module : Contains the jobs that will be triggered by the scheduler , in-
+cluding:
+23
+Chapter 3. Architecture And Used Technologies
+(a)Foreman Job Run Handler : Monitors job statuses in Foreman, identifies failures,
+stale/stuck jobs, and initiates alerts and retries.
+(b)Stuck Job Report Handler : Detects jobs that have remained in the same state
+beyond an acceptable duration and generates an alert.
+(c)Foreman Exception Handler : Captures, processes, and alerts on exceptions arising
+within Foreman.
+(d)Airflow Dag Run Handler : Verifies that Apache Airflow DAG executions have
+successfully uploaded the required files to the intended destinations.
+(e)DBT Run Handler : Ensures DBT runs result in correctly updated tables with ac-
+curate and complete data.
+(f)Sync Handler : Components responsible for syncing, Job Templates ,Jobs , and
+Dags .
+3.Alerting Module : Responsible for sending notifications and alerts to the appropriate
+team, typically via Microsoft Teams.
+4.Data Access Module : Manages interaction with the PostgreSQL database through Entity
+Framework Core , handling persistent storage and retrieval of system data such as jobs,
+logs, and integrity rules.
+5.API Module : Provides a RESTful interface using ASP.NET Core , accompanied by
+Swagger UI , used for inspection of logs, and configuration adjustments.
+3.3 Technology Stack
+To support the implementation and execution of our application, we used several programs
+and software tools, some of which include:
+3.3.1 Backend
+Our backend is built using .NET, ASP.NET for the API and combination between .NET
+Background worker and Quartz.NET.
+3.3.1.1. .NET
+.NET[15] is a free, cross-platform, open-source developer platform for building many kinds
+of applications. It can run programs written in multiple languages, with C# being the most
+popular. It relies on a high-performance runtime that is used in production by many high-scale
+apps.
+24
+Chapter 3. Architecture And Used Technologies
+Figure 3.3: .NET Logo
+3.3.1.2. C#
+C# (pronounced "C sharp")[16] is a simple, modern, object-oriented, and type-safe program-
+ming language.
+Figure 3.4: C# Logo
+3.3.1.3. ASP.NET
+ASP.NET[17] is an open source web framework, created by Microsoft, for building modern
+web apps and services with .NET.
+3.3.1.4. Quartz.NET
+Quartz.NET[18] is a full-featured, open source job scheduling system that can be used from
+smallest apps to large scale enterprise systems.
+Figure 3.5: Quartz NET Logo
+3.3.1.5. Postman
+Postman[19] is an all-in-one API platform for building and working with APIs. It takes
+the pain out of every stage of the API lifecycle—from designing and testing to delivery and
+monitoring.
+25
+Chapter 3. Architecture And Used Technologies
+Figure 3.6: Postman Logo
+3.3.2 Database
+3.3.2.1. PostgreSQL
+PostgreSQL[20] is a powerful, open source object-relational database system with over 35
+years of active development that has earned it a strong reputation for reliability, feature robust-
+ness, and performance.
+Figure 3.7: PostgreSQL Logo
+3.3.3 Version Control
+Git[21] is an open-source distributed version control system used to manage source code and
+track changes made to it. We use GitHub[22] for hosting and sharing repositories.
+Figure 3.8: Git logo
+ Figure 3.9: Github logo
+3.3.4 Communication & Collaboration Platforms
+In order to communicate with other team members, share information and track the progress
+of the project, we used many collaborating tools including :
+•Microsoft Teams : We used Microsoft teams in real-time conversations, video confer-
+encing, and collaborating on project .
+•Microsoft Outlook : We used Microsoft Outlook to manage calendars, plan meetings
+and appointments, exchange emails and track deadlines.
+26
+Chapter 3. Architecture And Used Technologies
+Figure 3.10: Collaboration tools
+•Microsoft SharePoint : This tool allowed us to create, store and share documents and
+files with versions control.
+•Zoom : Since most of the team members and clients are in the USA, we needed to have
+virtual meetings, and it was in this context where Zoom was used.
+•Paycor : Paycor is an HR management platform used inside Harvest Group to request
+days off, communicate feedback, and deliver notes and requests.
+3.3.5 Cloud
+3.3.5.1. Azure Cloud
+Azure[23] is a trusted cloud platform for building, deploying, and managing innovative so-
+lutions.
+Figure 3.11: Azure Logo
+3.3.6 Devops Tools / Technologies
+3.3.6.1. Docker
+Docker[24] is a software platform that allows you to build, test, and deploy applications
+quickly. Docker packages software into standardized units called containers that have every-
+thing the software needs to run including libraries, system tools, code, and runtime.
+Figure 3.12: Docker Logo
+27
+Chapter 3. Architecture And Used Technologies
+3.3.6.2. Github Actions
+GitHub Actions[25] is a continuous integration and continuous delivery (CI/CD) platform
+that allows you to automate your build, test, and deployment pipeline. You can create workflows
+that build and test every pull request to your repository, or deploy merged pull requests to
+production.
+Figure 3.13: Github Actions Logo
+3.4 Deployment Tools
+The deployment of Argus leverages modern cloud technologies and DevOps practices, en-
+suring reliability, scalability, and efficient management.
+•Azure : Harvest Group utilizes Microsoft Azure as a cloud provider to deploy its infras-
+tructure.
+•Azure Container Apps : Argus is deployed as two separate Azure Container Apps:
+– Scheduler Container App : Continuously running, ensuring at least one active
+replica at all times, with scaling capabilities up to 10 replicas based on CPU and
+memory utilization.
+– API Container App : Capable of scaling down to zero when not in use, automati-
+cally activates and scales up to 10 replicas based on incoming HTTP requests.
+•Azure PostgreSQL Database : Provides a reliable, managed database solution, ensuring
+data persistence, availability, and consistency.
+•Azure Application Insights : Integrated so that we can monitor the logs from the con-
+tainer applications Scheduler andAPI.
+•GitHub Actions (CI/CD) : Automates the deployment pipeline, including:
+1. Creating Pull Requests (PRs) for code reviews.
+2. Merging approved PRs into the main branch.
+3. Applying pending database migrations.
+4. Automatically building new container images and pushing them to GitHub Con-
+tainer Registry.
+5. Updating Azure Container Apps with new container images.
+28
+Chapter 3. Architecture And Used Technologies
+Figure 3.14: CI/CD Pipeline
+Conclusion
+This chapter explored the solution’s architecture, followed by a discussion of some of the
+design patterns employed within the system. We then presented the conceptual model that
+serves as the blueprint for the solution. The next chapter will be mainly about the realization
+part of our tool. Mocing forward, we will be mainly about the first release of our project
+focusing on monitoring and alerting.
+29
+Chapter 4: Release 1: Automated Monitoring and Alerting
+4.1 Introduction
+The purpose of this release is to have an automated system capable of monitoring Foreman
+and alerts when issues are detected. To ensure data integrity, we must guarantee the data source
+(Foreman) is always operational and immediately notified when issues arise. This release in-
+cludes the completion of the Alerting module, the integration of Foreman module, scheduler,
+and API which are the essential parts of our project Argus. The work included in this release
+spans five sprints.
+4.2 Release 1 Plan
+Figure 4.1: Plan of Release 1
+The development plan for Release 1, as illustrated in Figure 4.1, focuses on the essential
+features required for monitoring Foreman. The sprints are prioritized to ensure the core func-
+tionalities are implemented:
+1.Sprint 1: Alerting System : Focuses on building the capability within Argus to send
+30
+Chapter 4. Release 1: Automated Monitoring and Alerting
+alerts to Microsoft Teams.
+2.Sprint 2 & 3: Foreman Job Failure Alerting : Features the detection and handling of
+job failures.
+3.Sprint 4: Categorize Foreman Job Failure : Improves on the previous work by adding
+a pattern matching algorithm for categorizing job failures.
+4.Sprint 5: Monitor Foreman Exceptions and Stuck Jobs : Dedicated to detecting and
+alerting on exceptions and stale jobs.
+By focusing on these fundamental areas, it facilitates the development of the next steps.
+4.3 Release 1 Backlog
+The following table 4.1 outlines the backlog items identified for Release 1.
+Table 4.1: Release 1 Backlog
+Feature ID User Stories Priority
+Alerting 1- As a user, I want to receive alert notification in
+Microsoft Teams.
+- As a user, I don’t want to receive redundant or
+repeated alerts.+ + +
+Authentication 2- As a Technology Team member, I want to be
+able to authenticate myself when using the API.+ + +
+Foreman Job Failure
+Alerting3- As a user, I want Argus to detect Foreman job
+failures and send an alert with a summary from
+AI.+ + +
+Categorize Foreman Job
+Failure4- As a user, I want Argus to categorize Foreman
+failures.+ + +
+Monitor Foreman
+Exceptions5- As a Foreman Developer, I want Argus to
+monitor Foreman exceptions and alert when
+critical exceptions occur.+ +
+Foreman Stuck Job
+Alerting6- As a user, I want Argus to automatically iden-
+tify Foreman jobs that are stuck or running
+longer than expected.
+- As a user, I want to receive timely alerts when
+jobs become stuck.+ +
+Stuck Job Report
+Generation7- As a Data Operations Developer, I want Argus
+to generate a daily report containing all stuck
+jobs and relevant information about them.+
+4.4 Sprint 1: Alerting System & Authentication
+The main focus of the initial sprint is to implement the Alerting Module, which will contain
+the necessary functionalities such as sending alerts through Microsoft Teams, which are crucial
+features in our project and to work on integrating Microsoft OAuth into Argus.
+31
+Chapter 4. Release 1: Automated Monitoring and Alerting
+Product Backlog for Sprint 1:
+Table 4.2: Sprint 1 Backlog
+Feature ID User Stories Priority
+Alerting 1- As a user, I want to receive alert notification in
+Microsoft Teams.
+- As a user, I don’t want to receive redundant or
+repeated alerts.+ + +
+Authentication 2- As a Technology Team member, I want to be
+able to authenticate myself when using the API.+ + +
+4.4.1 Sprint 1 Software Design
+In this part, we will introduce the UML design of sprint 1, which will include the class and
+sequence diagram since the Alerting Module will be used by the other modules and users can’t
+interact with it directly.
+4.4.1.1. Static View: Class Diagram
+The following class diagram 4.2 shows the classes that other modules can use to interact with
+the Alerting Module.
+Figure 4.2: Alerting Class Diagram
+4.4.1.2. Dynamic View: Sequence Diagram
+The diagram 4.3 shows how other Argus Modules will be interacting with the Alerting
+Module .
+32
+Chapter 4. Release 1: Automated Monitoring and Alerting
+Figure 4.3: Alerting Sequence Diagram
+4.5 Sprint 2 & 3: Foreman Job Failure Alerting
+The goal of this sprint is to create an automated system that can detect and alert Foreman
+Job Failures, but also needs to be extensible since we will add more functionality on top of it in
+later sprints.
+Table 4.3: Sprint 2 & 3 Backlog
+Feature ID User Stories Priority
+Foreman Job Failure
+Alerting3- As a user, I want Argus to detect Foreman job
+failures and send an alert with a summary from
+AI.+ + +
+4.5.1 Database Design
+4.5.1.1. Logic Data Model (LDM)
+Figure 4.4 illustrates the database schema implemented during Sprints 2 and 3, focusing on
+tracking Foreman job failures and configuring alerts within Argus.
+33
+Chapter 4. Release 1: Automated Monitoring and Alerting
+Figure 4.4: Logical Data Model
+4.5.2 Software Design
+4.5.2.1. Static View: Class Diagram
+The class diagram presented in Figure 4.5 outlines the core structure and relationships among
+the key classes involved in the Foreman Job Failure Alerting process implemented during
+Sprints 2 and 3.
+34
+Chapter 4. Release 1: Automated Monitoring and Alerting
+Figure 4.5: Process Failed Job Runs Class Diagram
+4.5.2.2. Dynamic View: Sequence Diagram
+The following sequence diagram 4.6, illustrates how Argus process Foreman job runs after
+the scheduler triggers the execution.
+35
+Chapter 4. Release 1: Automated Monitoring and Alerting
+Figure 4.6: Process Failed Job Runs Sprint 2 Sequence Diagram
+36
+Chapter 4. Release 1: Automated Monitoring and Alerting
+4.5.3 Showcase
+Figure 4.7: Failure Alert Example: AI Analysis
+All alerts consistently include fields requested by the Data Operations (DO) developers, pro-
+viding essential context to help them quickly resolve issues. The field "Rerun Recommended"
+explicitly indicates whether re-executing the job is likely to resolve the issue. Furthermore, each
+Foreman related alert contains a "View Job Details" button, which directly navigates to the spe-
+37
+Chapter 4. Release 1: Automated Monitoring and Alerting
+cific job run’s dashboard within Foreman, facilitating immediate access to detailed diagnostic
+information.
+4.6 Sprint 4: Categorize Foreman Job Failure
+After evaluating the AI usage costs associated with summarizing job failures in the previous
+sprint, we identified the need to optimize AI usage. The goal of this sprint is to implement a
+pattern-matching algorithm capable of categorizing job failures into known types and use AI
+assistance when failures cannot be matched with the patterns, that results in huge cost savings
+while maintaining accuracy.
+Product Backlog for the sprint:
+Table 4.4: Sprint 4 Backlog
+Feature ID User Stories Priority
+Categorize Foreman Job
+Failure4- As a user, I want Argus to categorize Foreman
+failures.+ + +
+4.6.1 Software Design
+4.6.1.1. Dynamic View: Sequence Diagram
+The following sequence diagram 4.8, illustrates how Argus will process Foreman job runs
+with the pattern matching after the scheduler triggers the execution.
+38
+Chapter 4. Release 1: Automated Monitoring and Alerting
+Figure 4.8: Process Failed Job Runs Sprint 4 Sequence Diagram
+4.6.2 Foreman Job Failure Algorithm
+In order to detect Foreman job failures efficiently, we had to make an algorithm using pattern
+recognition to identify repeatable failures and use AI for the unidentifiable.
+Algorithm for failure alerting:
+39
+Chapter 4. Release 1: Automated Monitoring and Alerting
+Algorithm 1: Foreman Job Failure Alerting
+Input: Foreman Job Runs
+Output: Alert messages
+Start
+1. Retrieve Foreman Job Runs.
+2. Filter failed jobs
+3.Foreach failed job run
+(a)Start
+(b) Retrieve related data runs for the job.
+(c) Get log entries for each data run.
+(d) Categorize job run failure based on patterns matching.
+(e)IfCouldn’t categorize the job run:
+i. Send job run with relevant info to AI to identify the issue.
+(f) Store processed job run with the category.
+(g)Ifalerting is enabled for the job and didn’t alert for a similar issue for the same Job
+Template the job run uses.
+i. Create a structured Teams Card detailing the failure.
+ii. Send the card to Teams channel for the Foreman Team.
+(h)End
+End
+Description : This algorithm efficiently identifies the cause(s) of a Job Run failure. Pattern
+matching begins by analyzing the response code found in the log entry. For example:
+• HTTP Code 401or403: Authentication issue.
+• HTTP Code 425: Too Early.
+• HTTP Code 429: Too many requests made.
+If the cause is not identified using the response code, the algorithm examines the response body
+against a predefined set of patterns and their causes. Examples include:
+•Authentication : Issue with the credentials used.
+•Data Validation : Data do not match the expected format in Foreman.
+When Argus cannot match a failure to any of the predefined patterns, it forwards the job run
+along with its data runs and log entries to the AI for further analysis. Once the failure cause
+is identified, Argus sends a structured Teams Card, including detailed information about the
+job, job template and client. Argus also tracks previously alerted job runs to avoid redundant
+40
+Chapter 4. Release 1: Automated Monitoring and Alerting
+notifications for the same failure category related to the same Job Template . Implementing this
+pattern matching approach reduced AI usage significantly, cutting associated costs by approxi-
+mately 80
+41
+Chapter 4. Release 1: Automated Monitoring and Alerting
+4.6.3 Showcase
+Figure 4.9: Failure Alert Example: Authentication
+42
+Chapter 4. Release 1: Automated Monitoring and Alerting
+4.7 Sprint 5: Monitor Foreman Exceptions and Stuck Jobs
+By the end of this sprint we want to have an automated system that will alert on Foreman
+internal Exceptions and stuck jobs and an auto generated report with all Foreman stuck jobs.
+Table 4.5: Sprint 5 Backlog
+Feature ID User Stories Priority
+Monitor Foreman
+Exceptions4- As a Foreman Developer, I want Argus to
+monitor Foreman exceptions and alert when
+critical exceptions occur.+ +
+Foreman Stuck Job
+Alerting5- As a user, I want Argus to automatically iden-
+tify Foreman jobs that are stuck or running
+longer than expected.
+- As a user, I want to receive timely alerts when
+jobs become stuck.+ +
+Stuck Jobs Report
+Generation6- As a Data Operations Developer, I want Argus
+to generate a daily report containing all stuck
+jobs and relevant information about them.+
+4.7.1 Database Design
+4.7.1.1. Logic Data Model (LDM)
+The following figure 4.10 represents the database schema added during Sprint 5, focusing on
+tracking Foreman exceptions.
+The database schema introduced in Sprint 5, shown in Figure 4.10, captures and stores details
+related to Foreman exceptions, facilitating tracking and investigation.
+Figure 4.10: Logic Data Model
+43
+Chapter 4. Release 1: Automated Monitoring and Alerting
+4.7.2 Software Design
+4.7.2.1. Monitor Foreman Exceptions
+Static View: Class Diagram
+The following class diagram presented in 4.11 outlines the key classes used in processing
+Foreman Exceptions.
+Figure 4.11: Process Foreman Exceptions Class
+Dynamic View: Sequence Diagram
+When the scheduler triggers the processing of foreman exceptions, Argus will query Azure
+Application Insights and get the exceptions and alert based on the exception type once.
+Figure 4.12: Process Foreman Exceptions Sequence Diagram
+44
+Chapter 4. Release 1: Automated Monitoring and Alerting
+Showcase
+Figure 4.13: Foreman Exception Alert Example
+Each exception alert clearly specifies the type of exception, its location within the codebase,
+severity level, and the associated URL or operation name, which indicates the cause or context
+of the exception. Additionally, each alert includes a "See Stack Trace" button, allowing quick
+access to a concise stack trace containing only relevant details.
+4.7.2.2. Foreman Stuck Job Alerting
+Static View: Class Diagram
+In the following class diagram 4.14, we added new methods to the previous class diagram
+4.5 in order to support the new functionality.
+45
+Chapter 4. Release 1: Automated Monitoring and Alerting
+Figure 4.14: Check Stuck Job Run Class Diagram
+Dynamic View: Sequence Diagram
+Continuing on the implementation of processing failed job runs in the previous sprints we
+continue on it to add checking whether a job run is stuck.
+46
+Chapter 4. Release 1: Automated Monitoring and Alerting
+Figure 4.15: Check Stuck Job Run Sequence Diagram
+Algorithm
+Algorithm 2: Stuck Job Detection
+Input: Foreman Job Run
+Output: stuck or not and an alert messages if stuck
+Start
+1. Check if the job is not in a final state (completed, failed, partially failed...)
+2.IfArgus is still analyzing job stuck threshold:
+(a) Continue to next.
+3. Get the stuck threshold for the job
+4. Evaluate if the job is considered stuck
+5. Store the job to check on later
+6. If alerting is enabled for the job and didn’t alert for a similar issue for the same Job.
+(a) Create a Teams Card with relevant information
+(b) Send an alert in Teams to Foreman andData Operations teams
+End
+Description : This algorithm replaces the current way of checking stuck jobs which is by the
+47
+Chapter 4. Release 1: Automated Monitoring and Alerting
+Data Operations (DO) team manually checking or noticing delays on data. In order for a job
+to be considered stuck, the elapsed time from the start has to pass a threshold of time. Argus
+has 3 ways of getting that threshold, which are as follows and this is the order of priority Argus
+follows:
+•Harvester Stuck Threshold : This is a value entered manually through the API and is
+used for all jobs that derive from a certain Harvester.
+•Manual Stuck Threshold : This value is entered manually through the API and it will
+take effect only for a specific job.
+•Calculated Stuck Threshold : This threshold is automatically calculated by Argus. It
+analyzes the durations of multiple previous job runs, then sets the threshold equal to the
+maximum duration found.
+When Argus identifies a job as stuck, it sends a detailed alert in Teams. To prevent redundant
+notifications, Argus tracks previously alerted stuck job runs and will not alert again for the same
+Job. Each alert includes essential details such as the job, associated client, job template, current
+status, elapsed time, and the "stuck threshold" (in hours).
+48
+Chapter 4. Release 1: Automated Monitoring and Alerting
+Showcase
+Figure 4.16: Stuck Job Alert Example
+4.7.2.3. Stuck Jobs Report Generation
+Dynamic View: Sequence Diagram
+After being triggered by the scheduler Argus will get all the job runs that exists in Foreman
+and generate and upload the report in Azure Blob Storage.
+49
+Chapter 4. Release 1: Automated Monitoring and Alerting
+Figure 4.17: Stuck Jobs Report Sequence Diagram
+Algorithm
+Algorithm 3: Stuck Job Report Generation
+Input: Foreman Job Runs
+Output: JSON file
+Start
+1. Retrieve all Foreman Job Runs.
+2.Foreach job run
+(a) Check if job run is stuck.
+(b)Ifjob run is not stuck:
+i. Continue.
+(c) Collect information about job, job template and client.
+(d) Add Job Run to the stuck list.
+3. Upload report to Azure Blob Storage.
+End
+Description : This algorithm generates a report containing all current stuck job runs and
+uploads the file to Azure Blob Storage for the DO team to use.
+50
+Chapter 4. Release 1: Automated Monitoring and Alerting
+Showcase
+Figure 4.18: Stuck Jobs Report Example
+Figure 4.19: Stuck Jobs Report Blob Directory
+The generated JSON file uploaded in Azure Blob Storage contains the total stuck jobs, when
+the report were generated and a list of the stuck jobs, containing information about the Job, Job
+Template and Client.
+Note: This feature was initially not included in the sprint planning. However, after identify-
+ing numerous jobs that remained stuck for extended periods and reporting these findings to the
+Data Operations team, they specifically requested this functionality. This addition facilitates the
+creation of automated DAG workflows to efficiently track and resolve stuck jobs.
+4.8 Impact and Early Results
+Even though Argus is still in active development, the deployment of Release 1 significantly
+improved the detection and response of issues. The increased visibility provided by Argus
+allowed the team to address longstanding issues and immediately resolve new problems that
+emerged during Foreman’s significant architectural transition. This early success only high-
+lights how crucial a monitoring tool with real time alerts was for the team to effectively handle
+and respond to failures.
+Additionally, since Argus categorizes and stores failure types (e.g., Authentication, Data
+Validation, Rate Limit), it has empowered the Data Operations team to efficiently investigate
+51
+Chapter 4. Release 1: Automated Monitoring and Alerting
+specific issue types across all clients. Moreover, it has helped the Foreman team enhance their
+infrastructure, particularly by identifying "Rate Limit" alerts for newly developed harvesters
+designed to resolve rate-limiting issues. Due to unexpected changes from retailers regarding
+request limits, Argus enabled the team to identify these issues early and correct them promptly,
+thereby preventing any adverse impacts on downstream data.
+The team has provided positive feedback reflecting Argus’s impact:
+Data Operations Manager
+Argus helps at highlighting stuck jobs in times of having a big number of jobs that need
+to be monitored, since the complexity of monitoring gets higher as we add new clients
+and services.
+Foreman Developer
+Argus is our safety net to catching issues now that we’re migrating harvesters to a newer
+architecture gradually, it’s a way for us to monitor if everything is going smoothly after
+we push those migrations.
+Conclusion
+In this chapter, we detailed the development and implementation of Argus’s first release,
+emphasizing its monitoring and alerting capabilities. We covered the planning and execution
+across multiple sprints, showcasing the practical functionality through UML diagrams, algo-
+rithms, and alert examples, and lastly we showcased some of the early positive feedback had
+with the team. In the next chapter, we will be talking about the second and final release of our
+project, focusing on data integrity.
+52
+Chapter 5: Release 2: Automated Data Integrity
+5.1 Introduction
+The primary goal of this release is to implement automated data integrity verification , en-
+suring data consistency, completeness, and accuracy throughout the entire data pipeline. Build-
+ing on the foundational monitoring and alerting capabilities delivered in the previous release,
+Argus will now actively validate data at each stage from initial ingestion in Foreman, till the
+final Snowflake Tables.
+The work included in this release spans three sprints.
+5.2 Release 2 Plan
+Figure 5.1: Plan of Release 2
+The development plan for Release 2, as illustrated in Figure 4.1, focuses on ensuring data
+integrity verification throughout the data pipeline. The sprints are structured in order to validate
+data at each stage:
+53
+Chapter 5. Release 2: Automated Data Integrity
+1.Sprint 6: Foreman to Azure Blob Storage : Validates files pulled by Foreman are cor-
+rectly uploaded to Azure Blob Storage.
+2.Sprint 7: Airflow to Snowflake Raw Table : Confirms that data processed by Airflow is
+loaded into Snowflake’s raw tables.
+3.Sprint 8: DBT to Snowflake Tables (In Progress) : Validates data integrity by verifying
+DBT transformations.
+By implementing automated data integrity checks, Argus ensures reliable data validation at
+each stage of the pipeline, significantly reducing manual intervention and enhancing system
+readiness for future expansions or changes.
+5.3 Backlog for the release
+The following table 4.1 outlines the items in the backlog identified for Release 1.
+Table 5.1: Release 2 Backlog
+Feature ID User Stories Priority
+Foreman: Add Blob Tags 7- When uploading a file to Azure Blob Storage
+in Foreman, add unique identifiers as indexed
+tags.+ + +
+Foreman to Azure Blob
+Storage Verification8- As a user, I want Argus to verify that the file(s)
+Foreman pulled has been uploaded to Azure
+Blob Storage.+ + +
+Airflow to Snowflake Raw
+Verification8- As a user, I want Argus to verify the existence
+and data completion of the file(s) Airflow up-
+loaded to Snowflake Raw a.+ + +
+DBT to Snowflake Tables
+Verification8- As a user, I want Argus to validate that the
+final table(s) reflects the new data.+ + +
+5.4 Sprint 6: Foreman to Azure Blob Storage
+The focus of this sprint is to have an automated integrity tool that will verify that the file
+Foreman pulled has been successfully uploaded to Azure Blob Storage.
+Initially, files uploaded by Foreman to Azure Blob Storage lacked traceability due to different
+naming standards, the team previously needed to know the exact naming convention and specific
+values to locate a file. This limitation prevented Argus from reliably identifying required files.
+To address this, We had to work on Foreman code base to add indexed tags to each file uploaded
+to Blob Storage. These tags are easily searchable, enabling Argus to reliably and automatically
+identify files.
+Product Backlog for Sprint 6:
+54
+Chapter 5. Release 2: Automated Data Integrity
+Table 5.2: Sprint 6 Backlog
+Feature ID User Stories Priority
+Foreman: Add Blob Tags 7- When uploading a file to Azure Blob Storage
+in Foreman, add unique identifiers as indexed
+tags.+ + +
+Foreman to Azure Blob
+Storage Verification8- As a user, I want Argus to verify that the file(s)
+Foreman pulled has been uploaded to Azure
+Blob Storage.+ + +
+5.4.1 Database Design
+5.4.1.1. Logic Data Model (LDM)
+Figure 5.2 illustrates the database schema developed during Sprint 6, designed specifically
+to track and validate files as they progress through each stage of the data pipeline, ensuring
+accurate and reliable data integrity monitoring.
+55
+Chapter 5. Release 2: Automated Data Integrity
+Figure 5.2: Logical Data Model
+5.4.2 Software Design
+In this part we will be introducing the work done to add the feature of Blob Tags and Integrity
+checks on the files Foreman upload to Azure Blob Storage in the form of UML diagrams.
+5.4.2.1. Static View: Class Diagram
+The class diagram presented in Figure 5.3 outlines the connections between classes needed
+to simulate the data flow process.
+56
+Chapter 5. Release 2: Automated Data Integrity
+Figure 5.3: Sprint 6 Class Diagram
+5.4.2.2. Dynamic View: Sequence Diagram
+The diagram 5.4 illustrates how Foreman will be adding the blob tags to the an uploaded
+blob/file. We need this tags to be unique per blob, thus we used a combination of the Job Run
+Id+Data Run Id .
+57
+Chapter 5. Release 2: Automated Data Integrity
+Figure 5.4: Foreman Add Blob Tags Sequence Diagram
+Showcase
+Figure 5.5: Blob with Tags Example
+Now, rather than manually searching through blobs to find the required file, we can reliably
+and efficiently locate files using JobRunId andDataRunId provided by Foreman.
+The following sequence diagram 5.6 showcases how Argus processes Foreman job runs
+(Failed, Completed, Stuck and In Progress) after the scheduler triggers the execution.
+58
+Chapter 5. Release 2: Automated Data Integrity
+Figure 5.6: Complete Process Job Runs Sequence Diagrams 59
+Chapter 5. Release 2: Automated Data Integrity
+Algorithm 4: Workflow Creation
+Input: Foreman Job Runs
+Output: Workflows
+Start
+1. Retrieve Foreman Job Runs.
+2. Filter completed jobs
+3.Foreach completed job run
+(a)Start
+(b) Retrieve related data runs for the job.
+(c) Create a workflow to simulate the data pipeline.
+(d) Create stage from Foreman to Azure.
+(e)Iffile exists in Azure Blob Storage.
+i. Get the file’s content.
+ii. Split the columns into file related columns and foreman added columns.
+iii. Get the data type of each column
+iv. Add the file and its details to the workflow.
+i. Add to the list of missing files to send one alert containing all missing files.
+(f)Ifmissing file list is empty
+i. Mark the stage as completed and all files found.
+ii. Transition the workflow to the next stage (Airflow)
+(g)else
+i. Mark the stage as failed and update the found and missing files statuses.
+ii. Create missing files adaptive card.
+iii. Send an alert to the Foreman team.
+(h)End
+End
+Description : For each completed Foreman job run, Argus retrieves all data runs and initial-
+izes a workflow, simulating the data pipeline’s flow.
+Argus checks Azure Blob Storage for expected files. Upon confirming their presence, Argus
+extracts metadata such as row counts, column names, and data types from each file. It dis-
+tinguishes between original file column and the metadata columns added by Foreman, storing
+these details, along with the file path, within the workflow. Argus then creates and marks the
+pipeline stage from Foreman to Azure Blob Storage as complete, preparing the workflow for
+the next stage (Airflow).
+However, if any required files are missing, Argus alerts the Foreman on the missing files.
+60
+Chapter 5. Release 2: Automated Data Integrity
+This approach ensures immediate visibility of any issues and enables timely interventions and
+resolutions.
+This algorithm and its sequence diagram build upon and integrate previous steps, including
+job failure handling (Figure 4.8) and stuck job detection (Figure 4.15), providing comprehensive
+pipeline monitoring and integrity validation.
+Showcase
+Figure 5.7: Data Integrity Alert Stage Foreman to Azure
+61
+Chapter 5. Release 2: Automated Data Integrity
+5.5 Sprint 7: Airflow to Snowflake Raw
+After guaranteeing the existence of the file in Azure Blob Storage, we have a rough estimate
+of how the file should be like using the row count, column names, and types. Now we will be
+working on checking the integrity of the data for the next stage in the pipeline.
+5.5.1 Software Design
+5.5.1.1. Static View: Class Diagram
+The class diagram presented in Figure 5.8 outlines classes to be used in the following sprint.
+Figure 5.8: Sprint 7 Class Diagram
+62
+Chapter 5. Release 2: Automated Data Integrity
+5.5.1.2. Dynamic View: Sequence Diagram
+Figure 5.9: Process Dag Runs Sequence Diagrams
+Description : When the Process DAG Runs workflow is triggered by the scheduler, Argus
+first collects DAG IDs from workflows currently pending in the Airflow stage. It then retrieves
+the corresponding DAG runs from Airflow and loads the related workflows.
+For each DAG run, Argus retrieves the XCom entries generated by the loading task and
+parses the results to validate file uploads performed by Airflow. For CSV files, Argus addition-
+ally verifies that the number of parsed rows matches the row count of the uploaded file. For
+63
+Chapter 5. Release 2: Automated Data Integrity
+other file types, such as JSON and PARQUET, validation is limited to confirming the presence
+of the file, since these formats are loaded as single row records.
+When validation is successful, Argus transitions the workflow to the next stage ( SnowflakeRaw ),
+where it queries the corresponding Snowflake table to verify the presence of data, row count and
+columns against the expected values. Once this validation succeeds, Argus transitions the work-
+flow to the final validation stage ( DBT ).
+If any of these checks fail, Argus marks the workflow stage as failed, with an error message
+describing the cause, and sends an alert to the Data Operations (DO) team.
+5.5.2 Showcase
+Figure 5.10: Data Integrity Alert Stage Azure to Airflow
+64
+Chapter 5. Release 2: Automated Data Integrity
+Conclusion
+In this chapter, we detailed Argus’s second release, emphasizing its automated data integrity
+verification across each stage of the data pipeline. Through structured database designs, detailed
+software implementation, and practical validation workflows, Argus now actively ensures data
+consistency and accuracy from initial ingestion to final delivery. This release enhances the reli-
+ability of the overall system, building effectively upon the foundational monitoring and alerting
+features introduced earlier. The next chapter, focus on how our project Argus is deployed.
+65
+Chapter 6: Deployment
+6.1 Introduction
+In this chapter, we detail how the Argus application is deployed to the Azure cloud envi-
+ronment. We cover application containerization, key Azure infrastructure components, secure
+management of secrets and configurations, and the continuous integration and continuous de-
+livery (CI/CD) pipeline used to efficiently build and deploy new versions of Argus.
+6.2 Containerizing the Application
+The Argus application is containerized into two main components:
+1.argus-scheduler : This is the primary service responsible for continuous scheduling and
+executions of Argus tasks.
+2.argus-api : This is an optional interface component providing API endpoints for manual
+configuration changes, querying Argus data, or manually triggering specific processes. It
+also has an entry point with an exposed port for external communications.
+Additionally, Argus includes a Docker container dedicated to database migrations. This
+ensures that the PostgreSQL database schema stays up-to-date with the latest migrations. Each
+of these Docker setups comes with specific Dockerfiles tailored for both local development and
+production environments to streamline the development-to-deployment workflow.
+Figure 6.1: Docker Compose Dev Env
+6.3 Azure Infrastructure Setup
+Azure is the main cloud provider for Harvest Group, It hosts all of Harvest internal and
+external tools, and our project is no different. In this section we will be going through the setup
+we have to keep Argus running.
+6.3.1 Resource Group
+All resources for Argus are organized under a single Azure Resource Group for easy resource
+management, billing and permission assignment. Using a resource group makes it easy for Role
+Based Access Control (RBAC), ensuring team members have appropriate access.
+66
+Chapter 6. Deployment
+Figure 6.2: Argus Resource Group
+6.3.2 App Registration and Authentication
+Azure App Registration is used to manage permissions and authentication. This setup en-
+ables Microsoft OAuth integration, configures permitted redirect URLs, and provides Argus
+secure and controlled access to internal Harvest services, as well as Microsoft and Azure APIs.
+Figure 6.3: Argus App Registration
+6.3.3 Azure Database for PostgreSQL
+We provisioned an Azure Database for PostgreSQL instance to store Argus’s relational data.
+6.3.4 Azure Container Apps
+This section will focus on introducing the Azure Container Apps used to host Argus.
+1.Scheduler : This Container App serves as the central processing unit for Argus, responsi-
+ble for task scheduling, job executing.
+2.API: An optional API interface that scales down to 0 that can be used for manual config-
+uration changes, querying Argus data or manually triggering processes.
+6.3.4.1. Scheduler
+This container app is used to as the main project that will be handling monitoring and alert-
+ing. It hosts the scheduler container that will be automatically triggering jobs based on the
+configured cron expression for each job.
+67
+Chapter 6. Deployment
+1.Foreman: Process Job Runs : This job will be monitoring Foreman job runs and alert as
+explained in Release 1 chapter . This job will be triggered hourly.
+2.Foreman: Process Exceptions : This job will query exception logs from Foreman’s Ap-
+plication Insights and alert on them, as explained in Release 1 chapter .
+3.Stuck Job Report Generation : This job will be retrieving all Foreman job runs and
+generate a report for the stuck jobs, as explained in Release 1 chapter .
+4.Airflow: Process Dag Runs : This job will process dag runs and to ensure that Airflow
+has successfully uploaded the files into their respective Snowflake Raw Tables as ex-
+plained in Release 2 chapter . This job will be triggered after 30 min from the Foreman
+Process Job Runs job.
+5.Syncers : In order to minimize calls for Foreman and Airflow, we built custom syncers
+that will sync Foreman Job Templates ,Foreman Jobs , and Airflow Dags .
+Figure 6.4: Argus Scheduler Container App
+6.3.4.2. API
+This container app will be used for retrieving data from Argus, manually triggering jobs, and
+manual config changes.
+68
+Chapter 6. Deployment
+Figure 6.5: Argus API Container App
+6.3.5 Key Vault and Secrets Management
+Since both of our container apps are using the same functionalities that require configurations
+(ie: database connection string, webhook urls...). Managing secrets via standard environment
+variables poses challenges in consistency and security, especially across multiple containers.
+To overcome these limitations, we leverage Azure Key Vault, securely centralizing storage of
+sensitive configuration data. Container Apps then access these secrets at runtime using managed
+identities, significantly reducing management complexity and enhancing overall security.
+Figure 6.6: Argus Key Vault
+6.3.6 Application Insights
+With Argus actively handling workloads, continuous monitoring of exceptions, resource uti-
+lization, and logs becomes crucial. Azure Application Insights addresses this requirement by
+seamlessly integrating with Argus container apps, providing real-time monitoring capabilities,
+intuitive metric visualization, and a query interface similar to SQL, facilitating effective trou-
+69
+Chapter 6. Deployment
+bleshooting and system analysis. Application Insights is enabled on both container applications
+for real-time monitoring, logging, and resource usage monitoring.
+Figure 6.7: Argus Application Insights
+6.3.7 Container Registry
+Originally, we attempted to use Azure Container Registry (ACR), but due to integration is-
+sues we kept facing with the CI/CD not being able to upload new images even with the required
+permissions, we opted to using GitHub Container Registry (GHCR) to store and version our
+container images.
+Figure 6.8: Container Registry
+6.4 CI/CD Pipeline
+In order to maintain efficiency and facilitate the deployment of Argus, we created a CI/CD
+pipeline that utilizes Github actions.
+6.4.1 Azure AD Setup
+To securely facilitate GitHub Actions access to Azure resources, we had to create a federated
+credential in Azure AD. That allowed the automated workflows to interact securely with Azure
+services on behalf of Argus.
+70
+Chapter 6. Deployment
+Figure 6.9: GitHub Federated Credential
+6.4.2 Github Secrets
+Secrets are variables that we create in an organization, repository, or repository environment.
+Github allows access to this secrets when explicitly included in the workflow. In order to set
+the secrets in the repository, we were granted temporary admin access to Argus repository. We
+used Github secrets to safely store credentials required by our github action. In Table
+Table 6.1: Github Secretes
+Secret Description
+Azure Client ID Azure Client ID of Argus
+Azure Tenant ID Azure Tenant ID of Argus
+Azure Subscription ID Harvest Azure subscription ID
+6.4.3 Github Action Workflow
+The GitHub Actions workflow automates deployment through the following steps:
+1. Build the application.
+2. Run any pending migrations on the database.
+3. Build and push Docker images to GHCR separately for the API and scheduler.
+4. Create or update the secrets (environment variables) for the container apps from Azure
+Key Vault.
+5. Deploy the Container Apps using the new images.
+71
+Chapter 6. Deployment
+Figure 6.10: GitHub Actions workflow for build, migrate, and deploy.
+6.5 Post-Deployment Verification
+After a successful deployment, we continuously monitor the state of each container app
+using the Application Insights interface. If an issue occurs, we examine the container app logs
+to diagnose and resolve the problem.
+Figure 6.11: Argus Application Insights Stats.
+6.6 Conclusion
+In this chapter, we walked through how Argus is deployed in production environment, lever-
+aging the power and flexibility of Azure. By structuring resources under a unified Azure Re-
+source Group, we streamlined management and simplified access control. Containerizing Ar-
+gus and deploying it on Azure Container Apps allowed for scalability and efficient handling
+of workloads. Additionally, integrating GitHub Actions automated our deployment pipeline,
+ensuring smooth, consistent, and reliable releases.
+72
+Conclusion and Perspectives
+Throughout this internship project, significant progress was made in addressing Harvest
+Group’s critical need for reliable, automated data integrity and monitoring within their data
+pipeline. The developed solution, "Automated Data Integrity and Error Alerting System" named
+Argus, effectively implemented thorough monitoring, alerting, and validation across multiple
+pipeline stages, including Foreman job execution, Azure Blob Storage uploads, and Apache
+Airflow integrations. Each completed phase has shown notable improvements in the detection,
+categorization, and resolution of data pipeline issues, significantly enhancing the team’s opera-
+tional efficiency and responsiveness.
+The Foreman monitoring component particularly highlighted the team’s strong need for a
+solution that not only monitors job runs but also categorizes and efficiently alerts on failures.
+This was especially important for the Foreman team as they navigated significant architectural
+changes. Argus helped identify numerous issues and failures early, which otherwise might
+have gone unnoticed for extended periods. The implementation of the pattern matching algo-
+rithm, designed to reduce AI dependency and manage usage costs effectively, quickly became a
+standout feature of Argus. Its value was evident, as the Data Operations (DO) team frequently
+requested reports categorizing job runs by specific issue types.
+This internship provided substantial growth opportunities, both technically and profession-
+ally. Technically, working with large-scale applications enhanced my problem solving skills,
+broadened my programming skills by introducing me to the .NET framework, improved my
+DevOps expertise through practical experience with Azure Cloud, and taught me how to man-
+age complex technical challenges effectively. Professionally, being part of a large organization
+and collaborating with a diverse team helped me significantly improve my communication and
+teamwork skills. Overall, this experience has prepared me to contribute effectively in future
+professional settings.
+However, the final sprint, which focuses specifically on automated integrity checks and vali-
+dations involving Snowflake tables and DBT transformations, remains in progress due to several
+encountered challenges. These challenges include restricted access to critical infrastructure,
+concerns over the substantial cost associated with extensive usage of Snowflake resources, and
+the inherent complexity associated with DBT implementations within Harvest Group’s existing
+environment.
+73
+Conclusion
+Future enhancements will focus on addressing these constraints through strategic cost man-
+agement strategies, transitioning from using Webhooks/Workflows to send messages in Mi-
+crosoft Teams due to the rate limit, and automating the task of report generation by failure
+category. Successfully overcoming these challenges will enable the full deployment of Argus
+across the entire pipeline, thus realizing the comprehensive vision initially set for the project.
+74
+Webography
+[1] Airflow DAG .https://airflow.apache.org/docs/apache-airflow/
+stable/core-concepts/dags.html#dags . May, 2025.
+[2] Pattern Matching .https : / / learn . microsoft . com / en - us / dotnet /
+csharp/fundamentals/functional/pattern-matching . May, 2025.
+[3] Harvest Group .https://harvestgroup.com/ . May, 2025.
+[4] Apache Airflow .https://www.qubole.com/the-ultimate-guide-to-
+apache-airflow . May, 2025.
+[5] Data Build Tool (DBT) .https://www.getdbt.com/product/what-is-dbt .
+May, 2025.
+[6] Snowflake .https://docs.snowflake.com/en/user-guide/intro-key-
+concepts . May, 2025.
+[7] API.https://aws.amazon.com/what-is/api/ . May, 2025.
+[8] Data Integrity .https://www.fortinet.com/resources/cyberglossary/
+data-integrity . May, 2025.
+[9] Cron Expression .https://phoenixnap.com/kb/cron-expression . May,
+2025.
+[10] Adaptive Card .https://adaptivecards.io/ . May, 2025.
+[11] Blob Index Tags .https://learn.microsoft.com/en-us/azure/storage/
+blobs/storage-blob-index-how-to?tabs=azure-portal . Juin, 2025.
+[12] Agile Scrum .https://www.wrike.com/project-management-guide/
+faq/what-is-scrum-in-agile/ . Nov 24, 2024.
+[13] Product Backlog .https://www.atlassian.com/agile/scrum/backlogs .
+May, 2025.
+[14] Modular Monolith .https : / / www . geeksforgeeks . org / what - is - a -
+modular-monolith/ . Juin, 2025.
+[15] .NET .https://learn.microsoft.com/en-us/dotnet/core/introduction .
+June, 2025.
+[16] C#.https://dotnet.microsoft.com/en-us/languages . June, 2025.
+[17] ASP .NET .https://dotnet.microsoft.com/en- us/learn/aspnet/
+what-is-aspnet . June, 2025.
+75
+Webography
+[18] Quartz.NET .https://www.quartz-scheduler.net/ . June, 2025.
+[19] Postman .https://www.postman.com/product/what-is-postman/ . June,
+2025.
+[20] PostgreSQL .https://postgresql.org/ . June, 2025.
+[21] Git.https://git-scm.com// . Apr, 2024.
+[22] Github .https://github.com// . Apr, 2024.
+[23] Azure .https://azure.microsoft.com/en- us/resources/cloud-
+computing-dictionary/what-is-azure . June, 2025.
+[24] Docker .https://aws.amazon.com/docker/ . June, 2025.
+[25] Github Actions .https://docs.github.com/en/actions/about-github-
+actions/understanding-github-actions . June, 2025.
+76

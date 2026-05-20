@@ -19,7 +19,15 @@ class PolicyEffect(str, Enum):
 class PolicyConditionSchema(BaseModel):
     """Condition block for policies (IF)."""
     model_config = ConfigDict(extra="forbid")
-    
+
+    sensitivity: Optional[SensitivityLevel] = None
+    tenant: Optional[str] = None
+
+
+class PolicyConditionResponse(BaseModel):
+    """Condition as stored in DB (may include legacy/extra keys)."""
+    model_config = ConfigDict(extra="allow")
+
     sensitivity: Optional[SensitivityLevel] = None
     tenant: Optional[str] = None
 
@@ -71,10 +79,10 @@ class GovernancePolicyUpdate(BaseModel):
 class GovernancePolicyResponse(BaseModel):
     """Response schema for a governance policy."""
     model_config = ConfigDict(from_attributes=True)
-    
+
     id: str
     description: Optional[str] = None
-    condition: PolicyConditionSchema
+    condition: PolicyConditionResponse
     effect: PolicyEffect
     is_active: bool
     version: str

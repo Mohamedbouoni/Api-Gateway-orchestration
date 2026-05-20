@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import useAuth from "../hooks/useAuth";
-import axios from "axios";
+import api from "../api/client";
 import AIChat from "./AIChat";
 import AdminPortal from "./AdminPortal";
 import { useKeyPress } from "../../hooks/useKeyPress";
@@ -21,10 +21,9 @@ export default function Protected() {
       const config = {
         headers: {
           authorization: `Bearer ${token}`,
-          "kong-header": "true",
         },
       };
-      const res = await axios.get("/api/admin", config);
+      const res = await api.get("/admin", config);
       setDocuments(res.data.data);
     } catch (err) {
       setError(
@@ -44,10 +43,9 @@ export default function Protected() {
       const config = {
         headers: {
           authorization: `Bearer ${token}`,
-          "kong-header": "true",
         },
       };
-      const res = await axios.get("/api/documents", config);
+      const res = await api.get("/documents", config);
       setDocuments(res.data.data);
     } catch (err) {
       setError(

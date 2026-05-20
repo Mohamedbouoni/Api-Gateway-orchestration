@@ -1,0 +1,45 @@
+# Default values for the AI Gateway Platform.
+# This is a YAML-formatted file.
+
+global:
+  environment: "dev"
+  tenantIsolationEnabled: true
+
+fastapi:
+  replicaCount: 2
+  image:
+    repository: api-gateways-backend
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  service:
+    port: 3000
+
+intentClassifier:
+  replicaCount: 1
+  image:
+    repository: api-gateways-intent-classifier
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  service:
+    port: 3010
+
+frontend:
+  replicaCount: 1
+  image:
+    repository: api-gateways-frontend
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  service:
+    port: 5173
+
+kong:
+  enabled: true
+  proxy:
+    type: LoadBalancer
+    httpNodePort: 31954
+    httpsNodePort: 30503
+
+keycloak:
+  enabled: true
+  service:
+    port: 8080

@@ -1011,7 +1011,7 @@ class AIRequestService:
             },
             "response_headers": {
                 "x-kong-proxy-latency": "1",
-                "x-kong-upstream-latency": str(elapsed_ms),
+                "x-kong-upstream-latency": "0",
                 "x-ai-debug": f"intent={pf.intent_name} service={pf.resolved_service_id} model={pf.service.model_name}",
             },
         }

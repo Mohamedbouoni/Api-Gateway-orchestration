@@ -18,6 +18,7 @@ import {
   formatIntentConfidence,
   hasIntentClassificationDetails,
 } from "../utils/intentClassification";
+import { API_BASE } from "../api/client";
 
 // ── Blinking cursor keyframe injected once at module level ────────────────
 const CURSOR_STYLE = `
@@ -213,13 +214,12 @@ const AIChat = ({
     abortControllerRef.current = controller;
 
     try {
-      const response = await fetch("/api/ai/request", {
+      const response = await fetch(`${API_BASE}/ai/request`, {
         signal: controller.signal,
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
-          "kong-header": "true",
           Accept: "text/event-stream",
         },
         body: JSON.stringify({
