@@ -11,40 +11,38 @@
 
 $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 if (-not $isAdmin) {
-    Write-Host "ERROR: deploy.ps1 must be run as Administrator (required to set machine-level OLLAMA_KEEP_ALIVE)." -ForegroundColor Red
-    Write-Host "Right-click PowerShell and choose Run as administrator, then run .\deploy.ps1 again." -ForegroundColor Yellow
-    exit 1
-}
-
-$ollamaKeepAlive = [Environment]::GetEnvironmentVariable("OLLAMA_KEEP_ALIVE", "Machine")
-if ($ollamaKeepAlive -ne "-1") {
-    Write-Host "Configuring OLLAMA_KEEP_ALIVE=-1 (keep models loaded in memory)..." -ForegroundColor Yellow
-    [Environment]::SetEnvironmentVariable("OLLAMA_KEEP_ALIVE", "-1", "Machine")
-    $env:OLLAMA_KEEP_ALIVE = "-1"
-
-    Get-Process -Name "ollama*" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
-    $ollamaApp = Join-Path $env:LOCALAPPDATA "Programs\Ollama\ollama app.exe"
-    if (Test-Path $ollamaApp) {
-        Start-Process -FilePath $ollamaApp -WindowStyle Hidden
-    } elseif (Get-Command ollama -ErrorAction SilentlyContinue) {
-        Start-Process -FilePath "ollama" -ArgumentList "serve" -WindowStyle Hidden
-    } else {
-        $svc = Get-Service -Name "Ollama" -ErrorAction SilentlyContinue
-        if ($svc) {
-            Restart-Service -Name "Ollama" -Force -ErrorAction SilentlyContinue
-        } else {
-            Write-Host "  Warning: Ollama not found; install Ollama on the host for local LLM routing." -ForegroundColor DarkYellow
-        }
-    }
-    Start-Sleep -Seconds 3
-    try {
-        $null = Invoke-WebRequest -Uri "http://localhost:11434/api/tags" -UseBasicParsing -TimeoutSec 5
-        Write-Host "  Ollama API is reachable on :11434" -ForegroundColor Green
-    } catch {
-        Write-Host "  Warning: Ollama API not reachable yet at http://localhost:11434" -ForegroundColor DarkYellow
-    }
+    Write-Host "Warning: Not running as Administrator. Skipping machine-level OLLAMA_KEEP_ALIVE configuration." -ForegroundColor Yellow
 } else {
-    Write-Host "OLLAMA_KEEP_ALIVE already set to -1 (models stay warm)." -ForegroundColor Gray
+    $ollamaKeepAlive = [Environment]::GetEnvironmentVariable("OLLAMA_KEEP_ALIVE", "Machine")
+    if ($ollamaKeepAlive -ne "-1") {
+        Write-Host "Configuring OLLAMA_KEEP_ALIVE=-1 (keep models loaded in memory)..." -ForegroundColor Yellow
+        [Environment]::SetEnvironmentVariable("OLLAMA_KEEP_ALIVE", "-1", "Machine")
+        $env:OLLAMA_KEEP_ALIVE = "-1"
+
+        Get-Process -Name "ollama*" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+        $ollamaApp = Join-Path $env:LOCALAPPDATA "Programs\Ollama\ollama app.exe"
+        if (Test-Path $ollamaApp) {
+            Start-Process -FilePath $ollamaApp -WindowStyle Hidden
+        } elseif (Get-Command ollama -ErrorAction SilentlyContinue) {
+            Start-Process -FilePath "ollama" -ArgumentList "serve" -WindowStyle Hidden
+        } else {
+            $svc = Get-Service -Name "Ollama" -ErrorAction SilentlyContinue
+            if ($svc) {
+                Restart-Service -Name "Ollama" -Force -ErrorAction SilentlyContinue
+            } else {
+                Write-Host "  Warning: Ollama not found; install Ollama on the host for local LLM routing." -ForegroundColor DarkYellow
+            }
+        }
+        Start-Sleep -Seconds 3
+        try {
+            $null = Invoke-WebRequest -Uri "http://localhost:11434/api/tags" -UseBasicParsing -TimeoutSec 5
+            Write-Host "  Ollama API is reachable on :11434" -ForegroundColor Green
+        } catch {
+            Write-Host "  Warning: Ollama API not reachable yet at http://localhost:11434" -ForegroundColor DarkYellow
+        }
+    } else {
+        Write-Host "OLLAMA_KEEP_ALIVE already set to -1 (models stay warm)." -ForegroundColor Gray
+    }
 }
 
 # Warm up models into memory regardless of whether OLLAMA_KEEP_ALIVE was just set or already configured
@@ -275,6 +273,8 @@ if ($applyExitCode -ne 0) {
 
 # ── Wait for services ─────────────────────────────────────────────────────
 Write-Host ""
+Write-Host "Sleeping 10s to let Kubernetes schedule new pods..." -ForegroundColor Gray
+Start-Sleep -Seconds 10
 Write-Host "Waiting for databases..." -ForegroundColor Gray
 kubectl wait --for=condition=ready pod -l app=platform-db -n ai-data --timeout=300s
 if ($LASTEXITCODE -ne 0) {

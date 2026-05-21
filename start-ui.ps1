@@ -6,7 +6,7 @@ Write-Host ""
 Write-Host "Opening background terminals for Port Forwarding..." -ForegroundColor Yellow
 
 # Forward Frontend
-Start-Process powershell -WindowStyle Minimized -ArgumentList "-NoExit -Command title 'Frontend (5173)'; kubectl port-forward -n ai-gateway svc/frontend 5173:80"
+Start-Process powershell -WindowStyle Minimized -ArgumentList "-NoExit -Command title 'Frontend (5173)'; kubectl port-forward -n ai-gateway svc/frontend 5173:5173"
 
 # Forward Kong Manager (Admin UI)
 Start-Process powershell -WindowStyle Minimized -ArgumentList "-NoExit -Command title 'Kong Manager (8002)'; kubectl port-forward -n ai-gateway svc/kong-cp 8002:8002"

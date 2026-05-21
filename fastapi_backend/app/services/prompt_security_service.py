@@ -175,7 +175,7 @@ INJECTION_PATTERNS: List[InjectionPattern] = [
 class InjectionClassifier:
     """DistilBERT-based prompt injection scoring (CPU; run via executor)."""
 
-    MODEL_ID = "meta-llama/Llama-Prompt-Guard-2-86M"
+    MODEL_ID = "fmops/distilbert-prompt-injection"
 
     def __init__(self) -> None:
         self._pipeline: Any = None
