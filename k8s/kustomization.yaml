@@ -2,8 +2,9 @@ resources:
   # ── Step 1: Create namespaces first ──────────────────────────────────────
   - namespaces.yaml
 
-  # ── Step 2: Secrets (passwords must exist before pods start) ─────────────
-  - secrets/secrets.yaml
+  # ── Step 2: Secrets are created dynamically by scripts/vault-sync-k8s-secrets.ps1
+  # before kubectl apply -k runs. secrets/secrets.yaml is kept as a reference
+  # template but is NOT applied here (would overwrite Vault-sourced values).
 
   # ── Step 3: Data layer (databases must be healthy before app starts) ──────
   - data/postgres-platform.yaml
@@ -14,10 +15,13 @@ resources:
   - application/intent-classifier.yaml
   - application/fastapi.yaml
   - application/keycloak-and-logger.yaml
+  # Job manifest applied by deploy.ps1 after Keycloak is ready (not via kustomize)
+  # - application/keycloak-master-config-job.yaml
 
   # ── Step 5: Gateway layer ─────────────────────────────────────────────────
   - gateway/kong-cp.yaml
   - gateway/kong-dp.yaml
+  - gateway/waf.yaml        # WAF edge security — sole public LoadBalancer on :80
 
   # ── Step 6: Frontend and Monitoring ──────────────────────────────────────
   - frontend-and-monitoring.yaml

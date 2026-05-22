@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.middleware import verify_kong_header
 from app.core.security import get_current_user
+from app.core.vault_secrets import check_vault_health
 from app.infrastructure.db.session import get_db, get_db_with_user
 from app.models.ai_request import AIRequestRecord
 from app.models.ai_service import AIService
@@ -144,6 +145,7 @@ async def get_dashboard_metrics(db: AsyncSession = Depends(get_db_with_user)) ->
         },
         "system": {
             "backend_latency_ms": avg_latency_ms,
+            "vault": check_vault_health(),
         },
         "cost": {
             "top_consumer": top_consumer,

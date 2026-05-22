@@ -1,0 +1,25 @@
+sequenceDiagram
+    autonumber
+    participant Client as Client
+    participant API as AIRequestService
+    participant Redis as Redis_Quota
+    participant OPA as OPA_Engine
+    participant Audit as PolicyAuditLog
+
+    Client->>API: authenticated AI request
+    API->>Redis: INCRBY daily token usage
+    alt quota exceeded
+        Redis-->>API: over limit
+        API-->>Client: 429 quota rejected
+    else quota OK
+        Redis-->>API: allowed
+        API->>OPA: evaluate(tenant, sensitivity, service)
+        OPA-->>API: Allow or Deny
+        alt denied
+            API->>Audit: log deny decision
+            API-->>Client: 403 policy denied
+        else allowed
+            API->>Audit: log allow decision
+            API-->>API: continue orchestration
+        end
+    end

@@ -22,9 +22,10 @@ metadata:
     project: enterprise-ai-gateway
 data:
   PORT: "3000"
-  KEYCLOAK_URL: "http://keycloak.ai-application.svc.cluster.local:8080"
+  KEYCLOAK_URL: "http://keycloak.ai-application.svc.cluster.local:8080/auth"
   KEYCLOAK_REALM: "newRealm"
   CORS_ORIGIN: "http://localhost,http://127.0.0.1,http://localhost:5173,http://127.0.0.1:5173,http://localhost:8000"
+  # REDIS_URL is overridden at runtime by Vault (secret/redis/platform); this is the fallback
   REDIS_URL: "redis://redis.ai-data.svc.cluster.local:6379/0"
   OPA_ENABLED: "true"
   OPA_URL: "http://opa.ai-application.svc.cluster.local:8181"
@@ -40,6 +41,11 @@ data:
   INTENT_CLASSIFIER_ENABLED: "true"
   INTENT_CLASSIFIER_SHADOW: "false"
   INTENT_TAXONOMY_PATH: "/etc/intent-taxonomy/intent_labels_v1.yaml"
+  # ── Vault integration ────────────────────────────────────────────────────
+  VAULT_ENABLED: "true"
+  VAULT_ADDR: "http://vault.ai-data.svc.cluster.local:8200"
+  VAULT_TOKEN: "dev-root-token"
+  VAULT_MOUNT: "secret"
   # HuggingFace model cache (DistilBERT warm-up at startup)
   HF_HOME: "/var/cache/huggingface"
   # Presidio spaCy model — must match `python -m spacy download` in Dockerfile

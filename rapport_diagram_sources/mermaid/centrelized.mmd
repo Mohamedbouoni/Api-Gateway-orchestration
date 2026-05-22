@@ -1,0 +1,38 @@
+flowchart TB
+    subgraph Clients["Enterprise Clients"]
+        WEB[React Frontend]
+        API_CLIENT[Internal APIs]
+    end
+
+    subgraph Gateway["Centralized Control Plane"]
+        KC[Keycloak SSO]
+        KONG[Kong API Gateway]
+        OPA[OPA Policies]
+        REDIS[Redis Quotas]
+    end
+
+    subgraph Orchestrator["FastAPI Orchestration Engine"]
+        IC[ML Intent Classifier]
+        ROUTE[Deterministic Routing Map]
+        STREAM[SSE Streaming]
+    end
+
+    subgraph Providers["AI Providers"]
+        OLLAMA[Ollama on-prem]
+        EXT[External LLM APIs]
+    end
+
+    subgraph Data["Data & Observability"]
+        PG[(PostgreSQL + RLS)]
+        PROM[Prometheus / Grafana]
+        VAULT[HashiCorp Vault]
+    end
+
+    WEB & API_CLIENT --> KONG
+    KC -.->|JWT RS256| KONG
+    KONG --> OPA & REDIS
+    KONG --> Orchestrator
+    IC --> ROUTE --> STREAM
+    STREAM --> Providers
+    Orchestrator --> PG & PROM
+    VAULT -.->|secrets| Orchestrator

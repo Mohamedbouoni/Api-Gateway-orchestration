@@ -20,6 +20,6 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: kong-dp
+                name: waf    # WAF is the public edge; kong-dp is ClusterIP-only
                 port:
                   number: 80

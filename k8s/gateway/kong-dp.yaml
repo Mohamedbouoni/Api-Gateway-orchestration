@@ -134,7 +134,7 @@ spec:
     - name: status
       port: 8100
       targetPort: 8100
-  type: LoadBalancer  # exposes a real external IP in production (or localhost in dev)
+  type: ClusterIP  # WAF is now the sole public LoadBalancer — kong-dp is internal only
 ---
 # HorizontalPodAutoscaler: scales Kong DP pods based on traffic load
 apiVersion: autoscaling/v2

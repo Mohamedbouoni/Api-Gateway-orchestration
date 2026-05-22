@@ -1,0 +1,15 @@
+flowchart LR
+    REQ[Inbound HTTP request] --> WAF[WAF ModSecurity]
+    WAF --> CID[Correlation-ID plugin]
+    CID --> JWT[JWT plugin Keycloak JWKS]
+    JWT --> OPA[OPA governance plugin]
+    OPA --> RL[Rate limiting Redis quota]
+    RL --> ACL[ACL tenant-service]
+    ACL --> LOG[Kong logging plugin]
+    LOG --> API[FastAPI backend trusted headers]
+
+    style WAF fill:#fee2e2,stroke:#dc2626
+    style JWT fill:#dbeafe,stroke:#2563eb
+    style OPA fill:#fef3c7,stroke:#d97706
+    style RL fill:#fce7f3,stroke:#db2777
+    style API fill:#d1fae5,stroke:#059669

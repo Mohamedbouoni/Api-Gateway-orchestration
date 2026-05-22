@@ -1,0 +1,18 @@
+flowchart TB
+    subgraph UserActor["End User"]
+        U((End User))
+    end
+
+    subgraph Platform["Deterministic AI Orchestration Platform"]
+        A[Authenticate via Keycloak]
+        B[Submit AI Request]
+        C[Select intent / sensitivity]
+        D[Receive streamed response]
+        E[View quota status]
+    end
+
+    U --> A
+    U --> B
+    B --> C
+    B --> D
+    U --> E

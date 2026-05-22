@@ -13,10 +13,12 @@ data:
   VITE_KEYCLOAK_URL: "http://localhost/auth"
   VITE_KEYCLOAK_REALM: "newRealm"
   VITE_KEYCLOAK_CLIENT_ID: "myclient"
-  # Public URL (Kong LoadBalancer). Used for Keycloak redirect after login.
+  # Public URL (WAF LoadBalancer on :80). Used for Keycloak redirect after login.
   VITE_APP_URL: "http://localhost"
   VITE_GRAFANA_URL: "http://localhost/grafana"
-  VITE_API_PROXY_TARGET: "http://kong-dp.ai-gateway.svc.cluster.local:80"
+  # Route in-cluster frontend API calls through the WAF (not directly to kong-dp)
+  # so all traffic — external and internal — passes ModSecurity inspection.
+  VITE_API_PROXY_TARGET: "http://waf.ai-gateway.svc.cluster.local:80"
   # Hot reload cannot traverse Kong reliably; disable HMR to stop ws://localhost console errors.
   VITE_HMR_DISABLED: "true"
 ---
@@ -222,7 +224,10 @@ spec:
             - containerPort: 3000
           env:
             - name: GF_SECURITY_ADMIN_PASSWORD
-              value: "admin"
+              valueFrom:
+                secretKeyRef:
+                  name: grafana-admin-secret
+                  key: GF_SECURITY_ADMIN_PASSWORD
             - name: GF_USERS_ALLOW_SIGN_UP
               value: "false"
             - name: GF_AUTH_ANONYMOUS_ENABLED

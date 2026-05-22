@@ -31,6 +31,28 @@ groups:
           summary: "FastAPI 5xx error rate is elevated"
           description: "5xx rate is above 0.2 req/s for 5 minutes."
 
+  - name: api-gateway-waf
+    rules:
+      - alert: WafTargetDown
+        expr: up{job="waf"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          service: waf
+        annotations:
+          summary: "WAF metrics target is down"
+          description: "Prometheus cannot scrape waf:9113/metrics (nginx-exporter) for more than 2 minutes. Edge security may be degraded."
+
+      - alert: WafHighConnectionCount
+        expr: nginx_connections_active{job="waf"} > 200
+        for: 5m
+        labels:
+          severity: warning
+          service: waf
+        annotations:
+          summary: "WAF active connections unusually high"
+          description: "nginx_connections_active on the WAF has exceeded 200 for 5 minutes — possible traffic spike or DDoS attempt."
+
   - name: api-gateway-kong
     rules:
       # The kong prometheus plugin exposes kong_http_requests_total{code,...}

@@ -15,3 +15,30 @@ echo 'SecRule REQUEST_URI "@beginsWith /src/" "id:1002,phase:1,pass,nolog,ctl:ru
 # Exclude /@vite/ and /@fs/ internal Vite paths
 echo 'SecRule REQUEST_URI "@beginsWith /@" "id:1003,phase:1,pass,nolog,ctl:ruleRemoveById=920440"' \
   >> /etc/modsecurity.d/owasp-crs/rules/REQUEST-999-COMMON-EXCEPTIONS-AFTER.conf
+
+# Keycloak OIDC: redirect_uri / iss legitimately contain http://localhost (dev) - not SSRF
+echo 'SecRuleUpdateTargetById 934110 "!ARGS:redirect_uri"' \
+  >> /etc/modsecurity.d/owasp-crs/rules/REQUEST-999-COMMON-EXCEPTIONS-AFTER.conf
+echo 'SecRuleUpdateTargetById 934190 "!ARGS:redirect_uri"' \
+  >> /etc/modsecurity.d/owasp-crs/rules/REQUEST-999-COMMON-EXCEPTIONS-AFTER.conf
+echo 'SecRuleUpdateTargetById 934110 "!ARGS:post_logout_redirect_uri"' \
+  >> /etc/modsecurity.d/owasp-crs/rules/REQUEST-999-COMMON-EXCEPTIONS-AFTER.conf
+echo 'SecRuleUpdateTargetById 934190 "!ARGS:post_logout_redirect_uri"' \
+  >> /etc/modsecurity.d/owasp-crs/rules/REQUEST-999-COMMON-EXCEPTIONS-AFTER.conf
+# Admin console OAuth callback: iss=http://localhost/auth/realms/master after login
+echo 'SecRuleUpdateTargetById 934110 "!ARGS:iss"' \
+  >> /etc/modsecurity.d/owasp-crs/rules/REQUEST-999-COMMON-EXCEPTIONS-AFTER.conf
+echo 'SecRuleUpdateTargetById 934190 "!ARGS:iss"' \
+  >> /etc/modsecurity.d/owasp-crs/rules/REQUEST-999-COMMON-EXCEPTIONS-AFTER.conf
+
+# Keycloak static assets (.js/.css under /auth/resources/)
+echo 'SecRule REQUEST_URI "@beginsWith /auth/resources/" "id:1004,phase:1,pass,nolog,ctl:ruleRemoveById=920440"' \
+  >> /etc/modsecurity.d/owasp-crs/rules/REQUEST-999-COMMON-EXCEPTIONS-AFTER.conf
+
+# Keycloak session cookies can look like SQLi to rule 942290
+echo 'SecRuleUpdateTargetById 942290 "!REQUEST_COOKIES:/^AUTH_SESSION_ID/"' \
+  >> /etc/modsecurity.d/owasp-crs/rules/REQUEST-999-COMMON-EXCEPTIONS-AFTER.conf
+echo 'SecRuleUpdateTargetById 942290 "!REQUEST_COOKIES:/^KEYCLOAK_/"' \
+  >> /etc/modsecurity.d/owasp-crs/rules/REQUEST-999-COMMON-EXCEPTIONS-AFTER.conf
+echo 'SecRuleUpdateTargetById 942290 "!REQUEST_COOKIES:/^KC_/"' \
+  >> /etc/modsecurity.d/owasp-crs/rules/REQUEST-999-COMMON-EXCEPTIONS-AFTER.conf

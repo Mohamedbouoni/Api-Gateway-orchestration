@@ -1,0 +1,100 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# keycloak-master-config-job.yaml — One-shot master realm bootstrap
+#
+# Configures master realm for HTTP admin console at http://localhost/auth/admin/
+# (sslRequired=none + security-admin-console redirect URIs). Re-run on every deploy.
+# ─────────────────────────────────────────────────────────────────────────────
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: keycloak-master-config
+  namespace: ai-application
+  labels:
+    app: keycloak-master-config
+    project: enterprise-ai-gateway
+data:
+  sac.json: |
+    {
+      "redirectUris": [
+        "http://localhost/auth/admin/master/console/*",
+        "/admin/master/console/*"
+      ],
+      "webOrigins": [
+        "http://localhost",
+        "http://localhost/auth",
+        "+"
+      ],
+      "adminUrl": "http://localhost/auth/admin/master/console/"
+    }
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: keycloak-master-config
+  namespace: ai-application
+  labels:
+    app: keycloak-master-config
+    project: enterprise-ai-gateway
+spec:
+  ttlSecondsAfterFinished: 120
+  template:
+    metadata:
+      labels:
+        app: keycloak-master-config
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: config
+          image: quay.io/keycloak/keycloak:latest
+          imagePullPolicy: Never
+          env:
+            - name: KEYCLOAK_ADMIN
+              valueFrom:
+                secretKeyRef:
+                  name: keycloak-secret
+                  key: KEYCLOAK_ADMIN
+            - name: KEYCLOAK_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: keycloak-secret
+                  key: KEYCLOAK_ADMIN_PASSWORD
+          command:
+            - /bin/bash
+            - -ec
+            - |
+              KC="http://keycloak.ai-application.svc.cluster.local:8080/auth"
+              KC_HOST="keycloak.ai-application.svc.cluster.local"
+              echo "Waiting for Keycloak at ${KC}/realms/master ..."
+              for i in $(seq 1 90); do
+                if exec 3<>/dev/tcp/${KC_HOST}/8080 2>/dev/null; then
+                  printf 'GET /auth/realms/master HTTP/1.1\r\nHost: %s\r\nConnection: close\r\n\r\n' "${KC_HOST}" >&3
+                  read -r status_line <&3 || true
+                  exec 3<&- 2>/dev/null || true
+                  case "${status_line}" in *"200"*) break ;; esac
+                fi
+                sleep 5
+              done
+              case "${status_line}" in *"200"*) ;; *) echo "Keycloak not reachable at ${KC}"; exit 1 ;; esac
+
+              echo "Logging in kcadm (master realm)..."
+              /opt/keycloak/bin/kcadm.sh config credentials \
+                --server "${KC}" --realm master \
+                --user "${KEYCLOAK_ADMIN}" --password "${KEYCLOAK_ADMIN_PASSWORD}"
+
+              echo "Setting master realm sslRequired=none (HTTP edge)..."
+              /opt/keycloak/bin/kcadm.sh update realms/master -s sslRequired=none
+
+              echo "Updating security-admin-console client..."
+              CLIENT_ID=$(/opt/keycloak/bin/kcadm.sh get clients -r master \
+                -q clientId=security-admin-console --fields id --format csv --noquotes | tail -1)
+              /opt/keycloak/bin/kcadm.sh update "clients/${CLIENT_ID}" -r master -f /config/sac.json
+
+              echo "Master realm bootstrap complete."
+          volumeMounts:
+            - name: config
+              mountPath: /config
+              readOnly: true
+      volumes:
+        - name: config
+          configMap:
+            name: keycloak-master-config

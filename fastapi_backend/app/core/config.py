@@ -4,12 +4,27 @@
 from __future__ import annotations
 
 import logging
-from pydantic import Field
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
     """Environment-driven application settings."""
+
+    @model_validator(mode="before")
+    @classmethod
+    def _load_from_vault(cls, values: dict) -> dict:
+        """Overlay secrets from Vault before field validation.
+
+        Only secrets not already present in the environment are overridden,
+        so local .env files and explicit environment variables always win.
+        """
+        from app.core.vault_secrets import load_vault_secrets  # noqa: PLC0415
+        vault_overrides = load_vault_secrets()
+        for key, val in vault_overrides.items():
+            if key not in values or not values[key]:
+                values[key] = val
+        return values
 
     database_url: str = Field(alias="PLATFORM_DB_URL")
     keycloak_url: str = Field(alias="KEYCLOAK_URL")

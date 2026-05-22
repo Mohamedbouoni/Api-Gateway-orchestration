@@ -1,0 +1,24 @@
+flowchart LR
+    subgraph Before["Without Enterprise AI Gateway"]
+        direction TB
+        A1[Client App A] --> LLM1[OpenAI / Ollama]
+        A2[Client App B] --> LLM2[Azure / Local LLM]
+        A3[Client App C] --> LLM3[Other models]
+        R1[No central policy]
+        R2[No tenant isolation]
+        R3[No audit trail]
+        R4[Prompt injection exposure]
+    end
+
+    subgraph After["With Deterministic AI Orchestrator"]
+        direction TB
+        C1[Client Apps] --> GW[Kong + WAF + OPA + Redis]
+        GW --> ORCH[FastAPI Orchestrator]
+        ORCH --> IC[Intent Classifier]
+        ORCH --> SEC[Prompt Guard + Presidio]
+        ORCH --> SVC[Authorized AI services]
+        B1[Central governance]
+        B2[Tenant JWT isolation]
+        B3[Immutable audit logs]
+        B4[Injection + PII controls]
+    end

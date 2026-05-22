@@ -3,6 +3,33 @@ import api from "../api/client";
 import useIntent from "../hooks/useIntent";
 import { formatApiError } from "../utils/apiError";
 
+const HEALTH_BADGE_STYLES = {
+  ok: {
+    background: "rgba(52,211,153,0.1)",
+    color: "#34d399",
+    border: "1px solid rgba(52,211,153,0.3)",
+  },
+  warn: {
+    background: "rgba(251,191,36,0.1)",
+    color: "#fbbf24",
+    border: "1px solid rgba(251,191,36,0.3)",
+  },
+  down: {
+    background: "rgba(248,113,113,0.1)",
+    color: "#f87171",
+    border: "1px solid rgba(248,113,113,0.3)",
+  },
+  disabled: {
+    background: "rgba(148,163,184,0.1)",
+    color: "#94a3b8",
+    border: "1px solid rgba(148,163,184,0.3)",
+  },
+};
+
+function healthBadgeStyle(status) {
+  return HEALTH_BADGE_STYLES[status] || HEALTH_BADGE_STYLES.warn;
+}
+
 const AdminPortal = ({ token, onClose }) => {
   const [activeTab, setActiveTab] = useState("dashboard"); // "dashboard", "mappings", "services", "policies"
   const [services, setServices] = useState([]);
@@ -1013,7 +1040,34 @@ const AdminPortal = ({ token, onClose }) => {
                   <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.5rem" }}>
                     <span style={{ fontSize: "0.75rem", background: "rgba(52,211,153,0.1)", color: "#34d399", border: "1px solid rgba(52,211,153,0.3)", padding: "4px 8px", borderRadius: "12px" }}>Kong: OK</span>
                     <span style={{ fontSize: "0.75rem", background: "rgba(52,211,153,0.1)", color: "#34d399", border: "1px solid rgba(52,211,153,0.3)", padding: "4px 8px", borderRadius: "12px" }}>Keycloak: OK</span>
-                    <span style={{ fontSize: "0.75rem", background: "rgba(251,191,36,0.1)", color: "#fbbf24", border: "1px solid rgba(251,191,36,0.3)", padding: "4px 8px", borderRadius: "12px" }}>Vault: WARN</span>
+                    {(() => {
+                      const vault = dashboardMetrics?.system?.vault;
+                      const status = vault?.status || "warn";
+                      const label = vault?.label || "...";
+                      const title = vault
+                        ? [
+                            vault.enabled ? "Vault integration enabled" : "Vault integration disabled",
+                            vault.latency_ms != null ? `${vault.latency_ms} ms` : null,
+                            vault.secrets_loaded != null ? `${vault.secrets_loaded}/2 core secrets` : null,
+                            vault.error ? vault.error : null,
+                          ]
+                            .filter(Boolean)
+                            .join(" · ")
+                        : "Loading Vault status from /admin/metrics";
+                      return (
+                        <span
+                          title={title}
+                          style={{
+                            fontSize: "0.75rem",
+                            padding: "4px 8px",
+                            borderRadius: "12px",
+                            ...healthBadgeStyle(status),
+                          }}
+                        >
+                          Vault: {label}
+                        </span>
+                      );
+                    })()}
                   </div>
                 </div>
               </div>

@@ -1,0 +1,46 @@
+@startuml ldm_sprint2
+skinparam linetype ortho
+hide circle
+
+entity "ai_services" as svc {
+  * service_id : varchar <<PK>>
+  --
+  model_name : varchar
+  provider_url : varchar
+  provider_type : varchar
+  service_type : varchar
+}
+
+entity "intent_routing" as route {
+  * id : uuid <<PK>>
+  --
+  intent_name : varchar <<UK>>
+  * service_id : varchar <<FK>>
+  is_active : boolean
+  taxonomy_version : varchar
+  created_by : varchar
+}
+
+entity "ai_requests" as req {
+  * request_id : varchar <<PK>>
+  --
+  tenant_id : varchar
+  intent : varchar
+  resolved_service_id : varchar <<FK>>
+  sensitivity : varchar
+  resolved_sensitivity : varchar
+  environment : varchar
+  status : varchar
+  started_at : timestamp
+  completed_at : timestamp
+}
+
+svc ||--o{ route : "maps to"
+svc ||--o{ req : "executes on"
+
+note right of req
+  Row-Level Security (RLS)
+  enforces tenant_id isolation
+end note
+
+@enduml
