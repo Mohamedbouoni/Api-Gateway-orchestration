@@ -47,14 +47,56 @@ if ($ollamaKeepAlive -ne "-1") {
     Write-Host "OLLAMA_KEEP_ALIVE already set to -1 (models stay warm)." -ForegroundColor Gray
 }
 
-<#
-   Ollama warmup disabled (hardware constraint).
-   Warm up models into memory regardless of whether OLLAMA_KEEP_ALIVE was set.
-   Write-Host "Warming up Ollama models..." -ForegroundColor Yellow
-   $requiredModels = @("llama3", "DeepSeek-Coder")
-   ... (warmup loop omitted to save RAM on low-spec hardware)
-   To re-enable: delete the opening and closing block-comment markers.
-#>
+# Warm up models into memory regardless of whether OLLAMA_KEEP_ALIVE was just set or already configured
+Write-Host "Warming up Ollama models..." -ForegroundColor Yellow
+$requiredModels = @("llama3", "DeepSeek-Coder")
+$installedTags = @()
+try {
+    $installedTags = @(
+        (Invoke-RestMethod -Uri "http://localhost:11434/api/tags" -TimeoutSec 5).models |
+            ForEach-Object { $_.name }
+    )
+} catch {
+    Write-Host "  Warning: Ollama API not reachable; skipping model warmup." -ForegroundColor DarkYellow
+}
+
+foreach ($baseName in $requiredModels) {
+    $tag = $installedTags | Where-Object {
+        $_ -eq $baseName -or $_ -eq "${baseName}:latest" -or $_ -like "${baseName}:*"
+    } | Select-Object -First 1
+
+    if (-not $tag) {
+        Write-Host "  Warning: '$baseName' is not installed. Run: ollama pull $baseName" -ForegroundColor DarkYellow
+        continue
+    }
+
+    try {
+        Write-Host "  Loading $tag into memory (this can take a few minutes)..." -ForegroundColor Gray
+        $warmupBody = @{
+            model      = $tag
+            prompt     = "warmup"
+            stream     = $false
+            keep_alive = [int]-1
+        } | ConvertTo-Json -Compress
+
+        $null = Invoke-WebRequest -Uri "http://localhost:11434/api/generate" `
+            -Method POST `
+            -Body $warmupBody `
+            -ContentType "application/json" `
+            -UseBasicParsing `
+            -TimeoutSec 300
+
+        Write-Host "  $tag warmed up (keep_alive=-1)" -ForegroundColor Green
+    } catch {
+        Write-Host "  Warning: could not warm up $tag - $($_.Exception.Message)" -ForegroundColor DarkYellow
+    }
+}
+
+if (Get-Command ollama -ErrorAction SilentlyContinue) {
+    Write-Host "  Models currently loaded:" -ForegroundColor Gray
+    & ollama ps
+    Write-Host "  Note: if RAM is tight, Ollama may unload one model when loading the next." -ForegroundColor DarkGray
+}
 
 Write-Host ""
 Write-Host "==========================================" -ForegroundColor Cyan
