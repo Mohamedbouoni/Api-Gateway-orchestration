@@ -1,5 +1,6 @@
 version: "1"
 confidence_threshold: 0.32
+hypothesis_template: "This is related to {}."
 candidate_labels:
   - general_chat
   - code_generation

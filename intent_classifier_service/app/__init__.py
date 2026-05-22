@@ -1,1 +1,1 @@
-"""Intent classifier microservice (FastAPI + HuggingFace zero-shot)."""
+"""Intent classifier microservice (FastAPI + DistilBERT zero-shot NLI)."""

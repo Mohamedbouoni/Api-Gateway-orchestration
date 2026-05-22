@@ -37,12 +37,15 @@ data:
   PORT: "3010"
   REDIS_URL: "redis://redis.ai-data.svc.cluster.local:6379/1"
   INTENT_TAXONOMY_PATH: "/etc/intent-taxonomy/intent_labels_v1.yaml"
+  CLASSIFIER_BACKEND: "hybrid"
   HF_ZERO_SHOT_MODEL: "typeform/distilbert-base-uncased-mnli"
+  HYPOTHESIS_TEMPLATE: "This is related to {}."
+  INTENT_CONFIDENCE_THRESHOLD: "0.28"
   INTENT_CLASSIFIER_CACHE_TTL_SECONDS: "3600"
   INTENT_CLASSIFIER_LRU_MAX: "10000"
-  LLM_BASE_URL: "http://host.docker.internal:11434/api/chat"
-  LLM_MODEL: "llama3.2"
-  LLM_TIMEOUT_SECONDS: "45"
+  INTENT_CACHE_KEY_VERSION: "v8-hybrid"
+  INTENT_CACHE_FLUSH_ON_START: "true"
+  HF_HOME: "/var/cache/huggingface"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -68,6 +71,13 @@ spec:
           imagePullPolicy: Never
           ports:
             - containerPort: 3010
+          env:
+            - name: CLASSIFIER_BACKEND
+              value: "hybrid"
+            - name: INTENT_CACHE_KEY_VERSION
+              value: "v8-hybrid"
+            - name: INTENT_CACHE_FLUSH_ON_START
+              value: "true"
           envFrom:
             - configMapRef:
                 name: intent-classifier-config
@@ -75,12 +85,14 @@ spec:
             - name: intent-taxonomy
               mountPath: /etc/intent-taxonomy
               readOnly: true
+            - name: hf-cache
+              mountPath: /var/cache/huggingface
           resources:
             requests:
-              memory: "512Mi"
+              memory: "256Mi"
               cpu: "100m"
             limits:
-              memory: "1Gi"
+              memory: "512Mi"
               cpu: "500m"
           livenessProbe:
             httpGet:
@@ -99,6 +111,8 @@ spec:
         - name: intent-taxonomy
           configMap:
             name: intent-taxonomy-v1
+        - name: hf-cache
+          emptyDir: {}
 ---
 apiVersion: v1
 kind: Service

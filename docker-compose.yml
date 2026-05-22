@@ -259,9 +259,9 @@ services:
       PORT: 3010
       REDIS_URL: redis://redis:6379/1
       INTENT_TAXONOMY_PATH: /app/intent_taxonomy/intent_labels_v1.yaml
-      LLM_BASE_URL: http://host.docker.internal:11434/api/chat
-      LLM_MODEL: llama3.2
-      LLM_TIMEOUT_SECONDS: "45"
+      CLASSIFIER_BACKEND: hybrid
+      INTENT_CACHE_KEY_VERSION: v8-hybrid
+      INTENT_CACHE_FLUSH_ON_START: "true"
       INTENT_CLASSIFIER_CACHE_TTL_SECONDS: "3600"
     ports:
       - "3010:3010"
@@ -299,7 +299,7 @@ services:
       OPA_TIMEOUT_SECONDS: "2.0"
       KONG_ADMIN_URL: http://kong-cp:8001
       INTENT_CLASSIFIER_URL: http://intent-classifier:3010
-      INTENT_CLASSIFIER_TIMEOUT_SECONDS: "0.25"
+      INTENT_CLASSIFIER_TIMEOUT_SECONDS: "15"
       INTENT_CLASSIFIER_ENABLED: "true"
       INTENT_CLASSIFIER_SHADOW: "false"
       INTENT_TAXONOMY_PATH: /app/intent_taxonomy/intent_labels_v1.yaml
