@@ -1,0 +1,38 @@
+sequenceDiagram
+    autonumber
+    participant User as EndUser
+    participant API as AIRequestService
+    participant PS as PromptSecurityService
+    participant DB as SecurityPatternDB
+    participant PG as LlamaPromptGuard2
+    participant CI as ContentInspector
+    participant Presidio as MicrosoftPresidio
+    participant OPA as OPA
+    participant Guard as OutputGuard
+    participant LLM as AIModels_LLM
+
+    User->>API: POST prompt (JWT)
+    API->>PS: scan_messages()
+    PS->>DB: load active regex patterns
+    DB-->>PS: weighted jailbreak rules
+    PS->>PS: regex score (pattern weights)
+    PS->>PG: classify injection (threshold 0.85)
+    PG-->>PS: injection confidence
+    alt cumulative score >= block threshold
+        PS-->>API: ScanResult blocked
+        API-->>User: 403 injection blocked
+    else allowed
+        PS-->>API: ScanResult allow
+        API->>CI: inspect_content()
+        CI->>Presidio: detect PII in prompt
+        Presidio-->>CI: entities found
+        CI-->>API: sensitivity escalated if PII
+        API->>OPA: evaluate policy
+        OPA-->>API: allow
+        API->>LLM: stream generation
+        loop each token
+            LLM-->>API: token chunk
+            API->>Guard: redact PII (Presidio)
+            Guard-->>User: SSE safe token
+        end
+    end

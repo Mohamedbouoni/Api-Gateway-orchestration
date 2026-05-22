@@ -24,6 +24,7 @@ spec:
       containers:
         - name: keycloak
           image: quay.io/keycloak/keycloak:latest
+          imagePullPolicy: Never
           args: ["start-dev", "--import-realm"]
           ports:
             - containerPort: 8080
@@ -54,12 +55,23 @@ spec:
                   key: KEYCLOAK_ADMIN_PASSWORD
             - name: KC_HOSTNAME_STRICT
               value: "false"
+            - name: KC_HOSTNAME_STRICT_HTTPS
+              value: "false"
             - name: KC_HTTP_ENABLED
               value: "true"
             - name: KC_PROXY_HEADERS
               value: "xforwarded"
+            # Trust Kong/WAF cluster CIDR so X-Forwarded-* headers are honored
+            - name: KC_PROXY_TRUSTED_ADDRESSES
+              value: "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,127.0.0.0/8"
+            # v2 hostname API (Keycloak 26+) — full public URL including /auth path prefix
             - name: KC_HOSTNAME
               value: "http://localhost/auth"
+            - name: KC_HOSTNAME_ADMIN
+              value: "http://localhost/auth"
+            # Serve all endpoints under /auth (matches Kong route, no strip_path)
+            - name: KC_HTTP_RELATIVE_PATH
+              value: "/auth"
           resources:
             requests:
               memory: "512Mi"
@@ -69,14 +81,14 @@ spec:
               cpu: "1000m"
           startupProbe:
             httpGet:
-              path: /realms/master
+              path: /auth/realms/master
               port: 8080
             periodSeconds: 10
             timeoutSeconds: 5
             failureThreshold: 30
           livenessProbe:
             httpGet:
-              path: /realms/master
+              path: /auth/realms/master
               port: 8080
             initialDelaySeconds: 120
             periodSeconds: 30
@@ -84,7 +96,7 @@ spec:
             failureThreshold: 5
           readinessProbe:
             httpGet:
-              path: /realms/master
+              path: /auth/realms/master
               port: 8080
             initialDelaySeconds: 75
             periodSeconds: 15
@@ -148,11 +160,21 @@ spec:
               value: "/app/logs"
             - name: BODY_LIMIT
               value: "256kb"
+            # PLATFORM_DB_URL is loaded from Vault at startup; kept as fallback
             - name: PLATFORM_DB_URL
               valueFrom:
                 secretKeyRef:
                   name: platform-db-secret
                   key: DATABASE_URL
+            # ── Vault integration ─────────────────────────────────────────────
+            - name: VAULT_ENABLED
+              value: "true"
+            - name: VAULT_ADDR
+              value: "http://vault.ai-data.svc.cluster.local:8200"
+            - name: VAULT_TOKEN
+              value: "dev-root-token"
+            - name: VAULT_MOUNT
+              value: "secret"
           resources:
             requests:
               memory: "64Mi"

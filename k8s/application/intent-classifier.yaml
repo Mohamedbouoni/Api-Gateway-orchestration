@@ -35,7 +35,13 @@ metadata:
     project: enterprise-ai-gateway
 data:
   PORT: "3010"
+  # REDIS_URL is overridden at runtime by Vault (secret/redis/platform); this is the fallback
   REDIS_URL: "redis://redis.ai-data.svc.cluster.local:6379/1"
+  # ── Vault integration ──────────────────────────────────────────────────────
+  VAULT_ENABLED: "true"
+  VAULT_ADDR: "http://vault.ai-data.svc.cluster.local:8200"
+  VAULT_TOKEN: "dev-root-token"
+  VAULT_MOUNT: "secret"
   INTENT_TAXONOMY_PATH: "/etc/intent-taxonomy/intent_labels_v1.yaml"
   CLASSIFIER_BACKEND: "hybrid"
   HF_ZERO_SHOT_MODEL: "typeform/distilbert-base-uncased-mnli"

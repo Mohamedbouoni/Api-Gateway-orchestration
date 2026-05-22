@@ -1,0 +1,9 @@
+flowchart LR
+    DEV[Developer commit] --> GH[GitHub main branch]
+    GH --> GHA[GitHub Actions workflow]
+    GHA --> LINT[Lint + type check]
+    LINT --> TEST[Pytest suite]
+    TEST --> BUILD[Docker build + tag]
+    BUILD --> REG[Container registry]
+    REG --> K8S[kubectl apply manifests]
+    K8S --> ROLL[Rolling update Pods]

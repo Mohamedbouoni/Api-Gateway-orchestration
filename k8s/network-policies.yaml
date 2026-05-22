@@ -619,6 +619,16 @@ spec:
         - port: 8100
           protocol: TCP
     - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ai-gateway
+          podSelector:
+            matchLabels:
+              app: waf
+      ports:
+        - port: 9113
+          protocol: TCP
+    - to:
         - podSelector:
             matchLabels:
               app: prometheus
@@ -741,4 +751,208 @@ spec:
               app: grafana
       ports:
         - port: 5432
+          protocol: TCP
+---
+# ── RULE 24: FastAPI can reach Vault (ai-data) ───────────────────────────────
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-fastapi-to-vault
+  namespace: ai-data
+  labels:
+    project: enterprise-ai-gateway
+spec:
+  podSelector:
+    matchLabels:
+      app: vault
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ai-application
+          podSelector:
+            matchLabels:
+              app: fastapi
+      ports:
+        - port: 8200
+          protocol: TCP
+---
+# ── RULE 25: Intent-classifier can reach Vault ───────────────────────────────
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-classifier-to-vault
+  namespace: ai-data
+  labels:
+    project: enterprise-ai-gateway
+spec:
+  podSelector:
+    matchLabels:
+      app: vault
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ai-application
+          podSelector:
+            matchLabels:
+              app: intent-classifier
+      ports:
+        - port: 8200
+          protocol: TCP
+---
+# ── RULE 26: Kong-logger can reach Vault ─────────────────────────────────────
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-kong-logger-to-vault
+  namespace: ai-data
+  labels:
+    project: enterprise-ai-gateway
+spec:
+  podSelector:
+    matchLabels:
+      app: vault
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ai-application
+          podSelector:
+            matchLabels:
+              app: kong-logger
+      ports:
+        - port: 8200
+          protocol: TCP
+---
+# ── RULE 27: Vault egress — allow DNS only (dev mode is fully in-memory) ─────
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-vault-egress-dns
+  namespace: ai-data
+  labels:
+    project: enterprise-ai-gateway
+spec:
+  podSelector:
+    matchLabels:
+      app: vault
+  policyTypes:
+    - Egress
+  egress:
+    - ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+---
+# ── RULE 28: WAF accepts all inbound traffic on :8080 (LoadBalancer path) ────
+# Empty from: [] means the policy allows ingress from any source, which is
+# required for external traffic arriving via the LoadBalancer service.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-waf-ingress
+  namespace: ai-gateway
+  labels:
+    project: enterprise-ai-gateway
+spec:
+  podSelector:
+    matchLabels:
+      app: waf
+  policyTypes:
+    - Ingress
+  ingress:
+    - ports:
+        - port: 8080
+          protocol: TCP
+---
+# ── RULE 29: WAF egress — forward to kong-dp and resolve DNS ─────────────────
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-waf-egress
+  namespace: ai-gateway
+  labels:
+    project: enterprise-ai-gateway
+spec:
+  podSelector:
+    matchLabels:
+      app: waf
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app: kong-dp
+      ports:
+        - port: 8000
+          protocol: TCP
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+---
+# ── RULE 30: kong-dp accepts inbound from WAF only ───────────────────────────
+# Kong DP is now ClusterIP-only; WAF is the single permitted ingress source
+# for proxied traffic on port 8000. Existing Prometheus scrape on 8100 and
+# admin API access rules are unchanged.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-kong-dp-from-waf
+  namespace: ai-gateway
+  labels:
+    project: enterprise-ai-gateway
+spec:
+  podSelector:
+    matchLabels:
+      app: kong-dp
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: waf
+      ports:
+        - port: 8000
+          protocol: TCP
+---
+# ── RULE 31: Prometheus can scrape WAF nginx-exporter metrics (:9113) ────────
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-prometheus-to-waf
+  namespace: ai-gateway
+  labels:
+    project: enterprise-ai-gateway
+spec:
+  podSelector:
+    matchLabels:
+      app: waf
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ai-monitoring
+          podSelector:
+            matchLabels:
+              app: prometheus
+      ports:
+        - port: 9113
           protocol: TCP

@@ -1,0 +1,60 @@
+@startuml sprint2_class
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+
+package "API Layer" {
+  class AIRequestRouter <<router>>
+}
+
+package "Application Services" {
+  class AIRequestService {
+    +submit_stream(request)
+    -_pre_flight_parallel()
+    -_route_intent()
+  }
+  class IntentCacheService {
+    +resolve(intent_name)
+    +reload()
+  }
+  class OutputGuardService {
+    +redact_chunk(text)
+  }
+  class IntentClassifierClient {
+    +classify(prompt)
+  }
+}
+
+package "Infrastructure" {
+  class OllamaClient {
+    +stream_chat()
+  }
+}
+
+package "Repositories" {
+  class AIRequestRepository
+  class IntentRoutingRepository
+}
+
+package "Models" {
+  class AIRequestRecord
+  class IntentRouting
+  class AIService
+}
+
+class create_app <<factory>> {
+  +create_app(): FastAPI
+}
+
+create_app --> AIRequestRouter
+AIRequestRouter --> AIRequestService
+AIRequestService --> IntentCacheService
+AIRequestService --> OutputGuardService
+AIRequestService --> IntentClassifierClient
+AIRequestService --> OllamaClient
+AIRequestService --> AIRequestRepository
+IntentCacheService --> IntentRoutingRepository
+AIRequestRepository --> AIRequestRecord
+IntentRoutingRepository --> IntentRouting
+IntentRouting --> AIService
+
+@enduml

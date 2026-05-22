@@ -124,10 +124,52 @@ services:
       - name: keycloak-auth
         paths:
           - /auth
-        strip_path: true
+        strip_path: false
         protocols:
           - http
           - https
+        plugins:
+          # Keycloak uses KC_HTTP_RELATIVE_PATH=/auth; forward public edge headers.
+          - name: pre-function
+            config:
+              access:
+                - |
+                  ngx.req.set_header("X-Forwarded-Host", "localhost")
+                  ngx.req.set_header("X-Forwarded-Proto", "http")
+                  ngx.req.set_header("X-Forwarded-Port", "80")
+          # Safety net: rewrite Location if Kong upstream port leaks into redirects;
+          # strip Secure / downgrade SameSite on session cookies for HTTP localhost edge.
+          - name: post-function
+            config:
+              header_filter:
+                - |
+                  local location = ngx.header["Location"]
+                  if location then
+                    local fixed = location:gsub("http://localhost:8000", "http://localhost")
+                    fixed = fixed:gsub("https://localhost:8443", "http://localhost")
+                    ngx.header["Location"] = fixed
+                  end
+
+                  local function fix_cookie(value)
+                    if not value then
+                      return value
+                    end
+                    value = value:gsub(";%s*Secure", "")
+                    value = value:gsub("SameSite=None", "SameSite=Lax")
+                    return value
+                  end
+
+                  local headers = kong.response.get_headers()
+                  local set_cookie = headers["Set-Cookie"] or headers["set-cookie"]
+                  if set_cookie then
+                    kong.response.clear_header("Set-Cookie")
+                    if type(set_cookie) ~= "table" then
+                      set_cookie = { set_cookie }
+                    end
+                    for _, cookie in ipairs(set_cookie) do
+                      kong.response.add_header("Set-Cookie", fix_cookie(cookie))
+                    end
+                  end
 
   # Grafana dashboards (Admin Portal observability iframes via /grafana)
   - name: grafana

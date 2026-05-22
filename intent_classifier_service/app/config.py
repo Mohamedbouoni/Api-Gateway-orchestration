@@ -2,11 +2,50 @@
 
 from __future__ import annotations
 
-from pydantic import Field
+import logging
+import os
+
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+logger = logging.getLogger(__name__)
+
+
+def _load_redis_from_vault() -> str | None:
+    """Return a Redis URL built from Vault KV v2, or None if unavailable."""
+    if os.environ.get("VAULT_ENABLED", "").lower() != "true":
+        return None
+    vault_addr  = os.environ.get("VAULT_ADDR",  "http://vault.ai-data.svc.cluster.local:8200")
+    vault_token = os.environ.get("VAULT_TOKEN", "dev-root-token")
+    vault_mount = os.environ.get("VAULT_MOUNT", "secret")
+    try:
+        import hvac  # noqa: PLC0415
+        client = hvac.Client(url=vault_addr, token=vault_token)
+        if not client.is_authenticated():
+            logger.warning("Vault: authentication failed; using env REDIS_URL")
+            return None
+        resp = client.secrets.kv.v2.read_secret_version(
+            mount_point=vault_mount, path="redis/platform", raise_on_deleted_version=True
+        )
+        pwd = resp["data"]["data"]["password"]
+        redis_url = f"redis://:{pwd}@redis.ai-data.svc.cluster.local:6379/1"
+        logger.info("Vault: loaded REDIS_URL from secret/redis/platform")
+        return redis_url
+    except Exception as exc:
+        logger.warning("Vault: could not load REDIS_URL — %s", exc)
+        return None
 
 
 class Settings(BaseSettings):
+
+    @model_validator(mode="before")
+    @classmethod
+    def _load_from_vault(cls, values: dict) -> dict:
+        redis_url = _load_redis_from_vault()
+        if redis_url and not values.get("REDIS_URL"):
+            values["REDIS_URL"] = redis_url
+        return values
+
     port: int = Field(default=3010, alias="PORT")
     redis_url: str = Field(default="redis://redis:6379/1", alias="REDIS_URL")
     taxonomy_path: str = Field(

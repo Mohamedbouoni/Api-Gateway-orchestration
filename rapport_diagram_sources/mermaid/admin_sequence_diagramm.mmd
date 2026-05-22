@@ -1,0 +1,22 @@
+flowchart TB
+    subgraph AdminActor["Administrator"]
+        A((Administrator))
+    end
+
+    subgraph AdminPortal["Admin Portal"]
+        M1[Manage intent mappings]
+        M2[Manage governance policies]
+        M3[Manage AI services]
+        M4[Manage Kong plugins]
+        M5[View metrics and security events]
+        M6[Configure token quotas]
+    end
+
+    subgraph Backend["FastAPI + Kong CP"]
+        API[Admin APIs]
+        Kong[Kong Admin API]
+    end
+
+    A --> M1 & M2 & M3 & M4 & M5 & M6
+    M1 & M2 & M3 & M5 & M6 --> API
+    M4 --> Kong

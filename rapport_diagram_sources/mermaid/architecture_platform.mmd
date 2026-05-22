@@ -1,0 +1,53 @@
+flowchart TB
+    subgraph Client["Client Layer"]
+        FE[React Frontend]
+    end
+
+    subgraph Edge["Edge Security Layer"]
+        WAF[WAF ModSecurity]
+        KONG[Kong API Gateway]
+    end
+
+    subgraph Identity["Identity Provider"]
+        KC[Keycloak SSO + JWKS]
+    end
+
+    subgraph Orchestration["Orchestration Engine"]
+        API[FastAPI AIRequestService]
+        IC[ML Intent Classifier]
+        PS[Prompt Security Llama Guard]
+        OG[Output Guard Presidio]
+    end
+
+    subgraph Governance["Governance"]
+        OPA[OPA Rego policies]
+        REDIS[Redis per-tenant quotas]
+    end
+
+    subgraph Data["Data Layer"]
+        PG[(PostgreSQL RLS)]
+        AUDIT[(Audit tables)]
+    end
+
+    subgraph AI["AI Provider"]
+        OLLAMA[Ollama / external LLMs]
+    end
+
+    subgraph Obs["Observability Stack"]
+        PROM[Prometheus]
+        GRAF[Grafana]
+    end
+
+    subgraph Secrets["Secrets Management"]
+        VAULT[HashiCorp Vault]
+    end
+
+    FE --> WAF --> KONG
+    KC -.-> KONG
+    KONG --> OPA & REDIS
+    KONG --> API
+    API --> IC & PS & OG
+    API --> PG & AUDIT
+    API --> OLLAMA
+    API --> PROM --> GRAF
+    VAULT -.-> API & KONG

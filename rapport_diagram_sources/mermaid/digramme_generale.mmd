@@ -1,0 +1,40 @@
+flowchart TB
+    EU((End User))
+    ADM((Administrator))
+    KONG((Kong Gateway))
+
+    subgraph AUTH["Authentication"]
+        UC1[Login via Keycloak SSO]
+        UC2[Receive JWT]
+    end
+
+    subgraph ORCH["AI Orchestration"]
+        UC3[Submit AI request]
+        UC4[Select intent / sensitivity]
+        UC5[Receive streamed SSE response]
+    end
+
+    subgraph GOV["Governance"]
+        UC6[Evaluate OPA policy]
+        UC7[Enforce token quota]
+    end
+
+    subgraph SAFETY["Content Safety"]
+        UC8[Scan prompt injection]
+        UC9[Detect PII in prompt]
+        UC10[Redact PII in output]
+    end
+
+    subgraph ADMIN["Administration"]
+        UC11[Manage intent mappings]
+        UC12[Manage policies]
+        UC13[Manage Kong plugins]
+        UC14[View metrics and audits]
+    end
+
+    EU --> UC1 & UC3 & UC4 & UC5
+    UC1 --> UC2
+    KONG --> UC6 & UC7
+    UC3 --> UC8 & UC9 & UC6
+    UC5 --> UC10
+    ADM --> UC11 & UC12 & UC13 & UC14

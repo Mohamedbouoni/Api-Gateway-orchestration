@@ -1,0 +1,21 @@
+sequenceDiagram
+    autonumber
+    participant Client as ClientApp
+    participant KC as Keycloak
+    participant Kong as KongGateway
+    participant API as FastAPIBackend
+
+    Client->>KC: OAuth2 PKCE login
+    KC-->>Client: authorization code
+    Client->>KC: token exchange (code_verifier)
+    KC-->>Client: JWT (RS256)
+
+    Client->>Kong: POST /api/ai/request + Bearer JWT
+    Kong->>Kong: JWT plugin verify via JWKS
+    alt invalid or expired
+        Kong-->>Client: 401 Unauthorized
+    else valid
+        Kong->>Kong: inject tenant_id + roles headers
+        Kong->>API: forward authorized request
+        API-->>Client: response
+    end

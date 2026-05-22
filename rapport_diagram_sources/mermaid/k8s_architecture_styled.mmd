@@ -1,0 +1,35 @@
+flowchart TB
+    subgraph Internet["External"]
+        USER[Users / Browsers]
+    end
+
+    subgraph K8S["Kubernetes cluster — ai-gateway-namespace"]
+        NP[NodePort Service kong-proxy]
+        subgraph DeployFE["Deployment frontend"]
+            P1[POD-1 React]
+            P2[POD-2 React]
+        end
+        subgraph DeployKong["Deployment kong"]
+            K1[POD-1 Kong]
+            K2[POD-2 Kong]
+        end
+        subgraph DeployAPI["Deployment fastapi-backend"]
+            A1[POD-1 FastAPI]
+            A2[POD-2 FastAPI]
+            A3[POD-3 FastAPI]
+        end
+        SVC_API[ClusterIP fastapi-service]
+    end
+
+    subgraph External["External dependencies"]
+        KC[Keycloak Docker]
+        PG[(PostgreSQL)]
+        REDIS[(Redis)]
+        OLLAMA[Ollama GPU host]
+    end
+
+    USER --> NP --> DeployKong
+    DeployKong --> SVC_API --> DeployAPI
+    DeployAPI --> PG & REDIS & OLLAMA
+    KC -.->|OIDC| USER
+    DeployFE --> NP

@@ -1,0 +1,28 @@
+sequenceDiagram
+    autonumber
+    participant User as EndUser
+    participant FE as ReactFrontend
+    participant WAF as WAF
+    participant Kong as Kong
+    participant API as FastAPI
+    participant IC as IntentClassifier
+    participant OPA as OPA
+    participant LLM as AIModels_LLM
+
+    User->>FE: message + intent + JWT
+    FE->>WAF: POST /api/ai/request (SSE)
+    WAF->>Kong: forward
+    Kong->>Kong: validate JWT
+    Kong->>API: proxy with tenant headers
+    API->>API: pre-flight security + PII
+    API->>IC: resolve intent
+    IC-->>API: intent label
+    API->>OPA: policy check
+    OPA-->>API: allow
+    API->>LLM: stream request
+    loop SSE tokens
+        LLM-->>API: token
+        API-->>FE: data: token
+        FE-->>User: render stream
+    end
+    API->>API: persist usage + audit

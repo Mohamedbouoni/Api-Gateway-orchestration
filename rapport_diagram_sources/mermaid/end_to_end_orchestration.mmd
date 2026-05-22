@@ -1,0 +1,38 @@
+sequenceDiagram
+    autonumber
+    box Perimeter ZeroTrust Layer
+        participant WAF as WAF_ModSecurity
+        participant Kong as KongGateway
+        participant OPA as OPA_Governance
+        participant Redis as Redis_Quota
+    end
+    box Orchestration Layer FastAPI
+        participant API as AIRequestService
+        participant IC as ML_IntentClassifier
+        participant PS as PromptSecurityService
+        participant PG as LlamaPromptGuard2
+        participant Guard as OutputGuard
+    end
+    box Execution Layer
+        participant LLM as AI_Models_LLM
+    end
+    participant User as UserApplication
+
+    User->>WAF: POST /api/ai/request
+    WAF->>Kong: forward clean payload
+    Kong->>Kong: JWT verify Keycloak
+    Kong->>OPA: evaluate tenant policy
+    Kong->>Redis: check tenant quota
+    Kong->>API: forward authorized
+    par PreFlight parallel
+        API->>PS: scan prompt
+        PS->>PG: injection score
+        API->>IC: classify intent
+    end
+    IC-->>API: intent label
+    API->>LLM: stream generation
+    loop each token
+        LLM-->>API: token chunk
+        API->>Guard: sanitize PII
+        Guard-->>User: SSE safe token
+    end

@@ -71,6 +71,7 @@ async def get_current_user(
         # List all possible valid issuers (internal, localhost, and public IP)
         valid_issuers = [
             f"{settings.keycloak_url}/realms/{settings.keycloak_realm}",
+            f"http://localhost/auth/realms/{settings.keycloak_realm}",
             f"http://localhost:8080/realms/{settings.keycloak_realm}",
             f"http://197.14.4.163:8080/realms/{settings.keycloak_realm}",
         ]
