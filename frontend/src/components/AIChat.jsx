@@ -87,16 +87,78 @@ const AIChat = ({
     }
   }, [isDarkMode]);
 
-  const [messages, setMessages] = useState([
-    {
-      role: "assistant",
-      content: "Hello! I am your AI assistant. How can I help you today?",
-      timestamp: new Date().toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-    },
-  ]);
+  const initialMessage = {
+    role: "assistant",
+    content: "Hello! I am your AI assistant. How can I help you today?",
+    timestamp: new Date().toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    }),
+  };
+
+  const [chats, setChats] = useState([{
+    id: Date.now(),
+    title: "New Chat",
+    messages: [initialMessage]
+  }]);
+  
+  const [currentChatId, setCurrentChatId] = useState(chats[0].id);
+  const [messages, setMessages] = useState(chats[0].messages);
+  const [activeTool, setActiveTool] = useState("chat"); // chat, library, ide, shell
+
+  // Sync messages to the current chat and generate title from the first prompt
+  useEffect(() => {
+    setChats((prevChats) =>
+      prevChats.map((chat) => {
+        if (chat.id === currentChatId) {
+          let newTitle = chat.title;
+          if (newTitle === "New Chat" && messages.length > 1) {
+            const firstUserMsg = messages.find((m) => m.role === "user");
+            if (firstUserMsg) {
+              const words = firstUserMsg.content.split(" ");
+              newTitle = words.slice(0, 5).join(" ");
+              if (words.length > 5) newTitle += "...";
+            }
+          }
+          return { ...chat, title: newTitle, messages: messages };
+        }
+        return chat;
+      })
+    );
+  }, [messages, currentChatId]);
+
+  const createNewChat = () => {
+    const newId = Date.now();
+    const initialMsgs = [{ ...initialMessage }];
+    setChats((prev) => [{ id: newId, title: "New Chat", messages: initialMsgs }, ...prev]);
+    setCurrentChatId(newId);
+    setMessages(initialMsgs);
+  };
+
+  const deleteChat = (id) => {
+    setChats((prev) => {
+      const updated = prev.filter((c) => c.id !== id);
+      if (updated.length === 0) {
+        const newId = Date.now();
+        const initialMsgs = [{ ...initialMessage }];
+        setCurrentChatId(newId);
+        setMessages(initialMsgs);
+        return [{ id: newId, title: "New Chat", messages: initialMsgs }];
+      } else if (id === currentChatId) {
+        setCurrentChatId(updated[0].id);
+        setMessages(updated[0].messages);
+      }
+      return updated;
+    });
+  };
+
+  const selectChat = (id) => {
+    const chat = chats.find((c) => c.id === id);
+    if (chat) {
+      setCurrentChatId(id);
+      setMessages(chat.messages);
+    }
+  };
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false); // true = waiting for first token
   const [showDocs, setShowDocs] = useState(false);
@@ -469,7 +531,156 @@ const AIChat = ({
     INTENT_OPTIONS.find((i) => i.value === selectedIntent)?.label ?? selectedIntent;
 
   return (<>
-    <div className="chat-window">
+    <div className="chat-layout">
+      {/* ── Sidebar ──────────────────────────────────────────────────────── */}
+      <div className="chat-sidebar">
+        <div className="sidebar-header">
+          <div className="sidebar-logo">Nextora AI</div>
+        </div>
+
+        <div className="sidebar-section-title">Tools</div>
+        <div className="sidebar-tools">
+          <div 
+            className={`sidebar-tool ${activeTool === "chat" ? "active" : ""}`}
+            onClick={() => setActiveTool("chat")}
+          >
+            <div className="tool-left">💬 AI Chat</div>
+          </div>
+          
+          <div 
+            className={`sidebar-tool ${activeTool === "library" ? "active" : ""}`}
+            onClick={() => {
+              setActiveTool("library");
+              // Currently just opens the API directly or we can load it in the UI later
+              // For now we just select it
+            }}
+          >
+            <div className="tool-left">📚 Prompt Library</div>
+          </div>
+
+          <div 
+            className={`sidebar-tool ${activeTool === "ide" ? "active" : ""}`}
+            onClick={() => setActiveTool("ide")}
+          >
+            <div className="tool-left">&lt;/&gt; Agent IDE</div>
+            <span className="tool-lock">🔒</span>
+          </div>
+
+          <div 
+            className={`sidebar-tool ${activeTool === "shell" ? "active" : ""}`}
+            onClick={() => setActiveTool("shell")}
+          >
+            <div className="tool-left">🐚 Code Shell</div>
+            <span className="tool-lock">🔒</span>
+          </div>
+        </div>
+
+        {/* Show chat history ONLY if chat is active */}
+        {activeTool === "chat" && (
+          <div className="sidebar-chat-history">
+            <div className="sidebar-section-title" style={{ marginTop: 0 }}>History</div>
+            <button className="new-chat-btn" onClick={createNewChat}>
+              + New Chat
+            </button>
+            <div className="chat-list">
+              {chats.map((c) => (
+                <div
+                  key={c.id}
+                  className={`chat-list-item ${c.id === currentChatId ? "active" : ""}`}
+                  onClick={() => selectChat(c.id)}
+                >
+                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {c.title}
+                  </span>
+                  <button
+                    className="delete-chat-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      deleteChat(c.id);
+                    }}
+                    title="Delete Chat"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="main-content-area">
+        {/* ── Locked Tool Overlays ─────────────────────────────────────── */}
+        {(activeTool === "ide" || activeTool === "shell") && (
+          <div className="tool-locked-overlay">
+            <h2>🔒 Premium Feature</h2>
+            <p>
+              {activeTool === "ide" 
+                ? "The Agent IDE provides a full Monaco-powered code editor with autonomous AI code generation directly in the browser."
+                : "The Code Shell provides an isolated terminal emulator to execute and test AI-generated code securely."}
+            </p>
+            <button className="upgrade-btn">Upgrade to Unlock</button>
+          </div>
+        )}
+        
+        {/* ── Prompt Library UI ─────────────────────────────────────── */}
+        {activeTool === "library" && (
+          <div className="library-container">
+            <div className="library-header">
+              <h2>Prompt Library</h2>
+              <p>Curated AI templates to supercharge your workflow.</p>
+            </div>
+            
+            {loading ? (
+              <div style={{ color: "var(--text-dim)" }}>Loading prompts...</div>
+            ) : error ? (
+              <div style={{ color: "#ef4444" }}>{error}</div>
+            ) : (
+              <div className="library-grid">
+                {documents.map((doc, idx) => (
+                  <div key={idx} className="prompt-card">
+                    <div className="prompt-card-header">
+                      <div className="prompt-icon">{doc.metadata?.icon || "📄"}</div>
+                      <div className="prompt-title-area">
+                        <h3>{doc.title}</h3>
+                        <div className="prompt-category">{doc.category}</div>
+                      </div>
+                    </div>
+                    
+                    <p className="prompt-desc">{doc.metadata?.description || "No description available."}</p>
+                    
+                    {doc.metadata?.tags && (
+                      <div className="prompt-tags">
+                        {doc.metadata.tags.map(tag => (
+                          <span key={tag} className="prompt-tag">#{tag}</span>
+                        ))}
+                      </div>
+                    )}
+                    
+                    <button 
+                      className="use-prompt-btn"
+                      onClick={() => {
+                        setInput(doc.prompt);
+                        setActiveTool("chat");
+                        if (textareaRef.current) {
+                          textareaRef.current.focus();
+                        }
+                      }}
+                    >
+                      Use Prompt
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+      <div className="chat-window" style={{ 
+        display: activeTool === "library" ? "none" : "flex",
+        filter: (activeTool === "ide" || activeTool === "shell") ? "blur(4px)" : "none", 
+        transition: "filter 0.3s" 
+      }}>
       {/* Inject blinking cursor styles once */}
       <style>{CURSOR_STYLE}</style>
 
@@ -1006,6 +1217,8 @@ const AIChat = ({
           </div>
         </div>
       </div>
+      </div>
+    </div>
     </div>
 
     {/* ── Client-side Security Guard Modal ──────────────────────────── */}

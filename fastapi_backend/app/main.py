@@ -240,38 +240,209 @@ def create_app() -> FastAPI:
             "health": "/api/health",
         }
 
-    @app.get(
-        "/api/documents",
-        tags=["Data"],
-        dependencies=[Depends(verify_kong_header)],
-    )
-    async def get_documents(user: dict = Depends(get_current_user)) -> dict:
-        email = user.get("email", "unknown")
-        return {
-            "message": "Documents",
-            "client": email,
-            "data": [
-                {"id": 1, "name": f"{email} user Document 1"},
-                {"id": 2, "name": f"{email} user Document 2"},
-                {"id": 3, "name": f"{email} user Document 3"},
-            ],
-        }
+    # ── /api/v1/documents — AI Prompt Template Library ──────────────────
+    PROMPT_TEMPLATES = [
+        {
+            "id": "tpl-code-001",
+            "title": "Python Function Generator",
+            "category": "Code Generation",
+            "icon": "💻",
+            "description": "Generate a clean, documented Python function from a natural-language spec.",
+            "prompt": "Write a Python function that {describe what it does}. Include type hints, a docstring, and at least two usage examples.",
+            "tags": ["python", "functions", "best-practices"],
+        },
+        {
+            "id": "tpl-code-002",
+            "title": "REST API Endpoint Builder",
+            "category": "Code Generation",
+            "icon": "🔌",
+            "description": "Scaffold a production-ready FastAPI or Express endpoint.",
+            "prompt": "Create a {framework} REST API endpoint for {resource}. Include input validation, error handling, and response models.",
+            "tags": ["api", "fastapi", "express", "rest"],
+        },
+        {
+            "id": "tpl-code-003",
+            "title": "SQL Query Optimizer",
+            "category": "Code Generation",
+            "icon": "🗄️",
+            "description": "Turn a slow SQL query into an optimized version with explanations.",
+            "prompt": "Optimize this SQL query for performance. Explain each change you make and suggest relevant indexes:\n\n{paste your SQL here}",
+            "tags": ["sql", "database", "performance"],
+        },
+        {
+            "id": "tpl-data-001",
+            "title": "Dataset Summarizer",
+            "category": "Data Analysis",
+            "icon": "📊",
+            "description": "Provide a statistical summary and key insights from raw data.",
+            "prompt": "Analyze this dataset and provide: 1) Statistical summary, 2) Key patterns/anomalies, 3) Three actionable insights, 4) Recommended visualizations.\n\nData:\n{paste data here}",
+            "tags": ["analytics", "statistics", "insights"],
+        },
+        {
+            "id": "tpl-data-002",
+            "title": "JSON Schema Generator",
+            "category": "Data Analysis",
+            "icon": "📋",
+            "description": "Generate a strict JSON Schema from sample data.",
+            "prompt": "Generate a JSON Schema (draft-07) from this sample JSON. Include descriptions, required fields, and format constraints:\n\n{paste JSON here}",
+            "tags": ["json", "schema", "validation"],
+        },
+        {
+            "id": "tpl-devops-001",
+            "title": "Kubernetes Manifest Writer",
+            "category": "DevOps",
+            "icon": "☸️",
+            "description": "Generate a production-ready K8s deployment, service, and ingress.",
+            "prompt": "Create Kubernetes manifests (Deployment, Service, Ingress) for a {language} app named {name} with {replicas} replicas, {memory} memory limit, health checks, and resource quotas.",
+            "tags": ["kubernetes", "k8s", "deployment", "infrastructure"],
+        },
+        {
+            "id": "tpl-devops-002",
+            "title": "Docker Multi-Stage Builder",
+            "category": "DevOps",
+            "icon": "🐳",
+            "description": "Create an optimized multi-stage Dockerfile for minimal image size.",
+            "prompt": "Write a multi-stage Dockerfile for a {language/framework} application. Optimize for: minimal final image size, layer caching, non-root user, and security best practices.",
+            "tags": ["docker", "containers", "optimization"],
+        },
+        {
+            "id": "tpl-sec-001",
+            "title": "Security Audit Checklist",
+            "category": "Security",
+            "icon": "🛡️",
+            "description": "Generate an OWASP-aligned security review for your code.",
+            "prompt": "Perform a security audit of this code. Check for: injection vulnerabilities, authentication flaws, sensitive data exposure, broken access control, and misconfigurations. Provide severity ratings and fixes.\n\n{paste code here}",
+            "tags": ["security", "owasp", "audit", "vulnerability"],
+        },
+        {
+            "id": "tpl-write-001",
+            "title": "Technical Documentation Writer",
+            "category": "Writing",
+            "icon": "📝",
+            "description": "Transform code or architecture into clear technical documentation.",
+            "prompt": "Write technical documentation for {component/system}. Include: Overview, Architecture, API Reference, Configuration, Deployment, and Troubleshooting sections.",
+            "tags": ["documentation", "technical-writing", "readme"],
+        },
+        {
+            "id": "tpl-write-002",
+            "title": "Git Commit Message Crafter",
+            "category": "Writing",
+            "icon": "✍️",
+            "description": "Generate Conventional Commits messages from a code diff.",
+            "prompt": "Write a Conventional Commits message for this diff. Use the format: type(scope): description. Include a body explaining WHY, not just what.\n\nDiff:\n{paste diff here}",
+            "tags": ["git", "conventional-commits", "workflow"],
+        },
+    ]
 
     @app.get(
-        "/api/admin",
-        tags=["Data"],
+        "/api/v1/documents",
+        tags=["Prompt Library"],
         dependencies=[Depends(verify_kong_header)],
+        summary="AI Prompt Template Library",
+    )
+    async def get_documents(
+        user: dict = Depends(get_current_user),
+        category: str | None = None,
+    ) -> dict:
+        """Browse curated prompt templates. Optionally filter by category."""
+        email = user.get("email", "unknown")
+        templates = PROMPT_TEMPLATES
+        if category:
+            templates = [t for t in templates if t["category"].lower() == category.lower()]
+
+        categories = sorted(set(t["category"] for t in PROMPT_TEMPLATES))
+        return {
+            "message": "AI Prompt Template Library",
+            "client": email,
+            "total_templates": len(templates),
+            "available_categories": categories,
+            "data": templates,
+        }
+
+    # ── /api/v1/admin — Live Platform Intelligence Dashboard ─────────────
+    import httpx as _httpx
+
+    KONG_ADMIN_URL = os.getenv("KONG_ADMIN_URL", "http://kong-cp:8001")
+
+    @app.get(
+        "/api/v1/admin",
+        tags=["Platform Intelligence"],
+        dependencies=[Depends(verify_kong_header)],
+        summary="Live Platform Intelligence Dashboard",
     )
     async def get_admin(user: dict = Depends(get_current_user)) -> dict:
+        """Pull real-time metrics from Kong, PostgreSQL, and Redis."""
         email = user.get("email", "unknown")
+        uptime_seconds = int(time.time() - app.state.startup_time)
+
+        # ── Kong Gateway live stats ──────────────────────────────────────
+        kong_stats = {"services": 0, "routes": 0, "plugins": 0, "status": "unreachable"}
+        try:
+            async with _httpx.AsyncClient(timeout=3) as client:
+                svc_resp = await client.get(f"{KONG_ADMIN_URL}/services")
+                rte_resp = await client.get(f"{KONG_ADMIN_URL}/routes")
+                plg_resp = await client.get(f"{KONG_ADMIN_URL}/plugins")
+                kong_stats = {
+                    "services": len(svc_resp.json().get("data", [])),
+                    "routes": len(rte_resp.json().get("data", [])),
+                    "plugins": len(plg_resp.json().get("data", [])),
+                    "status": "connected",
+                }
+        except Exception:
+            logger.warning("[Admin] Could not reach Kong Admin API")
+
+        # ── Database live stats ──────────────────────────────────────────
+        db_stats: dict = {}
+        try:
+            async with AsyncSessionLocal() as session:
+                from sqlalchemy import text as _text
+                ai_req = await session.execute(_text("SELECT COUNT(*) FROM ai_requests"))
+                sec_evt = await session.execute(_text("SELECT COUNT(*) FROM security_events"))
+                policies = await session.execute(
+                    _text("SELECT COUNT(*) FROM governance_policies WHERE is_active = true")
+                )
+                db_stats = {
+                    "total_ai_requests": ai_req.scalar() or 0,
+                    "security_events_logged": sec_evt.scalar() or 0,
+                    "active_policies": policies.scalar() or 0,
+                    "status": "connected",
+                }
+        except Exception as exc:
+            logger.warning("[Admin] DB query failed: %s", exc)
+            db_stats = {"status": "error", "detail": str(exc)}
+
+        # ── Redis quota snapshot ─────────────────────────────────────────
+        redis_stats: dict = {}
+        try:
+            quota_status = await quota_service.get_quota_status("acme-corp")
+            redis_stats = {
+                "tenant": "acme-corp",
+                "tokens_used_today": quota_status.get("tokens_used", 0),
+                "daily_limit": quota_status.get("daily_limit", 0),
+                "remaining": quota_status.get("remaining", 0),
+                "status": "connected",
+            }
+        except Exception as exc:
+            logger.warning("[Admin] Redis quota query failed: %s", exc)
+            redis_stats = {"status": "error", "detail": str(exc)}
+
+        # ── Compose response ─────────────────────────────────────────────
+        hours, remainder = divmod(uptime_seconds, 3600)
+        minutes, secs = divmod(remainder, 60)
+
         return {
-            "message": "admin documents",
+            "message": "Platform Intelligence Dashboard",
             "client": email,
-            "data": [
-                {"id": 1, "name": f"{email} admin Document 1"},
-                {"id": 2, "name": f"{email} admin Document 2"},
-                {"id": 3, "name": f"{email} admin Document 3"},
-            ],
+            "platform": {
+                "name": "Nextora AI Gateway",
+                "version": "1.0.0",
+                "environment": settings.environment,
+                "uptime": f"{hours}h {minutes}m {secs}s",
+                "uptime_seconds": uptime_seconds,
+            },
+            "kong_gateway": kong_stats,
+            "database": db_stats,
+            "quota_usage": redis_stats,
         }
 
     return app

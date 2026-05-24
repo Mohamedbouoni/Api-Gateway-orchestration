@@ -47,7 +47,7 @@ if (-not $isAdmin) {
 
 # Warm up models into memory regardless of whether OLLAMA_KEEP_ALIVE was just set or already configured
 Write-Host "Warming up Ollama models..." -ForegroundColor Yellow
-$requiredModels = @("llama3", "DeepSeek-Coder")
+$requiredModels = @("llama3.2:3b", "qwen2.5-coder:7b")
 $installedTags = @()
 try {
     $installedTags = @(

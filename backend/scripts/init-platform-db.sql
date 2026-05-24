@@ -112,8 +112,8 @@ CREATE TABLE IF NOT EXISTS security_events (
 -- Seed Initial Data
 INSERT INTO ai_services (service_id, model_name, provider_url, provider_type, description, service_type)
 VALUES 
-    ('ollama-llama3', 'llama3', 'http://host.docker.internal:11434/api/chat', 'ollama', 'Local Llama 3 Instance', 'on-prem'),
-    ('ollama-DeepSeekCoder', 'DeepSeek-Coder', 'http://host.docker.internal:11434/api/chat', 'ollama', 'Local DeepSeek Coder Instance', 'on-prem'),
+    ('ollama-llama3', 'llama3.2:3b', 'http://host.docker.internal:11434/api/chat', 'ollama', 'Local Llama 3.2 3B Instance (lightweight)', 'on-prem'),
+    ('ollama-DeepSeekCoder', 'qwen2.5-coder:7b', 'http://host.docker.internal:11434/api/chat', 'ollama', 'Local Qwen 2.5 Coder 7B Instance', 'on-prem'),
 	('gemini-cloud', 'gemini_cloud_model', 'https://gemini.google.com/_/BardChatUi/data/assistant.lamda.BardFrontendService/StreamGenerate', 'gemini', 'official gemini model running in the cloud', 'cloud')
 ON CONFLICT (service_id) DO NOTHING;
 
