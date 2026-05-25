@@ -42,3 +42,8 @@ echo 'SecRuleUpdateTargetById 942290 "!REQUEST_COOKIES:/^KEYCLOAK_/"' \
   >> /etc/modsecurity.d/owasp-crs/rules/REQUEST-999-COMMON-EXCEPTIONS-AFTER.conf
 echo 'SecRuleUpdateTargetById 942290 "!REQUEST_COOKIES:/^KC_/"' \
   >> /etc/modsecurity.d/owasp-crs/rules/REQUEST-999-COMMON-EXCEPTIONS-AFTER.conf
+
+# Allow AI prompts and uploaded files to contain arbitrary text/code
+# (prevents SQLi/XSS/Command Injection rules from blocking legitimate AI chat context)
+echo 'SecRule REQUEST_URI "@beginsWith /api/v1/ai/" "id:1005,phase:1,pass,nolog,ctl:ruleRemoveById=949110,ctl:ruleRemoveById=959100,ctl:ruleRemoveById=942100-942999,ctl:ruleRemoveById=941100-941999"' \
+  >> /etc/modsecurity.d/owasp-crs/rules/REQUEST-999-COMMON-EXCEPTIONS-AFTER.conf

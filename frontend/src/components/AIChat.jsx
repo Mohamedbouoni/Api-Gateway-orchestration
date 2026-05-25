@@ -167,6 +167,34 @@ const AIChat = ({
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
   const abortControllerRef = useRef(null);
+  const fileInputRef = useRef(null);
+
+  // ── File upload state ─────────────────────────────────────────────────────
+  const [attachedFile, setAttachedFile] = useState(null); // { filename, text, metadata }
+  const [isUploading, setIsUploading] = useState(false);
+  const [showAttachMenu, setShowAttachMenu] = useState(false);
+
+  // ── Message Actions ────────────────────────────────────────────────────────
+  const handleLikeMessage = (idx) => {
+    setMessages((prev) =>
+      prev.map((msg, i) =>
+        i === idx ? { ...msg, liked: true, disliked: false } : msg
+      )
+    );
+  };
+
+  const handleDislikeMessage = (idx) => {
+    setMessages((prev) =>
+      prev.map((msg, i) =>
+        i === idx ? { ...msg, liked: false, disliked: true } : msg
+      )
+    );
+  };
+
+  const handleCopyMessage = (text) => {
+    navigator.clipboard.writeText(text);
+    // Could add a small toast notification here
+  };
 
   // ── Client-side message guard ──────────────────────────────────────────────
   const { guardCheck, registerSend } = useMessageGuard();
@@ -229,6 +257,46 @@ const AIChat = ({
     setPendingMessage(null);
   }, []);
 
+  // ── File upload handler ────────────────────────────────────────────────────
+  const handleFileUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch(`${API_BASE}/ai/upload-file`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        alert(`File upload failed: ${err.detail || "Unknown error"}`);
+        return;
+      }
+
+      const data = await res.json();
+      setAttachedFile({
+        filename: data.filename,
+        text: data.extracted_text,
+        metadata: data.metadata,
+      });
+    } catch (err) {
+      console.error("File upload error:", err);
+      alert("Failed to upload file. Please try again.");
+    } finally {
+      setIsUploading(false);
+      // Reset file input so the same file can be re-selected
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
   // ── Send handler (SSE streaming via native fetch) ─────────────────────────
   const handleSend = async (e) => {
     if (e) e.preventDefault();
@@ -256,9 +324,17 @@ const AIChat = ({
     // Sliding window — prevents context overflow and avoids
     // re-scanning old PII in backend content inspector
 
+    // If a file is attached, prepend its content as context
+    let fullContent = messageText;
+    if (attachedFile) {
+      fullContent = `[Attached File: ${attachedFile.filename}]\n\n${attachedFile.text}\n\n---\n\nUser Question: ${messageText}`;
+    }
+
     const userMessage = {
       role: "user",
-      content: messageText,
+      content: fullContent,
+      displayContent: messageText, // original text for display
+      attachedFilename: attachedFile?.filename || null,
       timestamp: new Date().toLocaleTimeString([], {
         hour: "2-digit",
         minute: "2-digit",
@@ -270,6 +346,7 @@ const AIChat = ({
 
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
+    setAttachedFile(null); // Clear attachment after sending
     setIsLoading(true);
 
     const controller = new AbortController();
@@ -1060,6 +1137,33 @@ const AIChat = ({
                     </div>
                   )}
               </div>
+              
+              {/* Message Actions (Like, Dislike, Copy) */}
+              {m.role === "assistant" && !m.isStreaming && !m.isCancelled && (
+                <div className="message-action-bar">
+                  <button 
+                    className={`msg-action-btn ${m.liked ? "active" : ""}`}
+                    onClick={() => handleLikeMessage(i)}
+                    title="Like this response"
+                  >
+                    {m.liked ? "👍" : "🤍"}
+                  </button>
+                  <button 
+                    className={`msg-action-btn ${m.disliked ? "active" : ""}`}
+                    onClick={() => handleDislikeMessage(i)}
+                    title="Dislike this response"
+                  >
+                    {m.disliked ? "👎" : "👎🏻"}
+                  </button>
+                  <button 
+                    className="msg-action-btn"
+                    onClick={() => handleCopyMessage(m.content)}
+                    title="Copy to clipboard"
+                  >
+                    📋
+                  </button>
+                </div>
+              )}
 
               {/* Request ID below AI bubble */}
               {m.role === "assistant" && m.requestId && (
@@ -1127,11 +1231,84 @@ const AIChat = ({
 
       {/* ── Input bar ────────────────────────────────────────────────────── */}
       <div className="input-section">
+        {/* File attachment indicator */}
+        {attachedFile && (
+          <div className="attached-file-chip">
+            <span>📎 {attachedFile.filename}</span>
+            <span style={{ fontSize: "0.7rem", color: "var(--text-dim)" }}>
+              ({(attachedFile.metadata?.extracted_chars || 0).toLocaleString()} chars)
+            </span>
+            <button
+              className="remove-file-btn"
+              onClick={() => setAttachedFile(null)}
+              title="Remove attachment"
+            >✕</button>
+          </div>
+        )}
+        {isUploading && (
+          <div className="attached-file-chip" style={{ opacity: 0.7 }}>
+            <span>⏳ Uploading and extracting text...</span>
+          </div>
+        )}
         <div className="input-container-pill">
+          {/* Hidden file inputs */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".pdf,.txt,.csv,.md,.json,.log,.py,.js,.ts,.yaml,.yml"
+            onChange={handleFileUpload}
+            style={{ display: "none" }}
+          />
+          <input
+            id="photoInput"
+            type="file"
+            accept=".jpg,.jpeg,.png,.webp,.gif"
+            onChange={handleFileUpload}
+            style={{ display: "none" }}
+          />
+
+          {/* Plus / attach button with menu */}
+          <div className="attach-menu-container">
+            <button
+              className={`attach-file-btn ${showAttachMenu ? "active" : ""}`}
+              onClick={() => setShowAttachMenu(!showAttachMenu)}
+              disabled={isUploading || isActive}
+              title="Attach a file or photo"
+            >
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+            </button>
+            
+            {showAttachMenu && (
+              <div className="attach-dropdown-menu">
+                <button 
+                  className="attach-dropdown-item"
+                  onClick={() => {
+                    setShowAttachMenu(false);
+                    fileInputRef.current?.click();
+                  }}
+                >
+                  📄 Document
+                </button>
+                <button 
+                  className="attach-dropdown-item"
+                  onClick={() => {
+                    setShowAttachMenu(false);
+                    document.getElementById("photoInput")?.click();
+                  }}
+                >
+                  🖼️ Photo
+                </button>
+              </div>
+            )}
+          </div>
+
           <textarea
             ref={textareaRef}
             className="type-area"
-            placeholder="Ask anything or request docs..."
+            placeholder={attachedFile ? `Ask about ${attachedFile.filename}...` : "Ask anything or attach a file..."}
             rows="1"
             value={input}
             onChange={(e) => setInput(e.target.value)}

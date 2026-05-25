@@ -6,7 +6,7 @@ from __future__ import annotations
 import logging
 from typing import Any, AsyncIterator, Dict
 
-from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from fastapi import APIRouter, Depends, File, HTTPException, Request, Response, UploadFile
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -28,10 +28,62 @@ from app.infrastructure.ai_provider.ollama_client import chat as ollama_chat  # 
 from app.infrastructure.nlp.spacy_loader import get_nlp
 from app.schemas.ai_request import AIRequestSchema
 from app.services.ai_request_service import AIRequestService
+from app.services.file_extraction_service import FileExtractionService, FileExtractionError
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/ai", tags=["AI"])
+
+# Singleton file extraction service
+_file_extraction_service = FileExtractionService()
+
+
+@router.post("/upload-file", dependencies=[Depends(verify_kong_header)])
+async def upload_file(
+    file: UploadFile = File(...),
+    current_user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """Upload a file and extract its text content securely.
+
+    The extracted text is returned to the client which can then include it
+    as context in the next AI request. No file is stored on disk.
+    """
+    filename = file.filename or "unknown"
+    content_type = file.content_type or "application/octet-stream"
+
+    try:
+        file_bytes = await file.read()
+
+        # Validate file (size, extension, magic bytes)
+        _file_extraction_service.validate_file(filename, content_type, file_bytes)
+
+        # Extract text
+        text, metadata = _file_extraction_service.extract_text(filename, file_bytes)
+
+        logger.info(
+            "[FileUpload] user=%s file=%s chars=%d",
+            current_user.get("preferred_username", "unknown"),
+            filename,
+            len(text),
+        )
+
+        return {
+            "success": True,
+            "filename": filename,
+            "extracted_text": text,
+            "metadata": metadata,
+        }
+
+    except FileExtractionError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except Exception as exc:
+        logger.error("[FileUpload] Unexpected error: %s", exc)
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to process uploaded file.",
+        ) from exc
+    finally:
+        await file.close()
 
 
 @router.post("/request", dependencies=[Depends(verify_kong_header)])

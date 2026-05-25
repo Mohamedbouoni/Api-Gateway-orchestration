@@ -1,0 +1,12 @@
+# ── Heavy / rarely-changed dependencies ──────────────────────────────────
+# These are installed in their own Docker layer so that adding a small
+# dependency (e.g. PyPDF2) to requirements.txt does NOT re-download
+# ~500 MB of PyTorch, transformers, spaCy, and Presidio every time.
+#
+# Only edit this file when upgrading major ML/NLP framework versions.
+
+torch>=2.2.0
+transformers>=4.40.0
+spacy>=3.7.0
+presidio-analyzer>=2.2.353
+presidio-anonymizer>=2.2.353

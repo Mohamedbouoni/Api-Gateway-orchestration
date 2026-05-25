@@ -9,28 +9,33 @@ RUN apt-get update && apt-get install -y --fix-missing \
     libgomp1 \
     && rm -rf /var/lib/apt/lists/*
 
-COPY requirements.txt .
-
-# Install CPU-only torch first (250 MB vs 800 MB for the default CUDA wheel).
-# Must run before the full requirements install so the CPU wheel isn't overwritten.
+# ── Layer 1: CPU-only PyTorch (rarely changes → cached) ──────────────────
 RUN pip install --no-cache-dir \
     torch \
     --index-url https://download.pytorch.org/whl/cpu
 
-# Install remaining dependencies (torch already satisfied, so pip skips it).
-RUN pip install --no-cache-dir --default-timeout=120 --retries 10 -r requirements.txt
+# ── Layer 2: Heavy ML/NLP packages (rarely changes → cached) ────────────
+# These are separated so that adding a lightweight dependency like PyPDF2
+# does NOT re-download ~500 MB of transformers, spaCy, and Presidio.
+COPY requirements-heavy.txt .
+RUN pip install --no-cache-dir --default-timeout=120 --retries 10 -r requirements-heavy.txt
 
+# ── Layer 3: spaCy model (rarely changes → cached) ──────────────────────
 RUN python -m spacy download en_core_web_sm
 
-# Bake the DistilBERT injection model into the image so startup warm-up is
-# instant — no download on first boot.  The model lands in HF_HOME which the
-# K8s manifest sets to /var/cache/huggingface (emptyDir, pre-populated here).
+# ── Layer 4: DistilBERT injection model (rarely changes → cached) ───────
+# Bake the model into the image so startup warm-up is instant.
 ENV HF_HOME=/var/cache/huggingface
 RUN python -c "\
 from transformers import pipeline; \
 pipeline('text-classification', model='fmops/distilbert-prompt-injection', \
          device=-1)"
 
+# ── Layer 5: Lightweight app dependencies (changes often → fast rebuild) ─
+COPY requirements.txt .
+RUN pip install --no-cache-dir --default-timeout=120 --retries 10 -r requirements.txt
+
+# ── Layer 6: Application code (changes most often → always rebuilt) ──────
 COPY . .
 
 # Environment variables will be provided by docker-compose
