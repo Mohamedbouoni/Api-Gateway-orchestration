@@ -34,6 +34,10 @@ class _GeminiService:
     provider_url: str = "https://gemini.example/generate"
     provider_type: str = "gemini"
     service_type: str = "cloud"
+    # Only the built-in protected gemini-cloud row routes through the Bard
+    # scrape path. Non-protected rows fall through to openai_client even when
+    # provider_type happens to be "gemini".
+    is_protected: bool = True
 
 
 class _NoopSession:

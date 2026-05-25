@@ -33,6 +33,7 @@ from app.core.exceptions import (
 from app.core.config import settings
 from app.repositories.usage_repository import create_usage_log as _create_usage_log
 from app.infrastructure.ai_provider.ollama_client import chat as ollama_chat
+from app.infrastructure.ai_provider.openai_client import chat as openai_chat
 from app.infrastructure.intent_classifier.client import IntentClassifierClient
 from app.intent_classification.contract import UNCLASSIFIED_LABEL
 from app.repositories.ai_request_repository import (
@@ -744,6 +745,83 @@ class AIRequestService:
                     decision="allowed",
                 )
 
+    # ── Provider dispatch ────────────────────────────────────────────────────
+
+    @staticmethod
+    def _is_protected_gemini(service: Any) -> bool:
+        """The built-in ``gemini-cloud`` row uses the Bard scrape path. Admins
+        can never edit/delete it, and only it should hit the Bard exploit
+        codepath — other gemini-flavoured services routed through the
+        official API use the generic OpenAI-compatible dispatcher with
+        ``x-goog-api-key``."""
+        return (
+            getattr(service, "provider_type", "") == "gemini"
+            and bool(getattr(service, "is_protected", False))
+        )
+
+    async def _dispatch_provider_stream(
+        self, *, service: Any, messages: List[Dict[str, str]]
+    ) -> AsyncIterator[Dict[str, Any]]:
+        """Pick the right HTTP client for ``service`` and return a chunk
+        iterator shaped like ``{"token", "done", "usage"}``."""
+        provider_url = service.provider_url
+        model = service.model_name
+        provider_type = getattr(service, "provider_type", "ollama")
+
+        if self._is_protected_gemini(service):
+            return self._call_gemini_stream(
+                provider_url=provider_url, messages=messages
+            )
+        if provider_type == "ollama":
+            iterator = await ollama_chat(
+                provider_url=provider_url,
+                model=model,
+                messages=messages,
+                stream=True,
+            )
+            return iterator  # type: ignore[return-value]
+
+        iterator = await openai_chat(
+            provider_url=provider_url,
+            model=model,
+            messages=messages,
+            stream=True,
+            api_key=getattr(service, "api_key", None),
+            auth_header=getattr(service, "auth_header", "Authorization"),
+            auth_scheme=getattr(service, "auth_scheme", "Bearer"),
+        )
+        return iterator  # type: ignore[return-value]
+
+    async def _dispatch_provider_json(
+        self, *, service: Any, messages: List[Dict[str, str]]
+    ) -> Dict[str, Any]:
+        """Non-streaming sibling of :meth:`_dispatch_provider_stream`."""
+        provider_url = service.provider_url
+        model = service.model_name
+        provider_type = getattr(service, "provider_type", "ollama")
+
+        if self._is_protected_gemini(service):
+            return await self._call_gemini_json(
+                provider_url=provider_url, messages=messages
+            )
+        if provider_type == "ollama":
+            return await ollama_chat(  # type: ignore[return-value]
+                provider_url=provider_url,
+                model=model,
+                messages=messages,
+                stream=False,
+            )
+
+        return await openai_chat(  # type: ignore[return-value]
+            provider_url=provider_url,
+            model=model,
+            messages=messages,
+            stream=False,
+            api_key=getattr(service, "api_key", None),
+            auth_header=getattr(service, "auth_header", "Authorization"),
+            auth_scheme=getattr(service, "auth_scheme", "Bearer"),
+        )
+
     # ── Public API ───────────────────────────────────────────────────────────
 
     async def submit_stream(
@@ -791,18 +869,9 @@ class AIRequestService:
 
             first_token = True
             try:
-                if pf.service.provider_type == "gemini":
-                    stream_iter = self._call_gemini_stream(
-                        provider_url=outbound_provider_url,
-                        messages=messages,
-                    )
-                else:
-                    stream_iter = await ollama_chat(
-                        provider_url=outbound_provider_url,
-                        model=outbound_model,
-                        messages=messages,
-                        stream=True,
-                    )
+                stream_iter = await self._dispatch_provider_stream(
+                    service=pf.service, messages=messages
+                )
                 if stream_iter is None:
                     raise ProviderError("Provider stream returned no iterator")
 
@@ -929,18 +998,9 @@ class AIRequestService:
         started_at = time.perf_counter()
 
         try:
-            if pf.service.provider_type == "gemini":
-                provider_data = await self._call_gemini_json(
-                    provider_url=outbound_provider_url,
-                    messages=pf.messages,
-                )
-            else:
-                provider_data = await ollama_chat(
-                    provider_url=outbound_provider_url,
-                    model=outbound_model if pf.service.provider_type == "ollama" else None,
-                    messages=pf.messages,
-                    stream=False,
-                )
+            provider_data = await self._dispatch_provider_json(
+                service=pf.service, messages=pf.messages
+            )
         except Exception as exc:
             logger.exception("Provider call failed: %s", exc)
             try:

@@ -38,6 +38,11 @@ data:
   ANOMALY_OUTBOUND: "4"
   RESTRICTED_EXTENSIONS: ".cmd/ .com/ .config/ .dll/ .sql/ .py/ "
   MSG_403: "Forbidden by WAF"
+  # CRS rule 911100 (METHOD-ENFORCEMENT) blocks any HTTP method not listed
+  # here. The upstream default ("GET HEAD POST OPTIONS") rejects PUT / PATCH /
+  # DELETE, which the admin REST APIs (intent mappings, policies, AI service
+  # governance) require. We allow the full REST verb set used by the gateway.
+  ALLOWED_METHODS: "GET HEAD POST PUT PATCH DELETE OPTIONS"
 
 ---
 apiVersion: apps/v1

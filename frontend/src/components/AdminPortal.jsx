@@ -30,6 +30,652 @@ function healthBadgeStyle(status) {
   return HEALTH_BADGE_STYLES[status] || HEALTH_BADGE_STYLES.warn;
 }
 
+// ── Provider templates ─────────────────────────────────────────────────────
+// Each template is rendered as a clickable card in Step 1 of the Add/Edit
+// Service wizard. Selecting one pre-fills Step 2. The "custom" template is
+// the escape hatch — admins enter any free-form provider_type / endpoint /
+// auth combo. The backend accepts any provider_type string; everything that
+// is not "ollama" or the protected gemini-cloud row routes through
+// openai_client.chat() using auth_header / auth_scheme / api_key.
+const PROVIDER_TEMPLATES = [
+  {
+    id: "openai",
+    label: "OpenAI / OpenAI-compatible",
+    icon: "🤖",
+    description: "GPT-4o, GPT-5 and any OpenAI-spec endpoint (vLLM, llama.cpp).",
+    provider_type: "openai",
+    service_type: "cloud",
+    provider_url: "https://api.openai.com/v1/chat/completions",
+    auth_header: "Authorization",
+    auth_scheme: "Bearer",
+    requires_api_key: true,
+  },
+  {
+    id: "anthropic",
+    label: "Anthropic (Claude)",
+    icon: "🧠",
+    description: "Claude 3.5 / Opus / Haiku via the official Messages API.",
+    provider_type: "anthropic",
+    service_type: "cloud",
+    provider_url: "https://api.anthropic.com/v1/messages",
+    auth_header: "x-api-key",
+    auth_scheme: "",
+    requires_api_key: true,
+  },
+  {
+    id: "groq",
+    label: "Groq",
+    icon: "⚡",
+    description: "Ultra-low-latency LPU inference, OpenAI-compatible.",
+    provider_type: "openai",
+    service_type: "cloud",
+    provider_url: "https://api.groq.com/openai/v1/chat/completions",
+    auth_header: "Authorization",
+    auth_scheme: "Bearer",
+    requires_api_key: true,
+  },
+  {
+    id: "openrouter",
+    label: "OpenRouter",
+    icon: "🌐",
+    description: "Multi-model gateway. Use vendor/model slugs as model name.",
+    provider_type: "openai",
+    service_type: "cloud",
+    provider_url: "https://openrouter.ai/api/v1/chat/completions",
+    auth_header: "Authorization",
+    auth_scheme: "Bearer",
+    requires_api_key: true,
+  },
+  {
+    id: "gemini_api",
+    label: "Google Gemini API",
+    icon: "✨",
+    description: "Google's OpenAI-compatible Gemini endpoint.",
+    provider_type: "gemini_api",
+    service_type: "cloud",
+    provider_url: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+    auth_header: "Authorization",
+    auth_scheme: "Bearer",
+    requires_api_key: true,
+  },
+  {
+    id: "ollama",
+    label: "Ollama (local)",
+    icon: "🦙",
+    description: "Local Ollama daemon. Runs on-prem, no API key needed.",
+    provider_type: "ollama",
+    service_type: "on-prem",
+    provider_url: "http://host.docker.internal:11434/api/chat",
+    auth_header: "Authorization",
+    auth_scheme: "Bearer",
+    requires_api_key: false,
+  },
+  {
+    id: "custom",
+    label: "Custom (free-form)",
+    icon: "🛠️",
+    description: "Any other provider. Enter every field yourself.",
+    provider_type: "",
+    service_type: "on-prem",
+    provider_url: "",
+    auth_header: "Authorization",
+    auth_scheme: "Bearer",
+    requires_api_key: false,
+  },
+];
+
+function getProviderTemplate(id) {
+  return PROVIDER_TEMPLATES.find((t) => t.id === id) || PROVIDER_TEMPLATES[0];
+}
+
+function emptyServiceForm() {
+  return {
+    template_id: null,
+    service_id: "",
+    model_name: "",
+    provider_url: "",
+    provider_type: "",
+    description: "",
+    service_type: "on-prem",
+    api_key: "",
+    auth_header: "Authorization",
+    auth_scheme: "Bearer",
+  };
+}
+
+function applyServiceTemplate(formData, tpl) {
+  return {
+    ...formData,
+    template_id: tpl.id,
+    provider_type: tpl.provider_type,
+    provider_url: tpl.provider_url,
+    service_type: tpl.service_type,
+    auth_header: tpl.auth_header,
+    auth_scheme: tpl.auth_scheme,
+  };
+}
+
+// Per-step validation for the wizard's Step 2 (Configure). Returns a map of
+// fieldName -> error message; an empty object means "OK to proceed". Cloud
+// services require an api_key on create. Editing leaves the existing key
+// alone, so a blank api_key on edit is fine. The Ollama template never asks
+// for a key at all, so we skip the check there.
+function validateStep2(formData, { editingService }) {
+  const errors = {};
+  if (!(formData.service_id || "").trim()) {
+    errors.service_id = "Service ID is required";
+  }
+  if (!(formData.model_name || "").trim()) {
+    errors.model_name = "Model name is required";
+  }
+  if (!(formData.provider_url || "").trim()) {
+    errors.provider_url = "Provider URL is required";
+  }
+  if (!(formData.provider_type || "").trim()) {
+    errors.provider_type = "Provider type is required";
+  }
+  if (formData.template_id !== "ollama") {
+    if (
+      formData.service_type === "cloud" &&
+      !editingService &&
+      !(formData.api_key && formData.api_key.trim())
+    ) {
+      errors.api_key = "API key is required for cloud services";
+    }
+  }
+  return errors;
+}
+
+// ── Service Wizard component ──────────────────────────────────────────────
+// Three-step flow used by the AI Services tab: Step 1 picks a provider
+// template (skipped when editing), Step 2 collects the configuration, Step 3
+// shows a read-only review before submitting. Submission is delegated up to
+// the parent via the surrounding <form onSubmit={handleSave}> wrapper.
+
+const FIELD_ERROR_STYLE = {
+  fontSize: "0.75rem",
+  color: "#fca5a5",
+  marginTop: "0.35rem",
+};
+
+function StepPill({ index, label, active, done }) {
+  const fg = active ? "var(--accent-primary)" : done ? "#34d399" : "var(--text-dim)";
+  const bg = active
+    ? "rgba(59, 130, 246, 0.12)"
+    : done
+      ? "rgba(52, 211, 153, 0.08)"
+      : "rgba(148, 163, 184, 0.06)";
+  const border = active
+    ? "1px solid rgba(59, 130, 246, 0.4)"
+    : done
+      ? "1px solid rgba(52, 211, 153, 0.3)"
+      : "1px solid var(--glass-border)";
+  return (
+    <div
+      style={{
+        flex: 1,
+        padding: "0.6rem 0.9rem",
+        borderRadius: "10px",
+        background: bg,
+        border,
+        color: fg,
+        display: "flex",
+        alignItems: "center",
+        gap: "0.6rem",
+        fontSize: "0.85rem",
+      }}
+    >
+      <span
+        style={{
+          width: "22px",
+          height: "22px",
+          borderRadius: "50%",
+          background: active ? "var(--accent-primary)" : done ? "#34d399" : "rgba(148,163,184,0.2)",
+          color: active || done ? "white" : "var(--text-dim)",
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: "0.75rem",
+          fontWeight: 700,
+        }}
+      >
+        {done ? "✓" : index}
+      </span>
+      <span style={{ fontWeight: active ? 600 : 400 }}>{label}</span>
+    </div>
+  );
+}
+
+function ServiceWizard({
+  step,
+  editingService,
+  formData,
+  setFormData,
+  fieldErrors,
+  setFieldErrors,
+  onStepChange,
+  onCancel,
+  submitting,
+  submitError,
+}) {
+  const isEdit = !!editingService;
+  const selectedTpl = formData.template_id ? getProviderTemplate(formData.template_id) : null;
+  const isOllamaTpl = formData.template_id === "ollama";
+  const isCustomTpl = formData.template_id === "custom";
+
+  // Stepper: 3 pills on create, 2 pills on edit (Step 1 is skipped).
+  const stepperPills = isEdit
+    ? [
+        { idx: 1, label: "Configure", step: 2 },
+        { idx: 2, label: "Review", step: 3 },
+      ]
+    : [
+        { idx: 1, label: "Provider", step: 1 },
+        { idx: 2, label: "Configure", step: 2 },
+        { idx: 3, label: "Review", step: 3 },
+      ];
+
+  const handleNextFromStep2 = () => {
+    const errors = validateStep2(formData, { editingService });
+    setFieldErrors(errors);
+    if (Object.keys(errors).length === 0) {
+      onStepChange(3);
+    }
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "1.4rem" }}>
+      {/* Progress indicator */}
+      <div style={{ display: "flex", gap: "0.5rem" }}>
+        {stepperPills.map((p) => (
+          <StepPill
+            key={p.step}
+            index={p.idx}
+            label={p.label}
+            active={step === p.step}
+            done={step > p.step}
+          />
+        ))}
+      </div>
+
+      {/* Step 1 — Provider cards */}
+      {step === 1 && !isEdit && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+          <div style={{ color: "var(--text-dim)", fontSize: "0.9rem" }}>
+            Pick a provider to start. We will pre-fill the endpoint and auth defaults; you can override anything in the next step.
+          </div>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(230px, 1fr))",
+              gap: "0.9rem",
+            }}
+          >
+            {PROVIDER_TEMPLATES.map((tpl) => {
+              const selected = formData.template_id === tpl.id;
+              return (
+                <button
+                  key={tpl.id}
+                  type="button"
+                  onClick={() => {
+                    setFormData(applyServiceTemplate(formData, tpl));
+                    setFieldErrors({});
+                    onStepChange(2);
+                  }}
+                  style={{
+                    textAlign: "left",
+                    padding: "1.1rem",
+                    borderRadius: "14px",
+                    cursor: "pointer",
+                    background: selected ? "rgba(59, 130, 246, 0.08)" : "var(--bg-card)",
+                    border: selected
+                      ? "2px solid var(--accent-primary)"
+                      : "1px solid var(--glass-border)",
+                    boxShadow: "var(--shadow-premium)",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "0.5rem",
+                    color: "inherit",
+                    transition: "border-color 0.15s ease, background 0.15s ease",
+                  }}
+                >
+                  <div style={{ fontSize: "1.6rem", lineHeight: 1 }}>{tpl.icon}</div>
+                  <div style={{ fontWeight: 600, color: "var(--text-header)" }}>{tpl.label}</div>
+                  <div style={{ fontSize: "0.8rem", color: "var(--text-dim)", lineHeight: 1.35 }}>
+                    {tpl.description}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+          <div style={{ display: "flex", justifyContent: "flex-end" }}>
+            <button type="button" className="dashboard-btn" onClick={onCancel}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Step 2 — Configure */}
+      {step === 2 && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "1.2rem" }}>
+          {selectedTpl && (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "0.6rem",
+                padding: "0.6rem 0.9rem",
+                background: "rgba(59, 130, 246, 0.06)",
+                border: "1px solid rgba(59, 130, 246, 0.2)",
+                borderRadius: "10px",
+              }}
+            >
+              <span style={{ fontSize: "1.1rem" }}>{selectedTpl.icon}</span>
+              <span style={{ color: "var(--text-header)", fontWeight: 600 }}>{selectedTpl.label}</span>
+              <span style={{ color: "var(--text-dim)", fontSize: "0.8rem" }}>· {selectedTpl.description}</span>
+            </div>
+          )}
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+            <div>
+              <label style={{ display: "block", color: "var(--text-dim)", fontSize: "0.85rem", marginBottom: "0.5rem" }}>Service ID</label>
+              <input
+                className="model-select-dropdown"
+                style={{ width: "100%", padding: "12px", background: "rgba(0,0,0,0.2)" }}
+                value={formData.service_id || ""}
+                onChange={(e) => setFormData({ ...formData, service_id: e.target.value })}
+                placeholder="e.g. openai-gpt4o"
+                disabled={isEdit}
+              />
+              {fieldErrors.service_id && <div style={FIELD_ERROR_STYLE}>{fieldErrors.service_id}</div>}
+            </div>
+            <div>
+              <label style={{ display: "block", color: "var(--text-dim)", fontSize: "0.85rem", marginBottom: "0.5rem" }}>Model Name</label>
+              <input
+                className="model-select-dropdown"
+                style={{ width: "100%", padding: "12px", background: "rgba(0,0,0,0.2)" }}
+                value={formData.model_name || ""}
+                onChange={(e) => setFormData({ ...formData, model_name: e.target.value })}
+                placeholder="e.g. gpt-4o-mini, llama3.2:3b"
+              />
+              {fieldErrors.model_name && <div style={FIELD_ERROR_STYLE}>{fieldErrors.model_name}</div>}
+            </div>
+          </div>
+
+          <div>
+            <label style={{ display: "block", color: "var(--text-dim)", fontSize: "0.85rem", marginBottom: "0.5rem" }}>Provider URL</label>
+            <input
+              className="model-select-dropdown"
+              style={{ width: "100%", padding: "12px", background: "rgba(0,0,0,0.2)" }}
+              value={formData.provider_url || ""}
+              onChange={(e) => setFormData({ ...formData, provider_url: e.target.value })}
+              placeholder="https://api.openai.com/v1/chat/completions"
+            />
+            {fieldErrors.provider_url && <div style={FIELD_ERROR_STYLE}>{fieldErrors.provider_url}</div>}
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+            <div>
+              <label style={{ display: "block", color: "var(--text-dim)", fontSize: "0.85rem", marginBottom: "0.5rem" }}>
+                Provider Type {!isCustomTpl && <span style={{ color: "var(--text-dim)" }}>(locked by template)</span>}
+              </label>
+              <input
+                className="model-select-dropdown"
+                style={{
+                  width: "100%",
+                  padding: "12px",
+                  background: "rgba(0,0,0,0.2)",
+                  opacity: isCustomTpl ? 1 : 0.7,
+                  cursor: isCustomTpl ? "text" : "not-allowed",
+                }}
+                value={formData.provider_type || ""}
+                onChange={(e) =>
+                  setFormData({ ...formData, provider_type: e.target.value.toLowerCase() })
+                }
+                placeholder="openai, ollama, anthropic, ..."
+                disabled={!isCustomTpl}
+              />
+              {fieldErrors.provider_type && <div style={FIELD_ERROR_STYLE}>{fieldErrors.provider_type}</div>}
+            </div>
+            <div>
+              <label style={{ display: "block", color: "var(--text-dim)", fontSize: "0.85rem", marginBottom: "0.5rem" }}>Service Type</label>
+              <div style={{ display: "flex", gap: "1rem", padding: "10px 0" }}>
+                <label style={{ color: "white", display: "flex", alignItems: "center", gap: "0.4rem", cursor: "pointer" }}>
+                  <input
+                    type="radio"
+                    name="service_type"
+                    value="on-prem"
+                    checked={formData.service_type === "on-prem"}
+                    onChange={(e) => setFormData({ ...formData, service_type: e.target.value })}
+                  />
+                  On-Prem
+                </label>
+                <label style={{ color: "white", display: "flex", alignItems: "center", gap: "0.4rem", cursor: "pointer" }}>
+                  <input
+                    type="radio"
+                    name="service_type"
+                    value="cloud"
+                    checked={formData.service_type === "cloud"}
+                    onChange={(e) => setFormData({ ...formData, service_type: e.target.value })}
+                  />
+                  Cloud
+                </label>
+              </div>
+            </div>
+          </div>
+
+          {/* API Key is hidden entirely for the Ollama template (local, no auth). */}
+          {!isOllamaTpl && (
+            <div>
+              <label style={{ display: "block", color: "var(--text-dim)", fontSize: "0.85rem", marginBottom: "0.5rem" }}>
+                API Key {formData.service_type === "cloud" ? <span style={{ color: "#fca5a5" }}>(required for cloud)</span> : <span style={{ color: "var(--text-dim)" }}>(optional)</span>}
+              </label>
+              <input
+                type="password"
+                className="model-select-dropdown"
+                style={{ width: "100%", padding: "12px", background: "rgba(0,0,0,0.2)", fontFamily: "monospace" }}
+                value={formData.api_key || ""}
+                onChange={(e) => setFormData({ ...formData, api_key: e.target.value })}
+                placeholder={isEdit && formData.has_api_key
+                  ? `Current: ${formData.api_key_masked} — leave blank to keep, type to rotate`
+                  : "sk-..."}
+                autoComplete="off"
+              />
+              {fieldErrors.api_key && <div style={FIELD_ERROR_STYLE}>{fieldErrors.api_key}</div>}
+            </div>
+          )}
+
+          <details style={{ background: "rgba(0,0,0,0.15)", borderRadius: "10px", padding: "0.6rem 0.9rem", border: "1px solid var(--glass-border)" }}>
+            <summary style={{ color: "var(--text-dim)", fontSize: "0.85rem", cursor: "pointer" }}>Advanced: auth header &amp; scheme</summary>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginTop: "0.8rem" }}>
+              <div>
+                <label style={{ display: "block", color: "var(--text-dim)", fontSize: "0.85rem", marginBottom: "0.5rem" }}>Auth Header</label>
+                <input
+                  className="model-select-dropdown"
+                  style={{ width: "100%", padding: "10px", background: "rgba(0,0,0,0.2)" }}
+                  value={formData.auth_header || "Authorization"}
+                  onChange={(e) => setFormData({ ...formData, auth_header: e.target.value })}
+                  placeholder="Authorization, x-api-key, x-goog-api-key"
+                />
+              </div>
+              <div>
+                <label style={{ display: "block", color: "var(--text-dim)", fontSize: "0.85rem", marginBottom: "0.5rem" }}>Auth Scheme</label>
+                <input
+                  className="model-select-dropdown"
+                  style={{ width: "100%", padding: "10px", background: "rgba(0,0,0,0.2)" }}
+                  value={formData.auth_scheme ?? ""}
+                  onChange={(e) => setFormData({ ...formData, auth_scheme: e.target.value })}
+                  placeholder="Bearer, Token, or blank for raw key"
+                />
+              </div>
+            </div>
+          </details>
+
+          <div>
+            <label style={{ display: "block", color: "var(--text-dim)", fontSize: "0.85rem", marginBottom: "0.5rem" }}>Description</label>
+            <textarea
+              className="model-select-dropdown"
+              style={{ width: "100%", padding: "12px", background: "rgba(0,0,0,0.2)", minHeight: "60px", border: "1px solid var(--glass-border)", color: "white", borderRadius: "8px" }}
+              value={formData.description || ""}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              placeholder="What is this service used for?"
+            />
+          </div>
+
+          <div style={{ display: "flex", gap: "1rem", marginTop: "0.4rem" }}>
+            {!isEdit && (
+              <button
+                type="button"
+                className="dashboard-btn"
+                style={{ flex: 1 }}
+                onClick={() => onStepChange(1)}
+              >
+                ← Back
+              </button>
+            )}
+            <button
+              type="button"
+              className="dashboard-btn"
+              style={{ flex: 1, background: "var(--accent-primary)" }}
+              onClick={handleNextFromStep2}
+            >
+              Next: Review →
+            </button>
+            <button
+              type="button"
+              className="dashboard-btn"
+              style={{ flex: 1 }}
+              onClick={onCancel}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Step 3 — Review */}
+      {step === 3 && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "1.2rem" }}>
+          <div style={{ color: "var(--text-dim)", fontSize: "0.9rem" }}>
+            Review the configuration below. Nothing is saved until you click <b>{isEdit ? "Update Service" : "Create Service"}</b>.
+          </div>
+
+          <ReviewCard formData={formData} isEdit={isEdit} />
+
+          <div style={{ display: "flex", gap: "1rem" }}>
+            <button
+              type="button"
+              className="dashboard-btn"
+              style={{ flex: 1 }}
+              onClick={() => onStepChange(2)}
+              disabled={submitting}
+            >
+              ← Back
+            </button>
+            <button
+              type="submit"
+              className="dashboard-btn"
+              style={{ flex: 1, background: "var(--accent-primary)" }}
+              disabled={submitting}
+            >
+              {submitting ? "Saving..." : isEdit ? "Update Service" : "Create Service"}
+            </button>
+            <button
+              type="button"
+              className="dashboard-btn"
+              style={{ flex: 1 }}
+              onClick={onCancel}
+              disabled={submitting}
+            >
+              Cancel
+            </button>
+          </div>
+
+          {submitError && (
+            <div
+              style={{
+                color: "#fca5a5",
+                background: "rgba(239, 68, 68, 0.1)",
+                border: "1px solid rgba(239, 68, 68, 0.3)",
+                padding: "0.8rem 1rem",
+                borderRadius: "10px",
+                fontSize: "0.85rem",
+              }}
+            >
+              {submitError}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ReviewRow({ label, value, mono = false }) {
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "180px 1fr", gap: "0.8rem", padding: "0.5rem 0", borderBottom: "1px dashed var(--glass-border)" }}>
+      <div style={{ color: "var(--text-dim)", fontSize: "0.85rem" }}>{label}</div>
+      <div
+        style={{
+          color: "var(--text-header)",
+          fontSize: "0.9rem",
+          fontFamily: mono ? "monospace" : "inherit",
+          wordBreak: "break-all",
+        }}
+      >
+        {value}
+      </div>
+    </div>
+  );
+}
+
+function ReviewCard({ formData, isEdit }) {
+  // Mask the api_key for display. On edit with no rotation, surface the
+  // existing masked value the backend already sent us; otherwise mask the
+  // freshly typed key locally so plaintext never appears in the review.
+  let apiKeyDisplay;
+  if (formData.api_key && formData.api_key.trim()) {
+    const tail = formData.api_key.slice(-4);
+    apiKeyDisplay = `****${tail}`;
+  } else if (isEdit && formData.has_api_key) {
+    apiKeyDisplay = `${formData.api_key_masked || "****"} (unchanged)`;
+  } else if (formData.template_id === "ollama") {
+    apiKeyDisplay = <span style={{ color: "var(--text-dim)" }}>(not used)</span>;
+  } else {
+    apiKeyDisplay = <span style={{ color: "var(--text-dim)" }}>(none)</span>;
+  }
+
+  const tpl = formData.template_id ? getProviderTemplate(formData.template_id) : null;
+  return (
+    <div
+      style={{
+        background: "var(--bg-card)",
+        border: "1px solid var(--glass-border)",
+        borderRadius: "14px",
+        padding: "1.2rem",
+        boxShadow: "var(--shadow-premium)",
+      }}
+    >
+      {tpl && (
+        <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "0.8rem" }}>
+          <span style={{ fontSize: "1.4rem" }}>{tpl.icon}</span>
+          <span style={{ color: "var(--text-header)", fontWeight: 600 }}>{tpl.label}</span>
+        </div>
+      )}
+      <ReviewRow label="Service ID" value={formData.service_id || "—"} mono />
+      <ReviewRow label="Model Name" value={formData.model_name || "—"} mono />
+      <ReviewRow label="Provider URL" value={formData.provider_url || "—"} mono />
+      <ReviewRow label="Provider Type" value={formData.provider_type || "—"} mono />
+      <ReviewRow label="Service Type" value={(formData.service_type || "—").toUpperCase()} />
+      <ReviewRow label="API Key" value={apiKeyDisplay} mono />
+      <ReviewRow label="Auth Header" value={formData.auth_header || "Authorization"} mono />
+      <ReviewRow label="Auth Scheme" value={formData.auth_scheme || <span style={{ color: "var(--text-dim)" }}>(none)</span>} mono />
+      <ReviewRow label="Description" value={formData.description || <span style={{ color: "var(--text-dim)" }}>(none)</span>} />
+    </div>
+  );
+}
+
 const AdminPortal = ({ token, onClose }) => {
   const [activeTab, setActiveTab] = useState("dashboard"); // "dashboard", "mappings", "services", "policies"
   const [services, setServices] = useState([]);
@@ -42,6 +688,11 @@ const AdminPortal = ({ token, onClose }) => {
   const [showForm, setShowForm] = useState(false);
   const [editingMapping, setEditingMapping] = useState(null);
   const [editingPolicy, setEditingPolicy] = useState(null);
+  const [editingService, setEditingService] = useState(null);
+  // Service form wizard — 1 = provider cards, 2 = configure, 3 = review.
+  // On edit we skip Step 1 (template is implied) and open at Step 2.
+  const [serviceWizardStep, setServiceWizardStep] = useState(1);
+  const [serviceFieldErrors, setServiceFieldErrors] = useState({});
 
   // Security Edge State
   const [securityPatterns, setSecurityPatterns] = useState([]);
@@ -388,14 +1039,66 @@ const AdminPortal = ({ token, onClose }) => {
       );
       fetchServices();
     } catch (err) {
-      setError("Failed to update service type");
+      setError(formatApiError(err, "Failed to update service type"));
     } finally {
       setLoading(false);
     }
   };
 
+  const handleDeleteService = async (serviceId) => {
+    if (!window.confirm(`Delete AI service '${serviceId}'? This cannot be undone.`)) return;
+    try {
+      await api.delete(`/service-governance/${serviceId}`, {
+        headers: { Authorization: `Bearer ${token}`, },
+      });
+      fetchServices();
+    } catch (err) {
+      setError(formatApiError(err, "Delete failed"));
+    }
+  };
+
+  const openServiceEditor = (service) => {
+    // Best-effort template match so the dropdown shows a sensible default
+    // when re-opening an existing service. The admin can switch to "custom"
+    // at any time to free-form override anything.
+    const match = PROVIDER_TEMPLATES.find(
+      (t) =>
+        t.id !== "custom" &&
+        t.provider_type === (service.provider_type || "") &&
+        t.provider_url === service.provider_url,
+    );
+    setEditingService(service);
+    setEditingMapping(null);
+    setEditingPolicy(null);
+    setFormData({
+      template_id: match ? match.id : "custom",
+      service_id: service.service_id,
+      model_name: service.model_name || "",
+      provider_url: service.provider_url || "",
+      provider_type: service.provider_type || "",
+      description: service.description || "",
+      service_type: service.service_type || "on-prem",
+      api_key: "",
+      auth_header: service.auth_header || "Authorization",
+      auth_scheme: service.auth_scheme || "Bearer",
+      has_api_key: !!service.has_api_key,
+      api_key_masked: service.api_key_masked || null,
+    });
+    // Editing skips Step 1 (template is implied by the existing row) and
+    // opens directly on the Configure step.
+    setServiceWizardStep(2);
+    setServiceFieldErrors({});
+    setShowForm(true);
+  };
+
   const handleSave = async (e) => {
     e.preventDefault();
+    // The Services tab uses a multi-step wizard. Only submit when the user
+    // is on Step 3 and explicitly clicked "Create/Update Service" — guards
+    // against accidental Enter-key submits while filling Step 2.
+    if (activeTab === "services" && serviceWizardStep !== 3) {
+      return;
+    }
     setLoading(true);
     try {
       const headers = { Authorization: `Bearer ${token}`, };
@@ -418,14 +1121,44 @@ const AdminPortal = ({ token, onClose }) => {
         await api.post("/admin/security-patterns", formData, { headers });
         await api.post("/admin/security-patterns/reload", {}, { headers });
         fetchSecurityPatterns();
+      } else if (activeTab === "services") {
+        const payload = {
+          model_name: formData.model_name,
+          provider_url: formData.provider_url,
+          provider_type: formData.provider_type,
+          description: formData.description || null,
+          service_type: formData.service_type,
+          auth_header: formData.auth_header || "Authorization",
+          auth_scheme: formData.auth_scheme ?? "Bearer",
+        };
+        // api_key semantics:
+        //   * empty string in the form  → don't touch (preserves existing key)
+        //   * non-empty value           → rotate / set the key
+        //   * "__clear__"               → explicitly null out the stored key
+        if (formData.api_key && formData.api_key.trim() !== "") {
+          payload.api_key = formData.api_key;
+        }
+        if (editingService) {
+          await api.patch(`/service-governance/${editingService.service_id}`,
+            payload, { headers });
+        } else {
+          payload.service_id = formData.service_id;
+          await api.post("/service-governance", payload, { headers });
+        }
+        fetchServices();
       }
       
       setShowForm(false);
       setEditingMapping(null);
       setEditingPolicy(null);
       setEditingPattern(null);
+      setEditingService(null);
+      setServiceWizardStep(1);
+      setServiceFieldErrors({});
     } catch (err) {
-      setError(err.response?.data?.detail || "Save failed");
+      // Stay on the current step (and the open form) so the admin can fix
+      // the input and resubmit. The error renders inline under the buttons.
+      setError(formatApiError(err, "Save failed"));
     } finally {
       setLoading(false);
     }
@@ -695,24 +1428,27 @@ const AdminPortal = ({ token, onClose }) => {
               {activeTab === "mappings"
                 ? "Manage intent-to-service orchestration"
                 : activeTab === "services"
-                  ? "Classify services for security policy enforcement"
+                  ? "Register local and cloud AI providers, set credentials, classify for policy enforcement"
                   : "Define automated security guardrails based on context"}
             </p>
           </div>
-          {(activeTab === "mappings" || activeTab === "policies") && (
+          {(activeTab === "mappings" || activeTab === "policies" || activeTab === "services") && (
             <div style={{ display: "flex", gap: "1rem" }}>
-              <button 
-                className="dashboard-btn" 
-                onClick={activeTab === "mappings" ? handleReload : handleReloadPolicies}
-              >
-                Reload {activeTab === "mappings" ? "Cache" : "Policies"}
-              </button>
+              {activeTab !== "services" && (
+                <button 
+                  className="dashboard-btn" 
+                  onClick={activeTab === "mappings" ? handleReload : handleReloadPolicies}
+                >
+                  Reload {activeTab === "mappings" ? "Cache" : "Policies"}
+                </button>
+              )}
               <button
                 className="dashboard-btn"
                 style={{ background: "var(--accent-primary)" }}
                 onClick={() => {
                   setEditingMapping(null);
                   setEditingPolicy(null);
+                  setEditingService(null);
                   if (activeTab === "mappings") {
                     setFormData({
                       intent_name: "",
@@ -720,6 +1456,10 @@ const AdminPortal = ({ token, onClose }) => {
                       taxonomy_version: "1.0.0",
                       is_active: true,
                     });
+                  } else if (activeTab === "services") {
+                    setFormData(emptyServiceForm());
+                    setServiceWizardStep(1);
+                    setServiceFieldErrors({});
                   } else {
                     setFormData({
                       description: "",
@@ -732,7 +1472,7 @@ const AdminPortal = ({ token, onClose }) => {
                   setShowForm(true);
                 }}
               >
-                + Add {activeTab === "mappings" ? "Mapping" : "Policy"}
+                + Add {activeTab === "mappings" ? "Mapping" : activeTab === "services" ? "Service" : "Policy"}
               </button>
             </div>
           )}
@@ -913,15 +1653,49 @@ const AdminPortal = ({ token, onClose }) => {
                   />
                 </div>
               </>
+            ) : activeTab === "services" ? (
+              <ServiceWizard
+                step={serviceWizardStep}
+                editingService={editingService}
+                formData={formData}
+                setFormData={setFormData}
+                fieldErrors={serviceFieldErrors}
+                setFieldErrors={setServiceFieldErrors}
+                onStepChange={setServiceWizardStep}
+                onCancel={() => {
+                  setShowForm(false);
+                  setEditingMapping(null);
+                  setEditingPolicy(null);
+                  setEditingService(null);
+                  setEditingPattern(null);
+                  setServiceWizardStep(1);
+                  setServiceFieldErrors({});
+                  setError(null);
+                }}
+                submitting={loading}
+                submitError={error}
+              />
             ) : null}
-            <div style={{ display: "flex", gap: "1rem", marginTop: "1rem" }}>
-              <button type="submit" className="dashboard-btn" style={{ flex: 1, background: "var(--accent-primary)" }}>
-                {editingMapping || editingPolicy ? "Update" : "Create"}
-              </button>
-              <button type="button" className="dashboard-btn" style={{ flex: 1 }} onClick={() => setShowForm(false)}>
-                Cancel
-              </button>
-            </div>
+            {activeTab !== "services" && (
+              <div style={{ display: "flex", gap: "1rem", marginTop: "1rem" }}>
+                <button type="submit" className="dashboard-btn" style={{ flex: 1, background: "var(--accent-primary)" }}>
+                  {editingMapping || editingPolicy ? "Update" : "Create"}
+                </button>
+                <button
+                  type="button"
+                  className="dashboard-btn"
+                  style={{ flex: 1 }}
+                  onClick={() => {
+                    setShowForm(false);
+                    setEditingMapping(null);
+                    setEditingPolicy(null);
+                    setEditingPattern(null);
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
           </form>
         ) : activeTab === "dashboard" ? (
           <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
@@ -1107,18 +1881,75 @@ const AdminPortal = ({ token, onClose }) => {
           </div>
         ) : activeTab === "services" ? (
           <div style={{ display: "flex", flexDirection: "column", gap: "0.8rem" }}>
-            {services.map((s) => (
-              <div key={s.service_id} style={{ padding: "1rem", background: "var(--bg-card)", borderRadius: "16px", border: "1px solid var(--glass-border)", boxShadow: "var(--shadow-premium)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div>
-                  <div style={{ fontWeight: 600, color: "var(--text-header)", marginBottom: "0.2rem" }}>{s.service_id}</div>
-                  <div style={{ fontSize: "0.85rem", color: "var(--text-dim)" }}>Model: <span style={{ color: "var(--accent-primary)" }}>{s.model_name}</span></div>
+            {services.map((s) => {
+              const locked = !!s.is_protected;
+              const lockedTitle = locked ? "Protected system service — cannot be edited or deleted" : undefined;
+              return (
+                <div key={s.service_id} style={{ padding: "1rem", background: "var(--bg-card)", borderRadius: "16px", border: "1px solid var(--glass-border)", boxShadow: "var(--shadow-premium)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.2rem" }}>
+                      {locked && (
+                        <span
+                          title={lockedTitle}
+                          aria-label="Protected system service"
+                          style={{ fontSize: "1rem", color: "#cbd5f5", display: "inline-flex", alignItems: "center" }}
+                        >
+                          🔒
+                        </span>
+                      )}
+                      <span style={{ fontWeight: 600, color: "var(--text-header)" }}>{s.service_id}</span>
+                      {locked && (
+                        <span title={lockedTitle} style={{ fontSize: "0.7rem", padding: "2px 8px", borderRadius: "10px", background: "rgba(148,163,184,0.15)", color: "#cbd5f5", border: "1px solid rgba(148,163,184,0.3)" }}>
+                          PROTECTED
+                        </span>
+                      )}
+                      {s.has_api_key && (
+                        <span title={`API key set (${s.api_key_masked})`} style={{ fontSize: "0.7rem", padding: "2px 8px", borderRadius: "10px", background: "rgba(251,191,36,0.1)", color: "#fbbf24", border: "1px solid rgba(251,191,36,0.3)" }}>
+                          API KEY
+                        </span>
+                      )}
+                    </div>
+                    <div style={{ fontSize: "0.85rem", color: "var(--text-dim)" }}>
+                      Model: <span style={{ color: "var(--accent-primary)" }}>{s.model_name}</span>
+                      <span style={{ marginLeft: "0.8rem", color: "var(--text-dim)" }}>· Provider: <code>{s.provider_type}</code></span>
+                    </div>
+                    {s.description && (
+                      <div style={{ fontSize: "0.75rem", color: "var(--text-dim)", marginTop: "0.3rem" }}>{s.description}</div>
+                    )}
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
+                    <div style={{ fontSize: "0.75rem", padding: "4px 12px", borderRadius: "20px", background: s.service_type === "cloud" ? "rgba(59, 130, 246, 0.1)" : "rgba(16, 185, 129, 0.1)", color: s.service_type === "cloud" ? "#60a5fa" : "#34d399", border: `1px solid ${s.service_type === "cloud" ? "rgba(59, 130, 246, 0.3)" : "rgba(16, 185, 129, 0.3)"}` }}>{s.service_type.toUpperCase()}</div>
+                    <button
+                      className="dashboard-btn"
+                      style={{ padding: "0.4rem 0.8rem", fontSize: "0.8rem", opacity: locked ? 0.4 : 1, cursor: locked ? "not-allowed" : "pointer" }}
+                      onClick={() => toggleServiceType(s.service_id, s.service_type)}
+                      disabled={locked}
+                      title={lockedTitle}
+                    >
+                      Switch to {s.service_type === "cloud" ? "On-Prem" : "Cloud"}
+                    </button>
+                    <button
+                      className="dashboard-btn"
+                      style={{ padding: "0.4rem 0.8rem", fontSize: "0.8rem", opacity: locked ? 0.4 : 1, cursor: locked ? "not-allowed" : "pointer" }}
+                      onClick={() => openServiceEditor(s)}
+                      disabled={locked}
+                      title={lockedTitle}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      className="dashboard-btn"
+                      style={{ padding: "0.4rem 0.8rem", fontSize: "0.8rem", borderColor: "rgba(239, 68, 68, 0.3)", color: "#fca5a5", opacity: locked ? 0.4 : 1, cursor: locked ? "not-allowed" : "pointer" }}
+                      onClick={() => handleDeleteService(s.service_id)}
+                      disabled={locked}
+                      title={lockedTitle}
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-                  <div style={{ fontSize: "0.75rem", padding: "4px 12px", borderRadius: "20px", background: s.service_type === "cloud" ? "rgba(59, 130, 246, 0.1)" : "rgba(16, 185, 129, 0.1)", color: s.service_type === "cloud" ? "#60a5fa" : "#34d399", border: `1px solid ${s.service_type === "cloud" ? "rgba(59, 130, 246, 0.3)" : "rgba(16, 185, 129, 0.3)"}` }}>{s.service_type.toUpperCase()}</div>
-                  <button className="dashboard-btn" style={{ padding: "0.4rem 0.8rem", fontSize: "0.8rem" }} onClick={() => toggleServiceType(s.service_id, s.service_type)}>Switch to {s.service_type === "cloud" ? "On-Prem" : "Cloud"}</button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         ) : activeTab === "policies" ? (
           <div style={{ display: "flex", flexDirection: "column", gap: "0.8rem" }}>

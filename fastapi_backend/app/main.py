@@ -34,6 +34,7 @@ from app.core.middleware import (
 from app.core.security import get_current_user
 from app.core.logging import setup_logging
 from app.infrastructure.ai_provider.ollama_client import chat as _, close_client as _close_ollama_client  # noqa: F401
+from app.infrastructure.ai_provider.openai_client import close_client as _close_openai_client
 from app.infrastructure.db.session import AsyncSessionLocal
 from app.infrastructure.db.tenant_filters import register_tenant_orm_filters
 from app.infrastructure.nlp.spacy_loader import get_nlp
@@ -168,6 +169,7 @@ async def lifespan(app: FastAPI):
             pass
         await intent_classifier_client.aclose()
         await _close_ollama_client()
+        await _close_openai_client()
 
 
 def create_app() -> FastAPI:

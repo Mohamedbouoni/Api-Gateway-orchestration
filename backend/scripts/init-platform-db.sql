@@ -7,8 +7,22 @@ CREATE TABLE IF NOT EXISTS ai_services (
     provider_url  VARCHAR(255) NOT NULL,
     provider_type VARCHAR(255) DEFAULT 'ollama',
     description   TEXT,
-    service_type  VARCHAR(255) DEFAULT 'on-prem'
+    service_type  VARCHAR(255) DEFAULT 'on-prem',
+    api_key       TEXT,
+    auth_header   VARCHAR(64)  DEFAULT 'Authorization',
+    auth_scheme   VARCHAR(32)  DEFAULT 'Bearer',
+    is_protected  BOOLEAN      DEFAULT FALSE,
+    created_at    TIMESTAMPTZ  DEFAULT NOW(),
+    updated_at    TIMESTAMPTZ  DEFAULT NOW()
 );
+
+-- Backfill for environments where ai_services was created by an older init script.
+ALTER TABLE ai_services ADD COLUMN IF NOT EXISTS api_key       TEXT;
+ALTER TABLE ai_services ADD COLUMN IF NOT EXISTS auth_header   VARCHAR(64)  DEFAULT 'Authorization';
+ALTER TABLE ai_services ADD COLUMN IF NOT EXISTS auth_scheme   VARCHAR(32)  DEFAULT 'Bearer';
+ALTER TABLE ai_services ADD COLUMN IF NOT EXISTS is_protected  BOOLEAN      DEFAULT FALSE;
+ALTER TABLE ai_services ADD COLUMN IF NOT EXISTS created_at    TIMESTAMPTZ  DEFAULT NOW();
+ALTER TABLE ai_services ADD COLUMN IF NOT EXISTS updated_at    TIMESTAMPTZ  DEFAULT NOW();
 
 -- 2. Intent Routing Table
 CREATE TABLE IF NOT EXISTS intent_routing (
@@ -110,12 +124,14 @@ CREATE TABLE IF NOT EXISTS security_events (
 );		
 
 -- Seed Initial Data
-INSERT INTO ai_services (service_id, model_name, provider_url, provider_type, description, service_type)
+INSERT INTO ai_services (service_id, model_name, provider_url, provider_type, description, service_type, is_protected)
 VALUES 
-    ('ollama-llama3', 'llama3.2:3b', 'http://host.docker.internal:11434/api/chat', 'ollama', 'Local Llama 3.2 3B Instance (lightweight)', 'on-prem'),
-    ('ollama-DeepSeekCoder', 'qwen2.5-coder:7b', 'http://host.docker.internal:11434/api/chat', 'ollama', 'Local Qwen 2.5 Coder 7B Instance', 'on-prem'),
-	('gemini-cloud', 'gemini_cloud_model', 'https://gemini.google.com/_/BardChatUi/data/assistant.lamda.BardFrontendService/StreamGenerate', 'gemini', 'official gemini model running in the cloud', 'cloud')
+    ('ollama-llama3', 'llama3.2:3b', 'http://host.docker.internal:11434/api/chat', 'ollama', 'Local Llama 3.2 3B Instance (lightweight)', 'on-prem', FALSE),
+    ('ollama-DeepSeekCoder', 'qwen2.5-coder:7b', 'http://host.docker.internal:11434/api/chat', 'ollama', 'Local Qwen 2.5 Coder 7B Instance', 'on-prem', FALSE),
+	('gemini-cloud', 'gemini_cloud_model', 'https://gemini.google.com/_/BardChatUi/data/assistant.lamda.BardFrontendService/StreamGenerate', 'gemini', 'official gemini model running in the cloud', 'cloud', TRUE)
 ON CONFLICT (service_id) DO NOTHING;
+
+UPDATE ai_services SET is_protected = TRUE WHERE service_id = 'gemini-cloud';
 
 INSERT INTO intent_routing (intent_name, service_id, taxonomy_version, created_by)
 VALUES 
