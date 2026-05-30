@@ -1,0 +1,15 @@
+network:
+  version: 2
+  ethernets:
+    enp2s0:
+      dhcp4: true
+      dhcp6: true
+      match:
+        macaddress: 00:d8...
+      set-name: enp2s0
+  wifis:
+    wlan0:
+      dhcp4: true
+      access-points:
+        "Your-WiFi-Name":
+          password: "Your-WiFi-Password"

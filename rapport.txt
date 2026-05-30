@@ -1,0 +1,2113 @@
+\documentclass[12pt,a4paper]{report}
+% --- Packages ---
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[english]{babel}
+\usepackage{graphicx}
+\usepackage{geometry}
+\usepackage{titlesec}
+\usepackage{hyperref}
+\usepackage{setspace}
+\usepackage{tikz}
+\usetikzlibrary{calc}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{xcolor}
+\usepackage{fancyhdr}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{float}
+\usepackage{colortbl}
+\usepackage{tcolorbox}
+\usepackage{subcaption}
+\bibliography{references}
+\usepackage{longtable}  
+
+
+\tcbuselibrary{skins, breakable}
+% --- Page Setup ---
+\geometry{a4paper, top=2.5cm, bottom=2.5cm, left=2.5cm, right=2.5cm}
+\onehalfspacing
+% --- Colors ---
+\definecolor{rowgray}{gray}{0.9} % Academic grey for table headers
+\definecolor{horizonblue}{RGB}{0,84,166} % Kept for logo/branding if needed, but not used in text
+% --- Chapter Title Formatting (BLACK) ---
+\titleformat{\chapter}[display]
+  {\normalfont\huge\bfseries}
+  {\chaptertitlename\ \thechapter}{18pt}{\Huge}
+\titlespacing*{\chapter}{0pt}{30pt}{20pt}
+% --- Section Formatting (BLACK) ---
+\titleformat{\section}
+  {\normalfont\Large\bfseries}
+  {\thesection}{1em}{}
+\titleformat{\subsection}
+  {\normalfont\large\bfseries}
+  {\thesubsection}{1em}{}
+\titleformat{\subsubsection}
+  {\normalfont\normalsize\bfseries}
+  {\thesubsubsection}{1em}{}
+% --- Header/Footer (BLACK) ---
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\itshape Deterministic Enterprise AI Orchestration Platform}
+\fancyhead[R]{\small\itshape Horizon School of Digital Technologies}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+% --- Hyperref Setup ---
+\hypersetup{
+    colorlinks=true,
+    linkcolor=black,
+    urlcolor=black,
+    citecolor=black
+}
+\begin{document}
+    % ================================================================
+    
+    % ----------------------------------------------------------------
+    %  TITLE PAGE
+    % ----------------------------------------------------------------
+    \begin{titlepage}
+    
+    \begin{tikzpicture}[remember picture, overlay]
+      % Dashed border
+      \draw[dash pattern=on 3pt off 2.5pt, line width=0.6pt, color=black!60]
+        ($ (current page.north west) + (0.6cm, -0.6cm) $)
+        rectangle
+        ($ (current page.south east) + (-0.6cm, 0.6cm) $);
+      % Spiral watermark left
+      \foreach \r in {1.2,2.0,2.8,3.6,4.4,5.2,6.0,6.8,7.6,8.4,9.2,10.0,10.8,11.6}{
+        \draw[color=black!6, line width=0.9pt]
+          ($ (current page.west) + (2.5cm, -3cm) $)
+          arc[start angle=210, end angle=350, radius=\r cm];
+      }
+      % Spiral watermark right
+      \foreach \r in {1.2,2.0,2.8,3.6,4.4,5.2,6.0,6.8,7.6,8.4,9.6}{
+        \draw[color=black!6, line width=0.9pt]
+          ($ (current page.east) + (-3cm, -5cm) $)
+          arc[start angle=20, end angle=160, radius=\r cm];
+      }
+    \end{tikzpicture}
+    
+    \centering
+    \vspace*{0.1cm}
+    
+    % University header
+    {\small\itshape Private University\\[1pt]
+    Horizon School of Digital Technologies\\[3pt]
+    {\normalfont *\,*\,*\,*\,*\,*}\\[2pt]
+    $N$\textdegree{} agr\'ement : \\[1pt]
+    {\normalfont *\,*\,*\,*\,*\,*}}
+    
+    \vspace{0.3cm}
+    
+    % Logo
+    \includegraphics[width=0.52\textwidth]{images/logo_horizon.png}
+    
+    \vspace{0.25cm}
+    
+    \begin{flushright}
+      {\small\bfseries N\textdegree{} d'ordre :}
+    \end{flushright}
+    
+    \vspace{0.05cm}
+    
+    % Main report title
+    {\fontsize{32}{38}\selectfont\bfseries End Of Studies Project\\[2pt] Report\par}
+    
+    \vspace{0.3cm}
+    
+    {\large\itshape\bfseries Presented in order to obtain the\par}
+    \vspace{0.18cm}
+    {\large\bfseries National Bachelor's Degree in Computer Science\par}
+    \vspace{0.15cm}
+    {\normalsize\itshape\bfseries Major :\par}
+    \vspace{0.15cm}
+    {\large\bfseries Software Engineering and Information Systems\par}
+    \vspace{0.18cm}
+    {\normalsize\itshape\bfseries By\par}
+    \vspace{0.15cm}
+    {\large\itshape\bfseries Mohamed BOUAOUNI \& Mohamed Aziz BEN ABDALLAH\par}
+    
+    \vspace{0.3cm}
+    \noindent\rule{0.42\textwidth}{1.8pt}
+    \vspace{0.2cm}
+    
+    % Project title
+    {\Large\bfseries Deterministic Enterprise AI Orchestration Platform\par}
+    \vspace{0.1cm}
+    {\normalsize\bfseries Design and Implementation of a Secure, Governance-Driven AI Control Plane\par}
+    
+    \vspace{0.2cm}
+    \noindent\rule{0.42\textwidth}{1.8pt}
+    \vspace{0.3cm}
+    
+    {\small\itshape\bfseries Defended in front of the jury composed of :\par}
+    \vspace{0.2cm}
+    
+    \noindent
+    \begin{tabularx}{\textwidth}{@{} X r @{}}
+      \textbf{Ms. : Asma MANSOUR}  & \textbf{Academic Supervisor}    \\[4pt]
+      \textbf{Ms. : Houda}         & \textbf{Professional Supervisor} \\
+    \end{tabularx}
+    
+    \vfill
+    
+    {\small\itshape\bfseries
+    \rule{1.5cm}{0.7pt}\quad Academic Year: 2025 / 2026 \quad\rule{1.5cm}{0.7pt}\par}
+    
+    \vspace{0.15cm}
+    \end{titlepage}
+    
+    % ----------------------------------------------------------------
+    %  DEDICATION - Mohamed BOUAOUNI
+    % ----------------------------------------------------------------
+    \chapter*{Dedication}
+    \addcontentsline{toc}{chapter}{Dedication}
+    \thispagestyle{fancy}
+    
+    \vspace{1.5cm}
+    
+    \begin{center}
+    \textit{To the pillars of my world}\\
+    \textit{This thesis is dedicated with heartfelt gratitude and deep love.}
+    \end{center}
+    
+    \vspace{0.8cm}
+    
+    \begin{center}
+    \textbf{To my beloved parents,}
+    \end{center}
+    
+    \noindent Your love, support, and faith have shaped every step of my journey. Your sacrifices and encouragement are the foundation of this achievement. You are my greatest inspiration.
+    
+    \vspace{0.6cm}
+    
+    \begin{center}
+    \textbf{To my brother,}
+    \end{center}
+    
+    \noindent Through laughter, trials, and understanding, you've walked beside me. Our bond, both of blood and friendship, is a constant source of strength.
+    
+    \vspace{0.6cm}
+    
+    \begin{center}
+    \textbf{To my sister,}
+    \end{center}
+    
+    \noindent Your unwavering support, kindness, and the moments we shared have left a lasting impact. Your dedication, intelligence, and quiet strength have always inspired me.
+    
+    \vspace{0.6cm}
+    
+    \begin{center}
+    \textbf{To all my professors,}
+    \end{center}
+    
+    \noindent Your guidance, mentorship, and wisdom have shaped not only my academic journey but also my character. Thank you for believing in me and pushing me to reach my potential.
+    
+    \vspace{0.6cm}
+    
+    \begin{center}
+    \textbf{To all my friends, old and new,}
+    \end{center}
+    
+    \noindent Your laughter, companionship, and support have made this journey brighter and more meaningful.
+    
+    
+    \vspace{1.2cm}
+    
+    \begin{center}
+    \textit{With sincere gratitude,}\\[8pt]
+    \textbf{Mohamed BOUAOUNI}
+    \end{center}
+    
+    \newpage
+    
+    % ----------------------------------------------------------------
+    %  DEDICATION - Mohamed Aziz BEN ABDALLAH
+    % ----------------------------------------------------------------
+    \thispagestyle{fancy}
+    
+    \vspace{1.5cm}
+    
+    \begin{center}
+    \textit{To the pillars of my world}\\
+    \textit{This thesis is dedicated with heartfelt gratitude and deep love.}
+    \end{center}
+    
+    \vspace{0.8cm}
+    
+    \begin{center}
+    \textbf{To my beloved parents,}
+    \end{center}
+    
+    \noindent Your love, support, and faith have shaped every step of my journey. Your sacrifices and encouragement are the foundation of this achievement. You are my greatest inspiration.
+    
+    \vspace{0.6cm}
+    
+    
+    
+    \begin{center}
+    \textbf{To all my professors,}
+    \end{center}
+    
+    \noindent Your guidance, mentorship, and wisdom have shaped not only my academic journey but also my character. Thank you for believing in me and pushing me to reach my potential.
+    
+    \vspace{0.6cm}
+    
+    \begin{center}
+    \textbf{To all my friends, old and new,}
+    \end{center}
+    
+    \noindent Your laughter, companionship, and support have made this journey brighter and more meaningful.
+    
+    \vspace{0.6cm}
+    
+    \begin{center}
+    \textbf{To everyone I've encountered along the way,}
+    \end{center}
+    
+    \noindent Each interaction, brief or lasting, has contributed to my growth and understanding of the world.
+    
+    \vspace{1.2cm}
+    \vspace{1.2cm}
+    
+    \begin{center}
+    \textit{With sincere gratitude,}\\[8pt]
+    \textbf{Mohamed Aziz BEN ABDALLAH}
+    \end{center}
+    
+    \newpage
+    
+    % ----------------------------------------------------------------
+    %  ACKNOWLEDGEMENTS
+    % ----------------------------------------------------------------
+    \chapter*{Acknowledgements}
+    \addcontentsline{toc}{chapter}{Acknowledgements}
+    \thispagestyle{fancy}
+    
+    This project would not have been possible without the steadfast support, guidance, and encouragement from many individuals. We are profoundly grateful to everyone who contributed, in any capacity, to the successful completion of this work.
+    
+    \vspace{0.4cm}
+    
+    We wish to extend our sincere gratitude to:
+    
+    \vspace{0.4cm}
+    
+    \textbf{Dr. Asma MANSOUR}, our academic supervisor, for her invaluable guidance, insightful feedback, and unwavering support throughout the duration of this project.
+    
+    \vspace{0.3cm}
+    
+    \textbf{Ms. Houda BECHIR}, our company supervisor, for her trust, mentorship, and professional expertise, which significantly enriched the practical aspects of our experience.
+    
+    \vspace{0.3cm}
+    
+    \textbf{Mr. Yasser BEN AMMAR}, for his invaluable help throughout the project. His expert feedback and deep insights into security architecture were instrumental in developing and strengthening the security aspects of this platform. His guidance elevated the quality of this work significantly.
+    
+    \vspace{0.3cm}
+    
+    Finally, to all those who supported us directly or indirectly, we extend our heartfelt thanks and deepest appreciation.
+    
+    \vspace{1.5cm}
+    
+    \begin{flushright}
+    \textit{With sincere gratitude,}\\[8pt]
+    \textbf{Mohamed BOUAOUNI \& Mohamed Aziz BEN ABDALLAH}
+    \end{flushright}
+    
+    \newpage
+    
+    % ----------------------------------------------------------------
+    %  ABSTRACT
+    % ----------------------------------------------------------------
+    \chapter*{Abstract}
+    \addcontentsline{toc}{chapter}{Abstract}
+    \thispagestyle{fancy}
+    
+    The rapid adoption of Artificial Intelligence in enterprise environments has highlighted the urgent need for scalable, secure, and governable solutions to manage AI service interactions at scale. The \textbf{Deterministic Enterprise AI Orchestration Platform}, developed during an internship at Next Step IT, addresses this challenge by introducing a centralized control plane that manages how clients, agents, and AI services interact   ensuring predictability, security, governance, and cost control.
+    
+    \vspace{0.4cm}
+    
+    Unlike traditional AI platforms that directly host or execute models, this system does not run AI models itself. Instead, it authenticates requests, enforces policies, deterministically routes each request to the correct AI service, and proxies execution while maintaining full observability and auditability. Key innovations include a \textbf{dynamic plugin discovery engine} for real-time gateway synchronization and \textbf{advanced observability dashboards} for granular tracking.
+    
+    \vspace{0.4cm}
+    
+    The platform leverages a modern technology stack including \textbf{Kong API Gateway}, \textbf{Keycloak} for identity management, \textbf{FastAPI} for the orchestration engine, \textbf{PostgreSQL} with Row Level Security, \textbf{HashiCorp Vault} for secrets management, \textbf{Open Policy Agent (OPA)} for governance, \textbf{Microsoft Presidio} for PII redaction, and \textbf{\mbox{Prometheus/}} \textbf{\mbox{Grafana}} for observability.
+    
+    \vspace{0.4cm}
+    \noindent\textbf{Keywords:} AI Orchestration --- Kong Gateway --- Keycloak --- FastAPI --- Deterministic Routing --- OPA --- Kubernetes --- Governance --- Zero-Trust Security   Dynamic Discovery   Real-time Observability.
+    
+    \vspace{0.6cm}
+    \noindent\rule{\textwidth}{0.4pt}
+    \vspace{0.4cm}
+    
+    % ----------------------------------------------------------------
+    %  RÉSUMÉ (FRENCH TRANSLATION)
+    % ----------------------------------------------------------------
+    \chapter*{R\'esum\'e}
+    \addcontentsline{toc}{chapter}{Résumé}
+    \thispagestyle{fancy}
+    
+    L'adoption rapide de l'Intelligence Artificielle dans les environnements d'entreprise a mis en \'evidence le besoin urgent de solutions \'evolutives, s\'ecuris\'ees et gouvernables pour g\'erer les interactions avec les services d'IA \`a grande \'echelle. La \textbf{Plateforme d'Orchestration D\'eterministe d'IA d'Entreprise}, d\'evelopp\'ee lors d'un stage chez Next Step IT, r\'epond \`a ce d\'efi en introduisant un plan de contr\^ole centralis\'e qui g\`ere les interactions entre clients, agents et services d'IA   garantissant pr\'evisibilit\'e, s\'ecurit\'e, gouvernance et contr\^ole des co\^uts.
+    
+    \vspace{0.4cm}
+    
+    Contrairement aux plateformes d'IA traditionnelles qui h\'ebergent ou ex\'ecutent directement des mod\`eles, ce syst\`eme n'ex\'ecute pas les mod\`eles d'IA lui-m\^eme. \`A la place, il authentifie les requ\^etes, applique les politiques, route chaque requ\^ete de mani\`ere d\'eterministe vers le service d'IA appropri\'e et assure l'ex\'ecution par proxy tout en maintenant une observabilit\'e et une auditabilit\'e compl\`etes. Les innovations cl\'es incluent un \textbf{moteur de d\'ecouverte dynamique de plugins} pour la synchronisation en temps r\'eel et des \textbf{tableaux de bord d'observabilit\'e avanc\'es} pour un suivi granulaire.
+    
+    \vspace{0.4cm}
+    
+    La plateforme s'appuie sur une pile technologique moderne comprenant \textbf{Kong API Gateway}, \textbf{Keycloak} pour la gestion des identit\'es, \textbf{FastAPI} pour le moteur d'orchestration, \textbf{PostgreSQL} avec Row Level Security, \textbf{HashiCorp Vault} pour la gestion des secrets, \textbf{Open Policy Agent (OPA)} pour la gouvernance, \textbf{Microsoft Presidio} pour la r\'edaction des PII, ainsi que \textbf{Prometheus/Grafana} pour l'observabilit\'e.
+    
+    \vspace{0.4cm}
+    \noindent\textbf{Mots-cl\'es :} Orchestration IA --- Kong Gateway --- Keycloak --- FastAPI --- Routage D\'eterministe --- OPA --- Kubernetes --- Gouvernance --- S\'ecurit\'e Zero-Trust   D\'ecouverte Dynamique   Observabilit\'e en Temps R\'eel.
+    
+    
+    \newpage
+    
+    % ----------------------------------------------------------------
+    %  TABLE OF CONTENTS
+    % ----------------------------------------------------------------
+    \tableofcontents
+    \listoffigures
+    \listoftables
+
+% ----------------------------------------------------------------
+%  LIST OF ABBREVIATIONS
+% ----------------------------------------------------------------
+\chapter*{List of Abbreviations}
+\addcontentsline{toc}{chapter}{List of Abbreviations}
+\thispagestyle{fancy}
+
+\begin{flushleft}
+\renewcommand{\arraystretch}{1.4}
+\begin{longtable}{p{0.18\textwidth} p{0.72\textwidth}}
+    \textbf{ACL}
+        & Access Control List \\
+    \textbf{AI}
+        & Artificial Intelligence \\
+    \textbf{API}
+        & Application Programming Interface \\
+    \textbf{CI/CD}
+        & Continuous Integration / Continuous Deployment \\
+    \textbf{CORS}
+        & Cross-Origin Resource Sharing \\
+    \textbf{CSRF}
+        & Cross-Site Request Forgery \\
+    \textbf{HTML}
+        & HyperText Markup Language \\
+    \textbf{HTTP}
+        & HyperText Transfer Protocol \\
+    \textbf{IBAN}
+        & International Bank Account Number \\
+    \textbf{IaaS}
+        & Infrastructure as a Service \\
+    \textbf{JWKS}
+        & JSON Web Key Set \\
+    \textbf{JWT}
+        & JSON Web Token \\
+    \textbf{LDM}
+        & Logical Data Model \\
+    \textbf{LLM}
+        & Large Language Model \\
+    \textbf{MLOps}
+        & Machine Learning Operations \\
+    \textbf{NLP}
+        & Natural Language Processing \\
+    \textbf{OAuth}
+        & Open Authorization \\
+    \textbf{OIDC}
+        & OpenID Connect \\
+    \textbf{OPA}
+        & Open Policy Agent \\
+    \textbf{ORM}
+        & Object-Relational Mapping \\
+    \textbf{OWASP}
+        & Open Web Application Security Project \\
+    \textbf{PaaS}
+        & Platform as a Service \\
+    \textbf{PII}
+        & Personally Identifiable Information \\
+    \textbf{PKCE}
+        & Proof Key for Code Exchange \\
+    \textbf{RLS}
+        & Row-Level Security \\
+    \textbf{SaaS}
+        & Software as a Service \\
+    \textbf{SDLC}
+        & Software Development Life Cycle \\
+    \textbf{SLA}
+        & Service Level Agreement \\
+    \textbf{SOC}
+        & Security Operations Center \\
+    \textbf{SP}
+        & Story Points \\
+    \textbf{SQL}
+        & Structured Query Language \\
+    \textbf{SSE}
+        & Server-Sent Events \\
+    \textbf{SSN}
+        & Social Security Number \\
+    \textbf{SSO}
+        & Single Sign-On \\
+    \textbf{TLS}
+        & Transport Layer Security \\
+    \textbf{UI}
+        & User Interface \\
+    \textbf{UML}
+        & Unified Modeling Language \\
+    \textbf{URL}
+        & Uniform Resource Locator \\
+    \textbf{WAF}
+        & Web Application Firewall \\
+    \textbf{YAML}
+        & YAML Ain't Markup Language \\
+\end{longtable}
+\end{flushleft}
+
+\newpage
+    % ================================================================
+    %  GENERAL INTRODUCTION
+    % ================================================================
+    \chapter*{General Introduction}
+    \addcontentsline{toc}{chapter}{General Introduction}
+    \thispagestyle{fancy}
+    
+    In recent years, enterprises have increasingly adopted Artificial Intelligence to automate processes, enhance decision-making, and deliver intelligent services. AI platforms enable organizations to leverage large language models, machine learning services, and intelligent agents across departments and business units.
+    
+    However, these platforms often face governance challenges when managing multiple AI services across different teams. The lack of centralized control over AI interactions creates security risks, unpredictable costs, and compliance gaps. Direct communication between applications and AI services exposes sensitive data and makes it difficult to enforce consistent policies.
+    
+    Motivated by this challenge, \textbf{Next Step IT} has launched the \textbf{Deterministic Enterprise AI Orchestration Platform} project, a centralized control plane designed to bridge the gap between enterprise clients and AI services. The platform acts as a secure proxy that authenticates requests, enforces governance policies, and deterministically routes each request to exactly one authorized AI service ensuring predictability, security, and full auditability.
+    
+    One solution is to decouple client applications from direct AI service access by introducing a centralized orchestrator. This orchestrator validates requests, classifies intent, evaluates policies, and proxies execution through a single controlled pathway. This architecture allows enterprises to maintain strict governance while enabling scalable AI adoption.
+    
+    The objective of this work is to design a scalable, secure, and deterministic AI orchestration platform combining identity management, policy enforcement, and real-time observability to overcome these limitations. We will provide a comprehensive overview of the system, covering its design, development, and deployment stages.
+    
+    This work proposes a governable solution for enterprise AI management while preserving security, predictability, and flexibility for future enhancements.
+    
+    The structure of this report has been carefully organized to ensure a coherent and progressive presentation of the work, as outlined below:
+    
+    \vspace{0.3cm}
+    
+    \textbf{Chapter 1} introduces the general context of the work. It outlines the problem statement, defines the project scope, and reviews existing AI orchestration solutions and similar challenges.
+    
+    \textbf{Chapter 2} presents the system redesign along with a detailed requirements analysis. It compares the limitations of the previous architecture with the improvements brought by the proposed solution.
+    
+    \textbf{Chapter 3} describes the technical implementation of the platform across eight development sprints, covering edge security, identity management, deterministic routing, governance policies, AI guardrails, and observability.
+    
+    \vspace{0.3cm}
+    
+    Finally, the report ends with a \textbf{Conclusion and Perspectives}, summarizing key achievements and outlining future directions for enhancing the platform's capabilities and enterprise adoption.
+    
+    \newpage
+    
+  % ================================================================
+%  CHAPTER 1 - GENERAL CONTEXT
+% ================================================================
+\chapter{Project Context}
+
+\section*{Introduction}
+\addcontentsline{toc}{section}{Introduction}
+
+The rapid integration of Large Language Models (LLMs) into enterprise operations presents critical governance, cost, and security challenges. This project addresses these risks by introducing the \textbf{Deterministic Enterprise AI Orchestration Platform}, which acts as a secure control plane between clients and AI services. This chapter presents our host company Next Step IT, evaluates existing AI usage risks, and details the development methodology applied to build the system.
+
+
+\section{Presentation of the Host Company}
+
+\subsection{Overview}
+
+Founded in 2012, \textbf{Next Step IT} has established itself as a premier technology solutions provider in Tunisia and across the broader North African and European markets. The company specializes in Cloud Computing, Cybersecurity, Managed IT Services, and cutting-edge Infrastructure Integration, with a core mission to accelerate digital transformation while ensuring the utmost security.
+
+Next Step IT is distinguished as the first Tunisian enterprise to be awarded the \textbf{National Cloud Service Provider (N-Cloud)} certificate, demonstrating its commitment to digital trust, data sovereignty, and robust information security standards.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.4\textwidth]{images/Next_Step.png}
+    \caption{Next Step IT company logo}
+    \label{fig:nextstep_logo}
+\end{figure}
+
+Operating with a dynamic workforce of over 90 engineers, architects, and technical consultants, Next Step IT has developed a broad portfolio supporting more than 700 national and international clients across critical sectors including financial services, telecommunications, public administration, and healthcare IT.
+
+The organization holds both \textbf{ISO-9001} (Quality Management Systems) and \textbf{ISO-27001} (Information Security Management Systems) certifications, ensuring quality and security across all deliverables.
+
+\subsection{Service Overview}
+
+Next Step IT delivers a comprehensive suite of services designed to guide enterprises through every phase of their digital transformation journey. The company's core offerings are categorized into four primary domains:
+
+\subsubsection{Cloud \& Infrastructure}
+
+Providing robust, scalable, and sovereign cloud solutions tailored to stringent latency and data residency requirements. Services include modernizing legacy data centers, building hybrid cloud infrastructures, and delivering Infrastructure as a Service (IaaS) and Platform as a Service (PaaS) capabilities that empower agile software deployment.
+
+\subsubsection{Cybersecurity}
+
+Delivering advanced threat detection, proactive vulnerability management, and regulatory compliance enforcement. Next Step IT operates state-of-the-art Security Operations Centers (SOC) to monitor enterprise environments continuously, utilizing zero-trust architectures and rigorous penetration testing to secure critical IT assets against emerging cyber threats.
+
+\subsubsection{Managed Services}
+
+Ensuring 24/7 operational continuity, system health monitoring, and infrastructure optimization. Through comprehensive service level agreements (SLAs), the managed services team assumes the operational burden of IT management, allowing enterprises to focus on their core business objectives without compromising on uptime or systemic reliability.
+
+\subsubsection{AI \& Digital Transformation}
+
+Architecting secure and scalable intelligent automation frameworks. This rapidly expanding division focuses on securely integrating generative AI, predictive machine learning models, and automated orchestration workflows into enterprise operations, ensuring that technological adoption aligns with strict governance, compliance, and ethical AI standards.
+
+\section{Project Scope}
+
+\subsection{Project Context}
+
+As enterprises transition from isolated proof-of-concept AI implementations to widespread, mission-critical deployment, the need for centralized orchestration becomes paramount. Modern infrastructures now interact with a myriad of intelligent services, ranging from in-house deployed LLMs to third-party cloud-based cognitive services.
+
+In a typical scenario, client applications or autonomous agents communicate directly with these downstream services without a mediating authority. While functionally viable at a small scale, this decentralized approach rapidly becomes unsustainable in an enterprise context.
+
+\subsubsection{Centralized AI Orchestration Architecture}
+
+The \textbf{Deterministic Enterprise AI Orchestration Platform} aims to resolve this architectural bottleneck by establishing a unified, secure control plane built on a \textbf{microservices architecture}. Rather than deploying a single monolithic application, the platform decomposes functionality into independent, containerized microservices, each responsible for a specific domain (security, orchestration, data persistence, AI inference). This platform operates as an intelligent proxy serving as the definitive gateway through which all enterprise AI interactions must flow, ensuring that governance, identity verification, and intent-based routing occur predictably before any model inference takes place.
+
+
+As illustrated in Figure~\ref{fig:problem_vs_solution}, traditional architectures rely on direct communication between clients and multiple AI services, leading to a lack of governance, increased security risks, and uncontrolled operational costs. In contrast, the proposed architecture introduces a centralized control plane where all requests pass through a secure gateway and orchestration layer. This ensures consistent enforcement of authentication, policy evaluation, and deterministic routing before reaching any AI service.
+
+\subsection{Problem Statement}
+Currently, most companies allow applications to communicate directly with AI models. While this works for simple demonstrations, it creates several critical issues in enterprise environments:
+\begin{itemize}[leftmargin=0.5cm, label=\textbullet, nosep]
+    \item \textbf{Lack of Oversight:} Without a central gatekeeper, organizations cannot enforce security policies consistently, leading to potential data leaks and compliance violations.
+    
+    \item \textbf{Cost Inefficiency:} AI tokens are expensive. Applications often use premium models for basic tasks that could be handled by cheaper alternatives, resulting in unnecessary expenditure.
+    
+    \item \textbf{New Vulnerabilities:} ``Prompt injections'' and ``jailbreaking'' are rising threats. Direct model exposure leaves organizations vulnerable to these attacks without centralized protection mechanisms.
+    
+    \item \textbf{Tenant Isolation:} In multi-team environments, ensuring that one team's data never leaks into another's AI session is difficult to manage at the application level.
+    
+    \item \textbf{Operational Blindness:} Without a gateway, there are no centralized logs to audit what the AI said or why a specific decision was made, creating significant accountability gaps.
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{images/problem_vs_solution.png}
+    \caption{Comparison between unmanaged direct access and the Enterprise AI Gateway solution}
+    \label{fig:problem_vs_solution}
+\end{figure}
+
+\subsubsection{Enterprise AI Gateway}
+The proposed solution implements a centralized control plane to address the issues listed above. It acts as the "Foreman" of the AI ecosystem, ensuring all requests are validated, routed, and audited.
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.3\textwidth]{images/gatway_logo.png} 
+    \caption{AI Gateway Architecture Logo}
+    \label{fig:gateway_logo}
+\end{figure}
+
+\section{Study of the Existing System}
+
+\subsection{Existing AI Orchestration Solutions}
+
+The rapid evolution of MLOps has given rise to numerous solutions aimed at managing AI workloads; however, they generally fall into two broad categories, each with distinct limitations regarding robust, tenant-aware enterprise orchestration.
+
+\subsubsection{Commercial Cloud Solutions}
+
+Platforms such as \textbf{Azure AI Studio, AWS Bedrock,} and \textbf{Google Vertex AI} provide excellent model hosting and pipeline management systems. However, these environments actively encourage vendor lock-in. Their policy enforcement is typically coarse-grained and tightly coupled to the vendor's distinct ecosystem, making deterministic, intent-based routing across heterogeneous, multi-cloud, or on-premise AI models exceedingly complex. 
+
+Furthermore, direct-access platforms like the \textbf{OpenAI API} lack inherent enterprise governance, offering minimal features for enforcing multi-tenant data isolation, deep routing control, or centralized threat intervention without relying on heavy external proxies.
+\newpage
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.85\textwidth]{images/limitions.png} 
+    \caption{Limitations of Commercial Cloud AI Platforms}
+    \label{fig:limitions}
+\end{figure}
+
+\subsubsection{Open-Source Frameworks}
+
+Tools such as \textbf{LangChain} and \textbf{LangGraph} deliver immense value in workflow composition, semantic chunking, and multi-agent coordination. Yet, they are fundamentally application-layer libraries natively lacking network-level security configurations, integrated tenant validation, centralized policy enforcement, and deterministic gateway-level routing. 
+
+Conversely, edge systems like \textbf{Ollama} excel at local model execution but provide absolutely no mechanisms for load-balanced orchestration, fine-grained access control policies, or enterprise-scale observability architectures.
+\newpage
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.85\textwidth]{images/open sources.png} 
+    \caption{Limitations of Open-Source AI Frameworks}
+    \label{fig:opensource}
+\end{figure}
+\subsection{Limitations of Existing Solutions}
+
+A comparative analysis of commercial cloud ecosystems and raw open-source libraries reveals a critical gap in enterprise-grade AI deployment. The primary deficiencies can be synthesized into four core areas:
+
+\begin{itemize}[leftmargin=1.5cm]
+    \item \textbf{Data Sovereignty and Compliance Risks:} Commercial SaaS providers require data egress to external public networks, violating strict corporate governance policies, HIPAA, or GDPR requirements.
+    
+    \item \textbf{Lack of Unified Edge Governance:} Open-source tools require complex, fragmented configurations at the application level. They fail to offer a centralized, gateway-enforced security boundary that uniformly applies rate-limiting, WAF filtering, and token authentication.
+    
+    \item \textbf{Absence of Proactive Guardrails:} Neither category natively intercepts prompts in transit to block injection attacks or real-time PII leaks. Existing systems rely on post-hoc audits rather than active inline request/response sanitization.
+    
+    \item \textbf{High Operational Cost and Lock-in:} Proprietary clouds create steep dependencies on specific APIs and pricing tiers. Without a vendor-agnostic proxy layer, migrating workloads between providers or local deployments is extremely disruptive.
+\end{itemize}
+
+\subsection{Proposed Solution}
+
+To effectively mitigate these pervasive risks, the proposed solution is the development of a highly scalable, \textbf{Deterministic AI Orchestrator}. Designed as a centralized, policy-enforcing proxy situated between enterprise clients and backend AI services, the system operates entirely on a zero-trust architecture. The platform fulfills several essential enterprise capabilities:
+
+\begin{itemize}[leftmargin=1.5cm]
+    \item \textbf{Authentication and Access Control:} Every incoming request is strictly authenticated using Keycloak Single Sign-On (SSO). The system enforces tenant isolation by evaluating cryptographically signed JSON Web Token (JWT) claims, ensuring requests are inherently bound to exact organizational units.
+    
+    \item \textbf{Deterministic Intent Classification:} Rather than allowing applications to request arbitrary models dynamically, the platform actively parses and classifies the intent of the request, mapping it deterministically to exactly one authorized AI service. This prevents ambiguity and resource misappropriation.
+    
+    \item \textbf{Governance and Real-Time Policy Enforcement:} Leveraging the Open Policy Agent (OPA), the orchestrator dynamically evaluates custom governance rules covering data sensitivity constraints, environmental isolation, and budget consumption before authorizing any downstream routing.
+    
+    \item \textbf{Proactive Threat Mitigation:} Incoming requests undergo strict sanitization against jailbreak libraries and prompt injection signatures. Simultaneously, output responses are scrubbed using Microsoft Presidio to redact Personally Identifiable Information (PII) before ever reaching the end-user.
+    
+    \item \textbf{Complete Lifecycle Observability:} Every transaction is tracked and recorded in an immutable audit ledger, complemented by real-time Prometheus metrics and centralized Grafana monitoring, allowing enterprise administrators full visibility into AI usage and platform health.
+\end{itemize}
+
+
+
+Given the critical limitations identified in both commercial cloud offerings and open-source application-layer frameworks, the strategic choice was made to build a \textbf{custom, centralized orchestration platform}. By adopting an API gateway-first design anchored entirely on a robust open-source technology stack consisting of Kong API Gateway, Keycloak, FastAPI, OPA, and HashiCorp Vault the project ensures absolute control over the routing logic, immutable security policies, and total operational observability. This architecture effectively democratizes AI access for the enterprise without succumbing to SaaS vendor lock-in or relinquishing data sovereignty.
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[height=23cm]{images/centrelized.png} 
+    \caption{Centralized AI Orchestration Architecture}
+    \label{fig:centralized}
+\end{figure}
+
+\section{Work Methodology}
+
+To build a platform this complex where high-security networking meets real-time AI orchestration we needed a framework that was both rigid in its standards and flexible in its execution. We followed a rigorous Software Development Life Cycle (SDLC) that prioritized security and integration from the very first line of code. Instead of waiting until the end to test the system, we integrated continuous testing and proactive security scanning into our daily workflow. This approach was essential for managing the high complexity of a zero-trust network, ensuring that every infrastructure component worked in perfect sync.
+
+\subsection{Chosen Methodology: Agile Scrum}
+
+We chose \textbf{Agile Scrum} as our primary methodology to stay flexible while maintaining a steady development pace. The project was organized into a structured backlog of 8 major epics and 53 specific tasks, which we executed through a consolidated series of 5 Sprints.
+
+This "layer-by-layer" approach was vital. We started at the foundation securing the edge network and moved outward through identity management, the core orchestration engine, and governance policies. By working in short Sprints, we were able to validate our security policies and deterministic routing logic in real-time. This allowed us to refine the system as we went, ensuring that the final observability and AI guardrail protocols were fully integrated into the architecture rather than being added as afterthoughts.
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.6\textwidth]{images/scrum.png}
+    \caption{Scrum Process}
+    \label{fig:scrum}
+\end{figure}
+
+\subsection{Justification for the Choice}
+
+Agille Scrum was purposefully selected over traditional waterfall processes due to the multifaceted and rapidly evolving requirements inherent in modern AI orchestration infrastructure:
+
+\begin{itemize}[leftmargin=1.5cm]
+    \item \textbf{Continuous Validation:} It enabled the frequent testing and validation of deterministic routing logic, token validation, and API schemas at the conclusion of every individual iteration.
+    
+    \item \textbf{Adaptive Security:} Enterprise governance regulations and security policies require progressive refinement as new threat vectors emerge and exact organizational needs are progressively clarified.
+    
+    \item \textbf{Risk Mitigation:} The modular, phase-gated delivery approach significantly reduced overall project risk, reliably producing functional microservices and deliverable systemic increments consistently throughout the timeline.
+    
+    \item \textbf{Backlog Alignment:} The chosen phased methodology aligned organically with the prioritization of the product backlog, directly translating abstract architectural epics into measurable story points, sprint deliverables, and tangible code contributions.
+\end{itemize}
+
+\subsection{Work Methodology: Agile Scrum}
+To ensure flexibility and continuous delivery, the project followed the \textbf{Agile Scrum framework}, which is fundamentally an \textbf{Iterative and Incremental model}. The project roadmap was strategically partitioned into sequential architectural layers, allowing for a balanced distribution of \textbf{story points} across Sprints. This structured approach ensured that core technical risks specifically regarding security and deterministic routing were addressed early in the development lifecycle through successive increments.
+
+\begin{table}[H]
+\caption{Sprint planning roadmap and risk assessment}
+
+\centering
+\renewcommand{\arraystretch}{1.4}
+\begin{tabularx}{\textwidth}{| c | >{\raggedright\arraybackslash}X | c | c |}
+\hline
+\rowcolor{rowgray}
+\textbf{Sprint} & \textbf{Theme \& Focus Area} & \textbf{SP} & \textbf{Priority} \\
+\hline
+Sprint 1 & \textbf{Platform Security Entry Layer:} Kong Gateway, WAF, JWT validation, Keycloak SSO, and tenant-level blocking. & 63 & HIGH \\
+\hline
+Sprint 2 & \textbf{Orchestration Engine:} FastAPI core, ML intent classifier, routing map engine, and service registry proxy. & 70 & CRITICAL \\
+\hline
+Sprint 3 & \textbf{Governance \& Policy Engine:} OPA policy evaluator, data sensitivity rules, and Redis per-tenant quota system. & 37 & HIGH \\
+\hline
+Sprint 4 & \textbf{Security Hardening:} PostgreSQL RLS, Vault integration, prompt injection scanner, and PII redaction (Presidio). & 55 & HIGH \\
+\hline
+Sprint 5 & \textbf{Observability \& Launch:} Prometheus metrics, Grafana dashboards, audit logs, and load/penetration testing. & 27 & MEDIUM \\
+\hline
+\rowcolor{rowgray!50}
+\textbf{Total} & \textbf{5 Sprints} & \textbf{252} & \\
+\hline
+\end{tabularx}
+\label{tab:sprint_roadmap}
+\end{table}
+
+
+\section*{Conclusion}
+\addcontentsline{toc}{section}{Conclusion}
+
+This chapter successfully outlined the broader context and overarching strategic significance for the Deterministic Enterprise AI Orchestration Platform. It introduced the host company Next Step IT, detailed the exact governance and security challenges constraining wide-scale enterprise AI adoption, and clearly defined the bounds and objectives of the deterministic proxy solution. To ensure a systematic defect-free execution, the rationale and structured timeline of the iterative development methodology were mapped out, laying the groundwork for the deployment of a highly secure enterprise-grade gateway. The subsequent chapter will delve straight into the intricate system redesign process, defining architectural layers, identifying system actors, and rigorously modeling all system functional and non-functional requirements.
+
+% ================================================================
+%  CHAPTER 2 - REQUIREMENTS SPECIFICATIONS
+% ================================================================
+\chapter{Requirements Specifications}
+
+\section*{Introduction}
+\addcontentsline{toc}{section}{Introduction}
+
+This chapter formalizes the requirements analysis of the Deterministic Enterprise AI Orchestration Platform. It identifies the system actors, catalogues functional and non-functional requirements, and models interactions through UML use case diagrams. The requirements defined here directly inform the microservices decomposition and Kubernetes deployment strategy detailed in Chapter~3.
+
+
+
+
+% ──────────────────────────────────────────────────────────────────
+\section{Identification of Requirements}
+% ──────────────────────────────────────────────────────────────────
+
+\subsection{Functional Requirements}
+
+The functional requirements were derived directly from the implemented system. They describe what the platform must do:
+
+\begin{enumerate}
+    \item Authenticate all users via Keycloak SSO and validate JWT tokens on every request.
+    \item Classify each request's intent using NLP and map it deterministically to exactly one AI service.
+    \item Stream AI responses in real-time using Server-Sent Events (SSE) with token-by-token delivery.
+    \item Enforce governance policies based on sensitivity level, tenant identity, and service type.
+    \item Scan inbound prompts against a configurable pattern library and block injection attempts that exceed the scoring threshold.
+    \item Enforce daily token quotas per tenant using Redis counters, rejecting requests when limits are exceeded.
+    \item Log all policy evaluations, permission checks, and security events into immutable audit tables.
+    \item Detect PII in user messages (SSN, email, phone, credit card, IBAN) and automatically escalate the request sensitivity.
+    \item Redact PII from AI-generated output before delivering it to the end user.
+    \item Provide a real-time admin dashboard displaying request health, security events, and system latency.
+    \item Allow administrators to manage intent mappings, governance policies, and AI service configurations through the admin portal.
+    \item Allow administrators to manage Kong Gateway plugins (apply, update, delete) directly from the admin UI.
+\end{enumerate}
+
+\subsection{Non-Functional Requirements}
+
+Non-functional requirements define the quality attributes under which the platform must operate:
+
+\begin{itemize}
+    \item \textbf{Performance} - First-token latency under 3 seconds; all database operations use asynchronous I/O (SQLAlchemy AsyncSession) to avoid blocking the event loop.
+    \item \textbf{Security} - All inter-service communication authenticated via JWT and Kong header verification; secrets managed through HashiCorp Vault; PostgreSQL Row-Level Security enforces tenant data isolation.
+    \item \textbf{Scalability} - Horizontal scaling via stateless backend design and externalized session state (Redis).
+    \item \textbf{Portability} - The entire platform deployable via a single \texttt{docker compose up} command with zero manual configuration.
+    \item \textbf{Compliance} - Complete audit trails maintained for all governance decisions, permission checks, and security events.
+    \item \textbf{Usability} - Responsive frontend with light/dark theme support and consistent design language.
+    \item \textbf{Observability} - Prometheus-compatible metrics endpoints exposed for integration with Grafana and external monitoring tools.
+\end{itemize}
+
+\newpage
+% ──────────────────────────────────────────────────────────────────
+\section{Identification of Actors}
+% ──────────────────────────────────────────────────────────────────
+
+Three actors interact with the platform, each operating at a different architectural layer:
+
+\begin{itemize}
+    \item \textbf{End User} - An authenticated enterprise user who submits AI requests through the chat interface. They select intents, choose sensitivity levels, and receive real-time streamed responses. They have no access to administrative functions.
+
+    \item \textbf{Administrator} - A privileged user responsible for configuring the orchestration layer. They manage intent-to-service mappings, define governance policies, set token quotas, deploy edge security plugins, and monitor platform health through a dedicated admin portal.
+
+    \item \textbf{Kong Gateway} - A secondary, non-human actor. The API gateway automatically mediates all inbound traffic by enforcing rate limiting, IP restriction, CORS policies, and JWT validation before forwarding requests to the FastAPI backend.
+\end{itemize}
+
+
+% ──────────────────────────────────────────────────────────────────
+\section{Use Case Diagrams}
+% ──────────────────────────────────────────────────────────────────
+
+\subsection{General Use Case Diagram}
+
+Figure~\ref{fig:usecase_general} presents the general use case diagram, grouping the platform's functionalities into five subsystem packages: Authentication, AI Orchestration, Governance, Content Safety, and Administration.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{images/digramme_generale.png}
+    \caption{General use case diagram of the Deterministic AI Orchestration Platform}
+    \label{fig:usecase_general}
+\end{figure}
+
+The End User interacts exclusively with the AI orchestration pipeline, while the Administrator has access to the full administrative suite. Kong Gateway operates as an automated actor, enforcing edge-level security before requests reach the backend.
+\newpage
+\subsection{Submit AI Request}
+
+This is the core use case of the platform, encompassing the entire request lifecycle from user input to streamed AI response.
+
+\begin{table}[H]
+\caption{Detailed use case: Submit AI Request}
+
+\centering
+\renewcommand{\arraystretch}{1.5}
+\begin{tabularx}{\textwidth}{| >{\bfseries}l | >{\raggedright\arraybackslash}X |}
+\hline
+\rowcolor{rowgray}
+Field & \textbf{Description} \\
+\hline
+Use Case & Submit AI Request \\
+\hline
+Actor & End User \\
+\hline
+Preconditions & User authenticated via Keycloak SSO; valid JWT present. \\
+\hline
+Postconditions & Response streamed to user; request persisted with status ``completed''. \\
+\hline
+Main Flow &
+\begin{enumerate}[nosep, leftmargin=0.5cm, topsep=2pt]
+    \item User types a message and selects an intent.
+    \item Frontend sends POST to \texttt{/api/ai/request} with SSE headers.
+    \item Backend validates JWT and extracts tenant ID.
+    \item Intent resolved to a specific AI service via the intent cache.
+    \item Request proxied to Ollama via SSE streaming.
+    \item Tokens streamed to frontend in real-time.
+    \item Usage metrics persisted to database.
+\end{enumerate} \\
+\hline
+\end{tabularx}
+\label{tab:uc_submit_detailed}
+\end{table}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{images/endUser_diagramm.png} 
+    \caption{Detailed UML diagram for the Submit AI Request process}
+    \label{fig:submit_request_uml}
+\end{figure}
+
+Figure~\ref{fig:submit_request_uml} presents the corresponding sequence diagram, illustrating the complete message flow across all system components.
+
+\clearpage
+\begin{figure}[p]
+    \centering
+    \vfill
+    \includegraphics[width=1\textwidth, height=4\textheight, keepaspectratio]{images/Sequence_diagramm.png}
+    \caption{Detailed Sequence Diagram: End-to-End AI Request Life Cycle}
+    \label{fig:seq_submit_full}
+    \vfill
+\end{figure}
+\clearpage
+
+\subsection{Manage Governance Policies}
+
+\begin{table}[H]
+\caption{Detailed use case: Manage Governance Policies}
+
+\centering
+\renewcommand{\arraystretch}{1.5}
+\begin{tabularx}{\textwidth}{| >{\bfseries}l | >{\raggedright\arraybackslash}X |}
+\hline
+\rowcolor{rowgray}
+Field & \textbf{Description} \\
+\hline
+Use Case & Manage Governance Policies \\
+\hline
+Actor & Administrator \\
+\hline
+Preconditions & Admin authenticated with access to the Admin Portal. \\
+\hline
+Postconditions & Policy persisted to database; in-memory policy cache refreshed. \\
+\hline
+Main Flow &
+\begin{enumerate}[nosep, leftmargin=0.5cm, topsep=2pt]
+    \item Admin navigates to the Policies tab.
+    \item System displays all active and inactive policies.
+    \item Admin creates a policy with conditions (sensitivity, tenant) and effect.
+    \item System validates and persists the policy to PostgreSQL.
+    \item Policy engine reloads its in-memory cache.
+\end{enumerate} \\
+\hline
+Exceptions &
+\begin{itemize}[nosep, leftmargin=0.5cm]
+    \item 3a. Invalid condition $\rightarrow$ validation error.
+    \item 4a. Duplicate policy $\rightarrow$ conflict error.
+\end{itemize} \\
+\hline
+\end{tabularx}
+\label{tab:uc_policies}
+\end{table}
+
+\subsection{Manage Edge Security Plugins}
+
+\begin{table}[H]
+\caption{Detailed use case: Manage Edge Security Plugins}
+
+\centering
+\renewcommand{\arraystretch}{1.5}
+\begin{tabularx}{\textwidth}{| >{\bfseries}l | >{\raggedright\arraybackslash}X |}
+\hline
+\rowcolor{rowgray}
+Field & \textbf{Description} \\
+\hline
+Use Case & Manage Edge Security Plugins \\
+\hline
+Actor & Administrator \\
+\hline
+Preconditions & Admin authenticated; Kong control plane reachable. \\
+\hline
+Postconditions & Plugin applied to Kong in real-time; rules enforced on subsequent traffic. \\
+\hline
+Main Flow &
+\begin{enumerate}[nosep, leftmargin=0.5cm, topsep=2pt]
+    \item Admin navigates to the Edge Security tab.
+    \item System fetches plugin catalog from Kong Admin API.
+    \item Admin selects and configures a plugin (e.g., rate-limiting).
+    \item Admin applies the plugin globally or per-route.
+    \item Backend proxies the configuration to Kong Admin API.
+    \item Kong enforces the new rule immediately.
+\end{enumerate} \\
+\hline
+Exceptions &
+\begin{itemize}[nosep, leftmargin=0.5cm]
+    \item 2a. Kong unreachable $\rightarrow$ error displayed.
+    \item 5a. Invalid config $\rightarrow$ Kong validation error shown.
+\end{itemize} \\
+\hline
+\end{tabularx}
+\label{tab:uc_plugins}
+\end{table}
+
+Figure~\ref{fig:usecase_admin} presents the detailed use case diagram for the Administrator, covering all administrative functions.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{images/admin_sequence_diagramm.png}
+    \caption{Detailed use case diagram for the Administrator}
+    \label{fig:usecase_admin}
+\end{figure}
+
+
+
+% ──────────────────────────────────────────────────────────────────
+\section{Product Backlog}
+% ──────────────────────────────────────────────────────────────────
+
+Following the Scrum methodology adopted in Chapter~1, the product backlog consolidates 53 user stories estimated using the Fibonacci scale. The stories are grouped into 8 epics, logically distributed across 5 consolidated sprints. Table~\ref{tab:backlog} presents the complete backlog.
+
+\begin{table}[H]\caption{Product backlog with story point estimates and sprint assignments}
+
+\centering
+\renewcommand{\arraystretch}{1.2}
+\footnotesize
+\begin{tabularx}{\textwidth}{| >{\raggedright\arraybackslash}X | c | c |}
+\hline
+\rowcolor{rowgray}
+\textbf{User Story} & \textbf{SP} & \textbf{Sprint} \\
+\hline
+As an operator, I want to deploy all services with a single command. & 8 & 1 \\
+As an operator, I want Kong routes configured via decK. & 5 & 1 \\
+As a security engineer, I want OWASP WAF at the edge. & 8 & 1 \\
+As a security engineer, I want TLS and network segmentation. & 5 & 1 \\
+As an operator, I want a Kong logging plugin. & 8 & 1 \\
+As a user, I want to log in via Keycloak SSO. & 8 & 1 \\
+As a developer, I want JWT middleware rejecting invalid tokens. & 8 & 1 \\
+As a security engineer, I want tenant ID enforced from JWT. & 5 & 1 \\
+As an admin, I want tenant-service ACLs. & 5 & 1 \\
+As a developer, I want permission audit logs. & 5 & 1 \\
+\hline
+As a developer, I want a FastAPI backend with Pydantic validation. & 8 & 2 \\
+As a developer, I want NLP-based intent classification. & 8 & 2 \\
+As a developer, I want a hot-reloadable intent cache. & 5 & 2 \\
+As a developer, I want database models for requests and services. & 8 & 2 \\
+As a developer, I want auto-creation of tables on startup. & 5 & 2 \\
+As a user, I want deterministic routing to one AI service. & 8 & 2 \\
+As a user, I want token-by-token SSE streaming. & 13 & 2 \\
+As a developer, I want an Ollama client with error recovery. & 8 & 2 \\
+As a developer, I want request lifecycle tracking. & 8 & 2 \\
+\hline
+As an admin, I want YAML-driven governance policies. & 8 & 3 \\
+As a developer, I want a policy evaluation engine. & 8 & 3 \\
+As a developer, I want policy audit logs. & 5 & 3 \\
+As an admin, I want configurable daily token quotas. & 5 & 3 \\
+As a developer, I want Redis-backed quota counters. & 8 & 3 \\
+\hline
+As a security engineer, I want PostgreSQL RLS. & 8 & 4 \\
+As an operator, I want Vault managing secrets. & 8 & 4 \\
+As a developer, I want a usage tracking table. & 5 & 4 \\
+As a developer, I want automated database migrations. & 8 & 4 \\
+As a security engineer, I want prompt injection detection. & 8 & 4 \\
+As a security engineer, I want database-driven security patterns. & 5 & 4 \\
+As a developer, I want PII detection (SSN, IBAN, credit card). & 8 & 4 \\
+As a developer, I want auto sensitivity escalation on PII. & 5 & 4 \\
+As a developer, I want output PII redaction. & 5 & 4 \\
+\hline
+As an admin, I want a real-time metrics dashboard. & 8 & 5 \\
+As an admin, I want Kong plugin management from the UI. & 8 & 5 \\
+As an admin, I want a security events log. & 5 & 5 \\
+As an operator, I want Prometheus metrics endpoints. & 5 & 5 \\
+As a developer, I want light/dark theme toggle. & 3 & 5 \\
+\hline
+\end{tabularx}
+\label{tab:backlog}
+\end{table}
+
+
+\subsection{Sprint Planning}
+
+The backlog was distributed across 5 consolidated sprints. Each sprint targets a specific architectural layer, following a bottom-up approach where infrastructure and security are established before orchestration and governance.
+
+\begin{table}[H]
+\centering
+\caption{Sprint planning roadmap and risk assessment}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabularx}{\textwidth}{| c | >{\raggedright\arraybackslash}X | c | c |}
+\hline
+\rowcolor{rowgray}
+\textbf{Sprint} & \textbf{Theme \& Focus Area} & \textbf{SP} & \textbf{Risk} \\
+\hline
+Sprint 1 & \textbf{Platform Security Entry Layer:} Kong Gateway, WAF, JWT validation, Keycloak SSO, and tenant-level blocking. & 63 & HIGH \\
+\hline
+Sprint 2 & \textbf{Orchestration Engine:} FastAPI core, ML intent classifier, routing map engine, and service registry proxy. & 70 & CRITICAL \\
+\hline
+Sprint 3 & \textbf{Governance \& Policy Engine:} OPA policy evaluator, data sensitivity rules, and Redis per-tenant quota system. & 37 & HIGH \\
+\hline
+Sprint 4 & \textbf{Security Hardening:} PostgreSQL RLS, Vault integration, prompt injection scanner, and PII redaction (Presidio). & 55 & HIGH \\
+\hline
+Sprint 5 & \textbf{Observability \& Launch:} Prometheus metrics, Grafana dashboards, audit logs, and load/penetration testing. & 27 & MEDIUM \\
+\hline
+\rowcolor{rowgray!50}
+\textbf{Total} & \textbf{5 Sprints} & \textbf{252} & \\
+\hline
+\end{tabularx}
+
+\label{tab:sprint_roadmap_ch2}
+\end{table}
+
+
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.75\textwidth]{images/sprint_velocity.png}
+    \caption{Velocity distribution across the project lifecycle}
+    \label{fig:sprint_velocity}
+\end{figure}
+
+
+\section*{Conclusion}
+\addcontentsline{toc}{section}{Conclusion}
+
+This chapter has transformed our project vision into a structured technical blueprint. By identifying our core actors and defining twenty-two rigorous requirements, we established a foundation centered on security and deterministic logic. Our Use Case and Sequence diagrams served as the final validation, mapping out the precise interactions that define the platform's behavior.
+
+Finally, by organizing our 53-story backlog into five risk-assessed sprints, we created a clear and consolidated path for development. With the "what" and "why" firmly established, we are now ready to move into the implementation phase. The following chapter details the technical journey across these sprints, from building the edge security layer to finalizing the observability dashboards.
+
+% ================================================================
+%  CHAPTER 3 - ARCHITECTURE AND USED TECHNOLOGIES
+% ================================================================
+\chapter{Architecture and Used Technologies}
+
+\section*{Introduction}
+\addcontentsline{toc}{section}{Introduction}
+
+Following the identification of the general context and functional requirements, this chapter details the architectural foundation of the Deterministic Enterprise AI Orchestration Platform. We present the technological ecosystem, the global system architecture, the Kubernetes deployment topology, and the automated CI/CD pipeline. This chapter serves as the technical blueprint upon which all subsequent releases are built.
+% ──────────────────────────────────────────────────────────────────
+\section{Global System Architecture}
+% ──────────────────────────────────────────────────────────────────
+
+In this section, we present the overall topology of the integrated system, illustrating how the open-source ecosystem interacts to deliver a secure orchestration experience. The system is composed of several independent yet interconnected microservices, reflecting a modular and scalable design.
+
+\subsection{Layered Platform Architecture}
+
+Figure~\ref{fig:global_architecture} presents the complete layered architecture of the Deterministic Enterprise AI Orchestration Platform. The design follows a defense-in-depth approach organized into distinct functional layers: the Client Layer, Edge Security Layer, Identity Provider, Orchestration Engine, Data Layer, AI Provider, Observability Stack, and Secrets Management. Each layer operates as an independent set of microservices within the Kubernetes cluster, ensuring strict separation of concerns and fault isolation.
+
+\clearpage
+\thispagestyle{empty}
+\begin{landscape}
+\begin{figure}[p]
+    \centering
+    \vfill
+    \includegraphics[width=\linewidth,height=\textheight,keepaspectratio]{images/architecture_platform.pdf}
+    \caption{Global Architecture of the Deterministic Enterprise AI Orchestration Platform}
+    \label{fig:global_architecture}
+    \vfill
+\end{figure}
+\end{landscape}
+\clearpage
+
+
+% ──────────────────────────────────────────────────────────────────
+\section{Technological Ecosystem \& Open-Source Foundation}
+% ──────────────────────────────────────────────────────────────────
+
+A core constraint of the Deterministic Enterprise AI Orchestration Platform was the absolute requirement for data sovereignty and transparent security. To achieve this, the entire ecosystem was built leveraging industry-leading open-source technologies.
+
+\subsection{Kong API Gateway}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[height=3cm]{images/logos/kong.png}
+    \caption{Kong API Gateway Logo}
+    \label{fig:kong_logo}
+\end{figure}
+
+Kong API Gateway acts as the high-performance edge router and Zero-Trust enforcement point, intercepting all traffic before it reaches the backend. Rather than adopting a monolithic architecture where the backend application is burdened with cross-cutting concerns (such as authentication, rate-limiting, and WAF protection), the API Gateway pattern was implemented. By centralizing these responsibilities in Kong, the FastAPI orchestration engine remains strictly decoupled. This \textit{Separation of Concerns} ensures that the backend code is exclusively dedicated to AI processing, massively reducing architectural complexity and minimizing the platform's attack surface.
+
+\subsection{Lua}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[height=3cm]{images/logos/lua.png}
+    \caption{Lua Logo}
+    \label{fig:lua_logo}
+\end{figure}
+
+Lua is a lightweight, high-level scripting language. It serves as the native execution environment for OpenResty and Kong, empowering the creation of high-performance, custom API gateway plugins directly within the request lifecycle.
+
+\subsection{Keycloak}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[height=3cm]{images/logos/keycloak-logo.jpg}
+    \caption{Keycloak Logo}
+    \label{fig:keycloak_logo}
+\end{figure}
+
+Keycloak provides federated identity management, issuing deterministically verifiable RS256 JSON Web Tokens (JWTs) via the OAuth 2.0 PKCE flow.
+
+\subsection{Open Policy Agent (OPA)}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[height=3cm]{images/logos/Opa-logo.png}
+    \caption{Open Policy Agent Logo}
+    \label{fig:opa_logo}
+\end{figure}
+
+Open Policy Agent (OPA) decouples authorization logic from application code by evaluating dynamic, declarative Rego policies at the gateway layer.
+
+\subsection{FastAPI}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[height=3cm]{images/logos/logo_fastapi.png}
+    \caption{FastAPI Logo}
+    \label{fig:fastapi_logo}
+\end{figure}
+
+FastAPI powers the core orchestration engine. It was specifically chosen for its native asynchronous capabilities (\texttt{asyncio}), which are essential for streaming AI text. Traditional frameworks (like Flask or Django) quickly bottleneck when waiting for AI models to generate text word-by-word because they lock up a server thread for each active request. FastAPI solves this using an async event loop that frees up the thread while waiting for the next word. This allows the platform to efficiently manage thousands of concurrent streams without slowing down or exhausting server resources.
+
+
+\subsection{PostgreSQL}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[height=3cm]{images/logos/postgresql.png}
+    \caption{PostgreSQL Logo}
+    \label{fig:postgres_logo}
+\end{figure}
+
+PostgreSQL serves as the primary, highly partitioned data persistence layer, enforcing strict data sovereignty via Row-Level Security (RLS).
+
+\subsection{Redis}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[height=3cm]{images/logos/redis.png}
+    \caption{Redis Logo}
+    \label{fig:redis_logo}
+\end{figure}
+
+Redis is an in-memory data store utilized for ultra-low latency, atomic tenant quota tracking (\texttt{INCRBY}), shielding the platform from resource exhaustion.
+
+\subsection{React}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[height=3cm]{images/logos/react.png}
+    \caption{React Logo}
+    \label{fig:react_logo}
+\end{figure}
+
+The client-side interface is built using React to provide a highly responsive and dynamic User Interface (UI). React enables component-based modularity, allowing for efficient rendering of active conversational components, real-time message streams, and token usage updates.
+
+\subsection{Hugging Face}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[height=3cm]{images/logos/huggingface.png}
+    \caption{Hugging Face Logo}
+    \label{fig:huggingface_logo}
+\end{figure}
+
+For intelligent semantic governance and routing, the platform integrates with Hugging Face's model ecosystem, which is used to load and run specialized local models for secure client classification tasks.
+
+\subsection{DistilBERT}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[height=2cm]{images/logos/pytorch.png}
+    \caption{PyTorch/DistilBERT Engine Logo}
+    \label{fig:distilbert_logo}
+\end{figure}
+
+The specific model utilized for real-time semantic analysis is \texttt{distilbert-base-uncased-mnli}. This model performs high-speed Zero-Shot Intent Classification on user prompts, categorizing intents immediately to enable dynamic policy evaluations in the gateway layer.
+
+\subsection{Microsoft Presidio}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[height=3cm]{images/logos/presidio.png}
+    \caption{Microsoft Presidio Logo}
+    \label{fig:presidio_logo}
+\end{figure}
+
+To guarantee data privacy, Microsoft Presidio is integrated into the streaming pipeline as an Output Guard. It performs real-time Natural Language Processing (NLP) to detect and redact Personally Identifiable Information (PII) before the AI response ever reaches the client.
+
+\vspace{0.5cm}
+This robust open-source foundation ensures maximum scalability, auditability, and sovereign control over all enterprise AI workloads, completely avoiding vendor lock-in.
+
+
+
+
+
+\subsection{Kubernetes Deployment Topology}
+
+The architectural topology segregates the platform into independent, scalable microservices orchestrated entirely within Kubernetes:
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[height=21cm]{images/k8s_architecture_styled.png}
+    \caption{Kubernetes Deployment Architecture (\texttt{ai-gateway-namespace})}
+    \label{fig:global_system_arch}
+\end{figure}
+
+\begin{itemize}
+    \item \textbf{Kubernetes Namespace:} The core orchestration engine, API Gateway, and frontend application are securely isolated within the \texttt{ai-gateway-namespace}, ensuring network policies restrict lateral movement.
+    \item \textbf{Deployments \& Pods:} Each microservice is managed via a Kubernetes \texttt{Deployment}. As illustrated, the architecture scales horizontally by deploying multiple \textbf{Pods} (e.g., \texttt{POD-1}, \texttt{POD-2}, \texttt{POD-3}) for the Frontend (React), Kong Gateway, and FastAPI backend, guaranteeing high availability.
+    \item \textbf{Kubernetes Services:} Traffic is routed to the ephemeral Pods via stable Kubernetes \texttt{Service} abstractions. A \texttt{NodePort} exposes the Kong Gateway for external ingress, while a \texttt{ClusterIP} internally routes authenticated traffic to the FastAPI backend.
+    \item \textbf{External Integrations:} Core dependencies such as \textbf{Keycloak} (running as an external Dockerized Identity Provider) and the Data Persistence layers remain highly decoupled from the volatile application workloads.
+\end{itemize}
+
+\subsection{Observability \& Monitoring Stack}
+
+A critical requirement for any production-grade orchestration platform is deep, real-time visibility into the system's health. 
+\begin{itemize}
+    \item \textbf{Prometheus:} Acts as the central time-series database, continuously scraping metrics from the Kubernetes cluster, Kong, and FastAPI.
+    \item \textbf{Grafana:} Serves as the visualization layer, displaying comprehensive dashboards to track tenant token quotas, WAF security events, and AI streaming latency.
+\end{itemize}
+
+\subsection{Continuous Integration \& Continuous Deployment (CI/CD)}
+
+To ensure absolute stability across iterations, a rigorous Continuous Integration and Continuous Deployment (CI/CD) pipeline was orchestrated via GitHub Actions.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.25\textwidth]{images/cicd_pipeline.png}
+    \caption{CI/CD Pipeline Flow}
+    \label{fig:cicd_pipeline}
+\end{figure}
+
+Upon every commit to the \texttt{main} branch, the system triggers an automated workflow that executes static analysis (linting, type-checking) and runs the Pytest suite. Upon successful validation, Docker images are built, tagged dynamically, and pushed to a secure registry. Finally, Kubernetes declarative manifests are applied, ensuring zero-downtime rolling updates.
+
+% ──────────────────────────────────────────────────────────────────
+\section*{Conclusion}
+\addcontentsline{toc}{section}{Conclusion}
+% ──────────────────────────────────────────────────────────────────
+
+This chapter explored the solution's architecture, the open-source technology stack, and the global system topology. We presented the layered microservices architecture, the Kubernetes deployment strategy, and the CI/CD pipeline that ensures continuous delivery. The next chapter will focus on the first release of the project, covering the platform security entry layer and the core orchestration engine.
+
+
+
+% ================================================================
+%  CHAPTER 4 - RELEASE 1: PLATFORM SECURITY & CORE ORCHESTRATION
+% ================================================================
+\chapter{Release 1: Platform Security \& Core Orchestration}
+
+\section{Introduction}
+
+The first major milestone of this project was to establish the foundational security perimeter and the core AI orchestration engine. Before we could even think about advanced governance or complex data policies, we needed to ensure two things: first, that every single request entering the platform is cryptographically authenticated at the network edge, and second, that our backend can intelligently route and stream AI workloads without bottlenecking. 
+
+This chapter details the work completed during the first release, which spans two sprints. We cover the deployment of the edge security layer, the integration of Keycloak for identity management, and the construction of the full AI streaming pipeline using FastAPI.
+
+% ──────────────────────────────────────────────────────────────────
+\section{Release 1 Plan}
+% ──────────────────────────────────────────────────────────────────
+
+We structured the development plan for Release 1 around the most critical building blocks of the platform:
+
+\begin{enumerate}
+    \item \textbf{Sprint 1: Platform Security Entry Layer} - The focus here was establishing a strict zero-trust perimeter. We deployed Kong Gateway, enabled WAF protection, integrated Keycloak for OAuth 2.0 PKCE authentication, and configured JWT validation plugins to act as the first line of defense.
+    
+    \item \textbf{Sprint 2: Core Orchestration Engine} - With the gates secured, we built the actual brain of the platform. This involved developing the FastAPI backend, implementing NLP-based intent classification to route prompts dynamically, and building the token-by-token SSE streaming engine connected to Ollama.
+\end{enumerate}
+
+By knocking out these fundamental areas early, we created a secure sandbox and a fully functional AI pipeline. This gave us the stable foundation needed to focus on governance and security hardening in the subsequent releases.
+
+% ──────────────────────────────────────────────────────────────────
+\section{Release 1 Backlog}
+% ──────────────────────────────────────────────────────────────────
+
+The following table outlines the specific backlog items we identified and completed for Release 1.
+
+\begin{table}[H]
+\centering
+\caption{Release 1 Backlog}
+\renewcommand{\arraystretch}{1.3}
+\footnotesize
+\begin{tabularx}{\textwidth}{| >{\raggedright\arraybackslash}p{3.5cm} | c | >{\raggedright\arraybackslash}X | c |}
+\hline
+\rowcolor{rowgray}
+\textbf{Feature} & \textbf{ID} & \textbf{User Stories} & \textbf{Priority} \\
+\hline
+Infrastructure Deployment & 1 & As an operator, I want to deploy all services with a single command. & + + + \\
+\hline
+Kong Configuration & 2 & As an operator, I want Kong routes configured via decK. & + + + \\
+\hline
+WAF Protection & 3 & As a security engineer, I want OWASP WAF at the edge. & + + + \\
+\hline
+Network Security & 4 & As a security engineer, I want TLS and network segmentation. & + + \\
+\hline
+Logging & 5 & As an operator, I want a Kong logging plugin. & + + + \\
+\hline
+Authentication & 6 & As a user, I want to log in via Keycloak SSO. & + + + \\
+\hline
+JWT Middleware & 7 & As a developer, I want JWT middleware rejecting invalid tokens. & + + + \\
+\hline
+Tenant Enforcement & 8 & As a security engineer, I want tenant ID enforced from JWT. & + + + \\
+\hline
+ACL Management & 9 & As an admin, I want tenant-service ACLs. & + + \\
+\hline
+Audit Logging & 10 & As a developer, I want permission audit logs. & + + \\
+\hline
+Backend Core & 11 & As a developer, I want a FastAPI backend with Pydantic validation. & + + + \\
+\hline
+Intent Classification & 12 & As a developer, I want NLP-based intent classification. & + + + \\
+\hline
+Intent Cache & 13 & As a developer, I want a hot-reloadable intent cache. & + + \\
+\hline
+Database Models & 14 & As a developer, I want database models for requests and services. & + + + \\
+\hline
+Auto Schema & 15 & As a developer, I want auto-creation of tables on startup. & + + \\
+\hline
+Deterministic Routing & 16 & As a user, I want deterministic routing to one AI service. & + + + \\
+\hline
+SSE Streaming & 17 & As a user, I want token-by-token SSE streaming. & + + + \\
+\hline
+Ollama Client & 18 & As a developer, I want an Ollama client with error recovery. & + + + \\
+\hline
+Lifecycle Tracking & 19 & As a developer, I want request lifecycle tracking. & + + \\
+\hline
+\end{tabularx}
+
+\label{tab:release1_backlog}
+\end{table}
+
+
+% ══════════════════════════════════════════════════════════════════
+%  SPRINT 1: PLATFORM SECURITY ENTRY LAYER
+% ══════════════════════════════════════════════════════════════════
+\section{Sprint 1: Platform Security Entry Layer}
+
+The primary goal of our first sprint was to establish a zero-trust security perimeter. We needed a system that could cryptographically validate every incoming request before it ever had the chance to touch our backend logic. To achieve this, we focused on deploying Kong Gateway, integrating Keycloak, and enforcing security strictly through gateway plugins.
+
+\begin{table}[H]
+\centering
+\caption{Sprint 1 Backlog}
+\renewcommand{\arraystretch}{1.3}
+\footnotesize
+\begin{tabularx}{\textwidth}{| >{\raggedright\arraybackslash}p{3.5cm} | c | >{\raggedright\arraybackslash}X | c |}
+\hline
+\rowcolor{rowgray}
+\textbf{Feature} & \textbf{ID} & \textbf{User Stories} & \textbf{Priority} \\
+\hline
+Infrastructure Deployment & 1 & As an operator, I want to deploy all services with a single command. & + + + \\
+\hline
+Kong Configuration & 2 & As an operator, I want Kong routes configured via decK. & + + + \\
+\hline
+WAF Protection & 3 & As a security engineer, I want OWASP WAF at the edge. & + + + \\
+\hline
+Network Security & 4 & As a security engineer, I want TLS and network segmentation. & + + \\
+\hline
+Logging & 5 & As an operator, I want a Kong logging plugin. & + + + \\
+\hline
+Authentication & 6 & As a user, I want to log in via Keycloak SSO. & + + + \\
+\hline
+JWT Middleware & 7 & As a developer, I want JWT middleware rejecting invalid tokens. & + + + \\
+\hline
+Tenant Enforcement & 8 & As a security engineer, I want tenant ID enforced from JWT. & + + + \\
+\hline
+ACL Management & 9 & As an admin, I want tenant-service ACLs. & + + \\
+\hline
+Audit Logging & 10 & As a developer, I want permission audit logs. & + + \\
+\hline
+\end{tabularx}
+
+\label{tab:sprint1_backlog}
+\end{table}
+
+
+\subsection{Use Case Analysis}
+
+The following table describes the detailed use case governing authenticated access to the platform.
+
+\begin{table}[H]
+\caption{Detailed use case: Authenticate and Authorize Request}
+\centering
+\renewcommand{\arraystretch}{1.5}
+\begin{tabularx}{\textwidth}{| >{\bfseries}l | >{\raggedright\arraybackslash}X |}
+\hline
+\rowcolor{rowgray}
+Field & \textbf{Description} \\
+\hline
+Use Case & Authenticate and Authorize Request \\
+\hline
+Actor & End User \\
+\hline
+Preconditions & User has valid Keycloak credentials; Kong Gateway and WAF are operational. \\
+\hline
+Postconditions & Request forwarded to backend with verified tenant identity injected into headers. \\
+\hline
+Main Flow &
+\begin{enumerate}[nosep, leftmargin=0.5cm, topsep=2pt]
+    \item User opens the frontend and is redirected to Keycloak login.
+    \item User authenticates via OAuth 2.0 PKCE flow.
+    \item Keycloak issues an RS256-signed JWT.
+    \item User sends an API request with the JWT as a Bearer token.
+    \item Kong WAF plugin scans the payload for malicious patterns.
+    \item Kong JWT plugin verifies the token signature using JWKS.
+    \item Kong injects \texttt{tenant\_id} and roles into upstream headers.
+    \item Request is forwarded to the FastAPI backend.
+\end{enumerate} \\
+\hline
+Exceptions &
+\begin{itemize}[nosep, leftmargin=0.5cm]
+    \item 5a. WAF detects injection $\rightarrow$ 403 Forbidden.
+    \item 6a. Invalid or expired JWT $\rightarrow$ 401 Unauthorized.
+\end{itemize} \\
+\hline
+\end{tabularx}
+\label{tab:uc_auth_sprint1}
+\end{table}
+
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{images/use_case_sprint1.drawio.png}
+    \caption{Detailed use case diagram: Authenticate and Authorize Request}
+    \label{fig:sprint1_usecase}
+\end{figure}
+
+\subsection{Architectural Model}
+
+Sprint 1 follows a \textbf{Gateway-Centric Security Architecture}, where all cross-cutting security concerns are externalized to the API Gateway layer rather than embedded in application code. This pattern is rooted in the \textit{Separation of Concerns} principle:
+
+\begin{itemize}[leftmargin=1.5cm]
+    \item \textbf{Edge Layer (Kong Gateway):} Handles WAF filtering, JWT validation, rate limiting, correlation ID injection, and OPA policy evaluation through a composable plugin pipeline.
+    \item \textbf{Identity Layer (Keycloak):} Acts as an external identity broker, issuing cryptographically verifiable tokens. Kong validates these tokens natively using JWKS, requiring zero network calls back to Keycloak.
+    \item \textbf{Backend Layer (FastAPI):} Receives only pre-authenticated, pre-authorized traffic. It trusts the upstream headers injected by Kong, keeping business logic completely decoupled from security logic.
+\end{itemize}
+
+This architecture guarantees that the backend never processes unauthenticated traffic, dramatically reducing the attack surface and simplifying the application codebase.
+
+
+\subsection{Software Design}
+
+Securing the platform meant we needed a rock-solid authentication system capable of issuing deterministic, verifiable identities. Rather than cluttering the FastAPI backend with complex security logic, we made a strategic architectural decision: externalize all security checks to the API Gateway. We selected Keycloak as our identity broker and configured it to work seamlessly with Kong Gateway to form an impenetrable perimeter.
+
+\subsubsection{Static View: Plugin Security Pipeline}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{images/plugin_pipeline_styled.png}
+    \caption{Zero-Trust Kong Plugin Security Pipeline}
+    \label{fig:plugin_pipeline}
+\end{figure}
+
+As shown in the pipeline above, we stacked an extensive suite of plugins directly at the gateway layer—WAF for threat detection, Correlation-IDs for tracing, JWT for authentication, OPA for governance, and Redis for rate limiting. By doing this, we guarantee that the FastAPI backend only processes requests that are 100\% verified, traceable, and authorized. 
+
+\subsubsection{Keycloak and OAuth 2.0 PKCE}
+
+For identity management, Keycloak handles Single Sign-On (SSO) via the OpenID Connect (OIDC) protocol. It runs atop its own dedicated PostgreSQL database and issues RS256-signed JSON Web Tokens (JWTs). To maximize security, especially for frontend client applications, we implemented the OAuth 2.0 Authorization Code flow with Proof Key for Code Exchange (PKCE).
+
+PKCE is a massive upgrade over traditional authorization flows. It introduces a dynamic, per-request secret (the \texttt{code\_verifier} and its hash, the \texttt{code\_challenge}). By strictly enforcing this at the edge, we completely eliminate the risk of authorization code interception and Cross-Site Request Forgery (CSRF) attacks. Even if an attacker somehow intercepts the authorization code, it is mathematically useless without the original verifier.
+
+\subsubsection{Dynamic View: Authentication Sequence Diagram}
+
+Instead of forcing the FastAPI application to manually decrypt and validate tokens, we leverage Kong's native \textbf{JWT Plugin}. This ensures that unauthenticated traffic is dropped at the network edge, keeping the backend completely shielded.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{images/sprint1_sequence.png}
+    \caption{Authentication and Plugin-Based Request Validation Sequence}
+    \label{fig:auth_sequence}
+\end{figure}
+
+The interaction flow works like this:
+\begin{enumerate}
+    \item The client application logs in and retrieves a secure JWT from Keycloak.
+    \item The client attaches this JWT as a \texttt{Bearer} token and sends its AI request to the Kong Gateway.
+    \item The \textbf{Kong JWT Plugin} intercepts the request. It uses Keycloak's public JSON Web Key Set (JWKS) to mathematically verify the RS256 signature natively, without needing to make a network call back to Keycloak.
+    \item If the token is valid, Kong securely injects the \texttt{tenant\_id} and user roles into the HTTP headers and forwards the traffic to the backend. If the signature is invalid or expired, Kong instantly drops the connection with a \texttt{401 Unauthorized} status.
+\end{enumerate}
+
+This "Identity Propagation" approach is the core of our Zero-Trust architecture. Because the token is mathematically verified at the edge, the FastAPI backend implicitly trusts the upstream headers injected by Kong. This results in a highly optimized, heavily protected environment.
+
+\subsection{Showcase}
+The following figures demonstrate the successful implementation of the Zero-Trust security perimeter.
+
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{images/keycloak_login.png}
+    \caption{Keycloak unified login portal intercepting unauthenticated traffic at the edge.}
+    \label{fig:keycloak_login}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{images/postman_jwt.png}
+    \caption{Layer 3: Zero-Trust edge authentication. FastAPI proactively rejecting an unauthorized request (401 Unauthorized) due to a missing or invalid Keycloak JWT signature.}
+    \label{fig:jwt_401}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{images/postman_OPA.png}
+    \caption{Layer 4: Dynamic Authorization. Open Policy Agent (OPA) actively evaluating and blocking a tenant's request to access high-sensitivity data via unauthorized cloud endpoints (Policy Decision Result: False).}
+    \label{fig:opa_403}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{images/postman_ratelimiting.png}
+    \caption{Layer 5: Resource Protection. Kong API Gateway mitigating a simulated volumetric attack by enforcing strict client IP rate limits (429 Too Many Requests), shielding the backend from resource exhaustion.}
+    \label{fig:kong_429}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{images/kong_plugins.png}
+    \caption{Custom Platform Security Dashboard showing real-time Kong plugin synchronization (JWT, request-transformer, etc.).}
+    \label{fig:kong_plugins}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{images/kong_active_plugins.png}
+    \caption{AI-Ready Plugin Marketplace for rapid deployment of security and traffic policies.}
+    \label{fig:kong_marketplace}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{images/frontend_guard_block.png}
+    \caption{Layer 1: Client-side proactive blocking of HTML/Script injection attempts.}
+    \label{fig:frontend_block}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{images/waf_network_block.png}
+    \vspace{0.5cm}
+    \includegraphics[width=0.85\textwidth]{images/waf_network_block 2.png}
+    \caption{Layer 2: Network-edge WAF (Kong) intercepting SQL injection payloads (Top: Inbound malicious payload; Bottom: Kong 403 Forbidden blocking response).}
+    \label{fig:waf_block}
+\end{figure}
+
+
+
+
+% TODO: Add screenshots of:
+% - Keycloak login screen
+% - Kong Admin API showing active plugins
+% - WAF blocking a malicious request
+% - JWT validation success/failure in logs
+
+
+% ══════════════════════════════════════════════════════════════════
+%  SPRINT 2: CORE ORCHESTRATION ENGINE
+% ══════════════════════════════════════════════════════════════════
+\section{Sprint 2: Core Orchestration Engine}
+
+With our security perimeter locked down, Sprint 2 focused entirely on building the orchestration engine. We needed a pipeline that could take a user's prompt, understand what they were asking for, route it to the right AI model, and stream the answer back in real-time. We designed the FastAPI backend using a Clean Architecture pattern, cleanly separating the HTTP transport layer from our business logic and database interactions.
+
+\begin{table}[H]
+\centering
+\caption{Sprint 2 Backlog}
+\renewcommand{\arraystretch}{1.3}
+\footnotesize
+\begin{tabularx}{\textwidth}{| >{\raggedright\arraybackslash}p{3.5cm} | c | >{\raggedright\arraybackslash}X | c |}
+\hline
+\rowcolor{rowgray}
+\textbf{Feature} & \textbf{ID} & \textbf{User Stories} & \textbf{Priority} \\
+\hline
+Backend Core & 11 & As a developer, I want a FastAPI backend with Pydantic validation. & + + + \\
+\hline
+Intent Classification & 12 & As a developer, I want NLP-based intent classification. & + + + \\
+\hline
+Intent Cache & 13 & As a developer, I want a hot-reloadable intent cache. & + + \\
+\hline
+Database Models & 14 & As a developer, I want database models for requests and services. & + + + \\
+\hline
+Auto Schema & 15 & As a developer, I want auto-creation of tables on startup. & + + \\
+\hline
+Deterministic Routing & 16 & As a user, I want deterministic routing to one AI service. & + + + \\
+\hline
+SSE Streaming & 17 & As a user, I want token-by-token SSE streaming. & + + + \\
+\hline
+Ollama Client & 18 & As a developer, I want an Ollama client with error recovery. & + + + \\
+\hline
+Lifecycle Tracking & 19 & As a developer, I want request lifecycle tracking. & + + \\
+\hline
+\end{tabularx}
+
+\label{tab:sprint2_backlog}
+\end{table}
+
+\subsection{Use Case Analysis}
+
+The following table describes the primary use case of the orchestration engine: routing and streaming an AI request.
+
+\begin{table}[H]
+\caption{Detailed use case: Route and Stream AI Request}
+\centering
+\renewcommand{\arraystretch}{1.5}
+\begin{tabularx}{\textwidth}{| >{\bfseries}l | >{\raggedright\arraybackslash}X |}
+\hline
+\rowcolor{rowgray}
+Field & \textbf{Description} \\
+\hline
+Use Case & Route and Stream AI Request \\
+\hline
+Actor & Authenticated User \\
+\hline
+Preconditions & User authenticated via Keycloak; valid JWT present; tenant quota not exceeded. \\
+\hline
+Postconditions & AI response streamed to user via SSE; request lifecycle persisted to database. \\
+\hline
+Main Flow &
+\begin{enumerate}[nosep, leftmargin=0.5cm, topsep=2pt]
+    \item User submits a prompt via the chat interface.
+    \item Frontend sends POST to \texttt{/api/ai/request} with SSE headers.
+    \item FastAPI validates the upstream JWT headers and extracts tenant ID.
+    \item IntentClassifier analyzes the prompt semantics using Zero-Shot NLP.
+    \item Intent is resolved to a specific AI model via the intent cache.
+    \item Request is forwarded to Ollama for inference.
+    \item Tokens are streamed back via SSE, each chunk sanitized by OutputGuard.
+    \item Request lifecycle metadata is persisted to PostgreSQL.
+\end{enumerate} \\
+\hline
+Exceptions &
+\begin{itemize}[nosep, leftmargin=0.5cm]
+    \item 4a. Unrecognized intent $\rightarrow$ fallback to default model.
+    \item 6a. Ollama unreachable $\rightarrow$ 503 Service Unavailable with retry.
+    \item 7a. PII detected in output $\rightarrow$ token redacted before delivery.
+\end{itemize} \\
+\hline
+\end{tabularx}
+\label{tab:uc_stream_sprint2}
+\end{table}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{images/Use-case-sprint2.drawio.png}
+    \caption{Detailed use case diagram: Route and Stream AI Request}
+    \label{fig:sprint1_usecase}
+\end{figure}
+
+
+\subsection{Architectural Model}
+
+Sprint 2 implements a \textbf{Clean Architecture} pattern with strict layer separation, enabling independent testing and evolution of each component:
+
+\begin{itemize}[leftmargin=1.5cm]
+    \item \textbf{Transport Layer (Routers):} HTTP endpoints and SSE stream handlers. Responsible only for request parsing and response formatting.
+    \item \textbf{Service Layer (Business Logic):} The \texttt{AIRequestService} orchestrates the entire pipeline: intent classification, model routing, streaming, and output sanitization. Dependencies are injected via the \texttt{ApplicationFactory}.
+    \item \textbf{Infrastructure Layer (Repositories):} Async SQLAlchemy repositories and the Ollama HTTP client. These are fully interchangeable, enabling future migration to alternative LLM providers without modifying business logic.
+\end{itemize}
+
+This layered approach ensures that adding new AI providers, intent categories, or guardrail rules requires changes in only one layer, preserving the stability of the overall system.
+
+
+\subsection{Database Design}
+
+\subsubsection{Logical Data Model (LDM)}
+
+Application state is managed by an isolated PostgreSQL cluster using SQLAlchemy's async ORM. Because multi-tenant isolation is a strict requirement for enterprise environments, our database schema enforces this separation from the ground up.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.35\textwidth]{images/ldm_sprint2.png}
+    \caption{Logical Data Model (LDM)}
+    \label{fig:ldm_sprint2}
+\end{figure}
+
+Looking at the Logical Data Model, every single \texttt{AIRequestRecord} is immutably bound to a specific \texttt{tenant\_id}. We don't just rely on application-level filtering (like adding \texttt{WHERE tenant\_id = X} to our queries), as that is prone to human error. Instead, we use Postgres Row-Level Security (RLS). This means that even if the application code had a bug, the database kernel itself physically prevents an attacker from querying records belonging to a different tenant.
+
+\subsection{Software Design}
+
+\subsubsection{Static View: Class Diagram}
+
+Handling thousands of concurrent AI streams without freezing the server is a major technical challenge. To solve this, we heavily leveraged Python's \texttt{asyncio} capabilities and built the system using strict Dependency Injection.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{images/sprint2_class.png}
+    \caption{FastAPI Backend Class Diagram}
+    \label{fig:sprint2_class}
+\end{figure}
+
+The class diagram above highlights the \texttt{ApplicationFactory}, which is responsible for wiring up routers and middlewares during startup. The heavy lifting is done by the \texttt{AIRequestService}. It orchestrates the flow by talking to the \texttt{IntentCacheService} (which maps user prompts to the correct LLM) and the \texttt{OutputGuardService} (which sanitizes the AI's text stream before sending it to the user).
+
+\subsubsection{Dynamic View: End-to-End Orchestration Sequence}
+
+To really understand how the security plugins, the routing logic, and the streaming guardrails all work together, we mapped out the complete end-to-end execution sequence. This shows the exact lifecycle of a prompt—from the moment it hits the firewall, to the moment the AI responds.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{images/end_to_end_orchestration.png}
+    \caption{End-to-End AI Orchestration Sequence}
+    \label{fig:end_to_end_orchestration}
+\end{figure}
+
+As mapped out in the sequence diagram, every request is governed across three distinct layers:
+
+\begin{enumerate}
+    \item \textbf{The Zero-Trust Perimeter:} The user's prompt is first scrubbed by the Web Application Firewall (WAF). It then hits Kong, where Keycloak mathematically verifies the JWT. Next, the Open Policy Agent (OPA) checks if the tenant actually has permission to make the request, and Redis verifies they haven't exceeded their API quota. If any of these checks fail, the request is killed instantly.
+    \item \textbf{Cognitive Routing:} Once safely inside the backend, we don't just send the prompt to a massive monolithic LLM. Instead, the \texttt{IntentClassifier} analyzes the semantic meaning of the user's prompt (e.g., is this a coding question or a data analysis request?) and routes it to a smaller, specialized AI model that handles that specific task.
+    \item \textbf{Streaming \& Guardrails:} Once the local LLM (Ollama) starts answering, it generates text word-by-word. Our backend initiates an asynchronous stream, and the \texttt{OutputGuardService} inspects every single chunk in real-time. If it detects sensitive data (like a credit card number), it redacts it before the token ever leaves the platform via Server-Sent Events (SSE).
+\end{enumerate}
+
+This architecture gives us absolute deterministic control over the entire enterprise AI workload. We've decoupled the security perimeter from the AI routing, resulting in a system that is incredibly fast, scalable, and secure.
+
+\subsection{Showcase}
+\label{subsec:sprint2_showcase}
+
+The following figures showcase the core orchestration and real-time streaming capabilities of the platform.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{images/chat_intent.png}
+    \caption{AI Orchestration interface with dynamic intent classification and model routing.}
+    \label{fig:chat_intent}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{images/ai_streaming.png}
+    \caption{Low-latency AI response streaming via Server-Sent Events (SSE).}
+    \label{fig:ai_streaming}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{images/db_audit_log.png}
+    \caption{Database audit trail capturing the full request lifecycle and orchestration metadata.}
+    \label{fig:db_audit_log}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+
+    \includegraphics[width=0.85\textwidth]{images/intent_classification_result.png}
+    \vspace{0.2cm}
+
+    \includegraphics[width=0.85\textwidth]{images/intent_classification_result2.png}
+
+    \caption{Intent classification results before and after routing showing label, source, and confidence.}
+    \label{fig:intent_classification}
+\end{figure}
+
+
+
+% TODO: Add screenshots of:
+% - Chat interface with intent selection
+% - Real-time SSE streaming in action
+% - Request lifecycle in the database
+% - Intent classification result
+
+
+% ──────────────────────────────────────────────────────────────────
+\section*{Conclusion}
+\addcontentsline{toc}{section}{Conclusion}
+% ──────────────────────────────────────────────────────────────────
+
+In this chapter, we successfully delivered the platform's first major release. Through Sprint 1, we established a Zero-Trust security perimeter using Kong and Keycloak, ensuring that malicious or unauthenticated traffic is dropped at the network edge. In Sprint 2, we built the core FastAPI orchestration engine, enabling intelligent intent routing and real-time, token-by-token streaming. This provided us with a fully functional, highly secure foundation. In the next chapter, we will build upon this by integrating advanced governance policies, strict data quotas, and proactive security hardening.
+
+
+% ================================================================
+%  CHAPTER 5 - RELEASE 2: GOVERNANCE & SECURITY HARDENING
+% ================================================================
+\chapter{Release 2: Governance \& Security Hardening}
+
+\section{Introduction}
+
+With the foundational security perimeter and core AI orchestration engine established in Release 1, the platform successfully authenticates and routes AI requests. However, enterprise adoption requires strict data governance, cost control, and advanced threat mitigation. The purpose of Release 2 is to enforce centralized governance policies and harden the platform against AI-specific vulnerabilities. This release introduces dynamic policy evaluation, tenant-level token quotas, and active data sanitization. The work included in this release spans two sprints.
+
+% ──────────────────────────────────────────────────────────────────
+\section{Release 2 Plan}
+% ──────────────────────────────────────────────────────────────────
+
+The development plan for Release 2 focuses on establishing robust guardrails for AI usage, structured into two consecutive sprints:
+
+\begin{enumerate}
+    \item \textbf{Sprint 3: Governance \& Policy Engine} - Implements Open Policy Agent (OPA) for evaluating dynamic data sensitivity rules and integrates Redis to enforce per-tenant daily token quotas, preventing cost overruns.
+    
+    \item \textbf{Sprint 4: Security Hardening} - Focuses on data sovereignty and AI-specific threat mitigation. It introduces PostgreSQL Row-Level Security (RLS) for absolute tenant isolation, HashiCorp Vault for secrets management, and Microsoft Presidio for real-time Personally Identifiable Information (PII) redaction.
+\end{enumerate}
+
+By focusing on these areas, we ensure that AI interactions comply with enterprise data policies and that sensitive information is strictly protected from exposure.
+
+% ──────────────────────────────────────────────────────────────────
+\section{Release 2 Backlog}
+% ──────────────────────────────────────────────────────────────────
+
+The following table outlines the backlog items identified for Release 2, covering both Sprint 3 and Sprint 4.
+
+\begin{table}[H]
+\centering
+\caption{Release 2 Backlog}
+\renewcommand{\arraystretch}{1.3}
+\footnotesize
+\begin{tabularx}{\textwidth}{| >{\raggedright\arraybackslash}p{3.5cm} | c | >{\raggedright\arraybackslash}X | c |}
+\hline
+\rowcolor{rowgray}
+\textbf{Feature} & \textbf{ID} & \textbf{User Stories} & \textbf{Priority} \\
+\hline
+Policy Definitions & 20 & As an admin, I want YAML-driven governance policies. & + + + \\
+\hline
+Policy Engine & 21 & As a developer, I want a policy evaluation engine. & + + + \\
+\hline
+Policy Auditing & 22 & As a developer, I want policy audit logs. & + + \\
+\hline
+Token Quotas & 23 & As an admin, I want configurable daily token quotas. & + + + \\
+\hline
+Quota Counters & 24 & As a developer, I want Redis-backed quota counters. & + + + \\
+\hline
+Tenant Isolation & 25 & As a security engineer, I want PostgreSQL RLS. & + + + \\
+\hline
+Secrets Management & 26 & As an operator, I want Vault managing secrets. & + + + \\
+\hline
+Usage Tracking & 27 & As a developer, I want a usage tracking table. & + + \\
+\hline
+Database Migrations & 28 & As a developer, I want automated database migrations. & + + \\
+\hline
+Injection Detection & 29 & As a security engineer, I want prompt injection detection. & + + + \\
+\hline
+Security Patterns & 30 & As a security engineer, I want database-driven security patterns. & + + \\
+\hline
+PII Detection & 31 & As a developer, I want PII detection (SSN, IBAN, credit card). & + + + \\
+\hline
+Sensitivity Escalation & 32 & As a developer, I want auto sensitivity escalation on PII. & + + \\
+\hline
+Data Redaction & 33 & As a developer, I want output PII redaction. & + + + \\
+\hline
+\end{tabularx}
+
+\label{tab:release2_backlog}
+\end{table}
+
+
+% ══════════════════════════════════════════════════════════════════
+%  SPRINT 3: GOVERNANCE & POLICY ENGINE
+% ══════════════════════════════════════════════════════════════════
+\section{Sprint 3: Governance \& Policy Engine}
+
+The goal of this sprint is to introduce dynamic policy evaluation and cost control mechanisms. By leveraging Open Policy Agent (OPA) and Redis, the platform ensures that AI requests comply with organizational data sensitivity constraints and adhere to allocated budgets.
+
+\begin{table}[H]
+\centering
+\caption{Sprint 3 Backlog}
+\renewcommand{\arraystretch}{1.3}
+\footnotesize
+\begin{tabularx}{\textwidth}{| >{\raggedright\arraybackslash}p{3.5cm} | c | >{\raggedright\arraybackslash}X | c |}
+\hline
+\rowcolor{rowgray}
+\textbf{Feature} & \textbf{ID} & \textbf{User Stories} & \textbf{Priority} \\
+\hline
+Policy Definitions & 20 & As an admin, I want YAML-driven governance policies. & + + + \\
+\hline
+Policy Engine & 21 & As a developer, I want a policy evaluation engine. & + + + \\
+\hline
+Policy Auditing & 22 & As a developer, I want policy audit logs. & + + \\
+\hline
+Token Quotas & 23 & As an admin, I want configurable daily token quotas. & + + + \\
+\hline
+Quota Counters & 24 & As a developer, I want Redis-backed quota counters. & + + + \\
+\hline
+\end{tabularx}
+
+\label{tab:sprint3_backlog}
+\end{table}
+
+\subsection{Software Design}
+
+\subsubsection{Dynamic View: Governance Policy Evaluation Sequence}
+
+Governance and Real-Time Policy Enforcement rely on the Open Policy Agent (OPA). The orchestrator dynamically evaluates custom governance rules covering data sensitivity constraints, environmental isolation, and budget consumption before authorizing any downstream routing. Additionally, Redis is used for ultra-low latency, atomic tenant quota tracking, shielding the platform from resource exhaustion.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{images/sprint3_sequence.png}
+    \caption{Governance Policy and Quota Evaluation Sequence}
+    \label{fig:sprint3_sequence}
+\end{figure}
+
+The sequence diagram illustrates the policy enforcement flow:
+\begin{enumerate}
+    \item The FastAPI backend receives an authenticated request.
+    \item Before processing the AI intent, the backend queries the Redis instance to verify the tenant's daily token quota.
+    \item If the quota is exceeded, the request is immediately rejected to prevent cost overruns.
+    \item If the quota is valid, the backend queries the OPA engine, passing the tenant context, request sensitivity, and requested service.
+    \item OPA evaluates the declarative Rego policies and returns an authoritative decision (Allow/Deny).
+    \item The backend enforces the decision, proceeding with orchestration only if authorized, and logging the outcome in the audit ledger.
+\end{enumerate}
+
+\subsection{Showcase}
+The following figures demonstrate the implementation of declarative governance and token-based cost controls.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{images/opa_policies_admin.png}
+    \caption{Governance policies in the admin UI, enforced by OPA per tenant.}
+    \label{fig:opa_policies}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{images/quota_exceeded_error.png}
+    \vspace{0.2cm}
+
+    \includegraphics[width=0.95\textwidth]{images/quota_exceeded_error2.png}
+    
+    \caption{Daily token quota exceeded: chat warning (top) and HTTP 429 (bottom).}
+    \label{fig:quota_exceeded}
+\end{figure}
+
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{images/redis_quota_dashboard.png}
+    \caption{Quota Manager in the admin portal: per-tenant daily limits and live token usage from Redis counters.}
+    \label{fig:redis_quota}
+\end{figure}
+
+
+% TODO: Add screenshots of:
+% - Admin UI showing active governance policies
+% - Quota rejection error message in the chat interface
+% - Redis token tracking metrics
+
+
+% ══════════════════════════════════════════════════════════════════
+%  SPRINT 4: SECURITY HARDENING
+% ══════════════════════════════════════════════════════════════════
+\section{Sprint 4: Security Hardening}
+
+With governance in place, Sprint 4 focuses on absolute data sovereignty and mitigating AI-specific vulnerabilities, such as prompt injection and data exfiltration. The system introduces PostgreSQL Row-Level Security (RLS) and integrates Microsoft Presidio for proactive threat mitigation and data sanitization.
+
+\begin{table}[H]
+\centering
+\caption{Sprint 4 Backlog}
+\renewcommand{\arraystretch}{1.3}
+\footnotesize
+\begin{tabularx}{\textwidth}{| >{\raggedright\arraybackslash}p{3.5cm} | c | >{\raggedright\arraybackslash}X | c |}
+\hline
+\rowcolor{rowgray}
+\textbf{Feature} & \textbf{ID} & \textbf{User Stories} & \textbf{Priority} \\
+\hline
+Tenant Isolation & 25 & As a security engineer, I want PostgreSQL RLS. & + + + \\
+\hline
+Secrets Management & 26 & As an operator, I want Vault managing secrets. & + + + \\
+\hline
+Usage Tracking & 27 & As a developer, I want a usage tracking table. & + + \\
+\hline
+Database Migrations & 28 & As a developer, I want automated database migrations. & + + \\
+\hline
+Injection Detection & 29 & As a security engineer, I want prompt injection detection. & + + + \\
+\hline
+Security Patterns & 30 & As a security engineer, I want database-driven security patterns. & + + \\
+\hline
+PII Detection & 31 & As a developer, I want PII detection (SSN, IBAN, credit card). & + + + \\
+\hline
+Sensitivity Escalation & 32 & As a developer, I want auto sensitivity escalation on PII. & + + \\
+\hline
+Data Redaction & 33 & As a developer, I want output PII redaction. & + + + \\
+\hline
+\end{tabularx}
+
+\label{tab:sprint4_backlog}
+\end{table}
+
+\subsection{Database Design}
+
+\subsubsection{Row-Level Security (RLS)}
+
+Traditional multi-tenant architectures often rely on Application-Level Filtering (e.g., appending \texttt{WHERE tenant\_id = X} to database queries). This approach is highly susceptible to human error and data leaks. To guarantee absolute data sovereignty, the platform implements Row-Level Security (RLS) directly at the PostgreSQL kernel level. During request execution, the authenticated \texttt{tenant\_id} extracted from the JWT is passed as a session variable to the database engine. RLS policies dynamically restrict the visibility of rows at the lowest storage tier, ensuring deterministic tenant isolation regardless of how the application layer attempts to query the data.
+
+\subsection{Software Design}
+
+\subsubsection{Dynamic View: Threat Mitigation and PII Redaction}
+
+Proactive threat mitigation requires inspecting both the inbound user prompt and the outbound AI response.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{images/sprint4_sequence.png}
+    \caption{Prompt Injection Detection and PII Redaction Sequence}
+    \label{fig:sprint4_sequence}
+\end{figure}
+
+The sequence diagram details the security hardening workflow:
+\begin{enumerate}
+    \item \textbf{Inbound Sanitization:} Incoming user prompts undergo strict sanitization against known jailbreak libraries and prompt injection signatures.
+    \item \textbf{PII Detection:} The prompt is scanned for Personally Identifiable Information (PII) using Microsoft Presidio. If sensitive data (e.g., Credit Card, SSN) is detected, the request's sensitivity level is automatically escalated, potentially triggering stricter OPA governance rules.
+    \item \textbf{Outbound Redaction:} As the AI generates the response stream, the \texttt{OutputGuardService} intercepts the text chunks in real-time. It scrubs the output, redacting any PII before the response is delivered to the end-user.
+\end{enumerate}
+
+\subsection{Showcase}
+
+\label{subsec:sprint4_showcase}
+
+The following figures showcase the advanced security hardening features of the platform.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{images/prompt_injection_blocked.png}
+    \caption{Proactive mitigation of a prompt injection attempt using the Microsoft Presidio-backed Security Service.}
+    \label{fig:injection_block}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{images/front_block.png}
+    \caption{Layer 1: Proactive client-side warning detecting personal data (phone numbers) before transmission.}
+    \label{fig:frontend_pii_warning}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{images/pii_redaction.png}
+    \caption{Layer 2: Real-time backend output sanitization: sensitive data redacted from the AI response stream.}
+    \label{fig:pii_redaction}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{images/database_rls_proof.png}
+    \caption{Technical proof of PostgreSQL Row-Level Security (RLS) enforcing deterministic tenant isolation at the database kernel level.}
+    \label{fig:rls_proof}
+\end{figure}
+
+
+% TODO: Add screenshots of:
+% - Prompt injection attempt being blocked by the system
+% - Chat interface showing redacted PII (e.g., [CREDIT CARD REDACTED])
+% - Vault integration configuration
+
+
+% ──────────────────────────────────────────────────────────────────
+\section*{Conclusion}
+\addcontentsline{toc}{section}{Conclusion}
+% ──────────────────────────────────────────────────────────────────
+
+In this chapter, we successfully implemented Release 2, significantly enhancing the platform's governance and security posture. Sprint 3 integrated OPA and Redis to enforce dynamic data policies and token quotas, providing administrators with granular control over AI consumption. Sprint 4 hardened the data layer with PostgreSQL Row-Level Security and established active threat mitigation guardrails, including prompt injection detection and real-time PII redaction. With a fully secured, governed, and orchestrated AI pipeline, the final release will focus on delivering complete operational visibility and deploying the platform for production use.
+
+
+\begin{thebibliography}{99}
+
+\bibitem{kong_gateway}
+Kong Inc. (2024). \textit{Kong API Gateway - Cloud Native API Management}. Retrieved from \url{https://konghq.com/kong/}
+
+\bibitem{keycloak_auth}
+Red Hat (2024). \textit{Keycloak - Open Source Identity and Access Management}. Retrieved from \url{https://www.keycloak.org/}
+
+\bibitem{opa_policy}
+Styra (2024). \textit{Open Policy Agent (OPA) - Policy-based control for cloud native environments}. Retrieved from \url{https://www.openpolicyagent.org/}
+
+\bibitem{nist_ai_framework}
+NIST (2023). \textit{AI Risk Management Framework (AI RMF)}. Retrieved from \url{https://www.nist.gov/itl/ai-risk-management-framework}
+
+\bibitem{owasp_llm_top10}
+OWASP Foundation (2023). \textit{OWASP Top 10 for LLM Applications}. Retrieved from \url{https://owasp.org/www-project-top-10-for-large-language-model-applications/}
+
+\bibitem{postgresql_rls}
+PostgreSQL Global Development Group (2024). \textit{PostgreSQL Documentation: Row-Level Security Policies}. Retrieved from \url{https://www.postgresql.org/docs/current/ddl-rowsecurity.html}
+
+\bibitem{presidio_pii}
+Microsoft (2024). \textit{Presidio - Data Protection and Anonymization SDK}. Retrieved from \url{https://microsoft.github.io/presidio/}
+
+\end{thebibliography}
+
+    
+    
+    \end{document}
