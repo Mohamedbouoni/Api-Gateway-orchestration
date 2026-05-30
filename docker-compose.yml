@@ -355,7 +355,7 @@ services:
       VITE_KEYCLOAK_REALM: newRealm
       VITE_KEYCLOAK_CLIENT_ID: myclient
       # The URL Kong serves the frontend on (or the dev server directly)
-      VITE_APP_URL: http://localhost:5173
+      VITE_APP_URL: https://departure-uneatable-tattle.ngrok-free.dev
       VITE_API_PROXY_TARGET: http://kong-dp:8000
     ports:
       - "5173:80"
