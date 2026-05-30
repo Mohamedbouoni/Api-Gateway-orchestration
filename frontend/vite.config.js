@@ -57,6 +57,14 @@ export default defineConfig({
         target: API_PROXY_TARGET,
         changeOrigin: true,
       },
+      "/realms": {
+        target: "http://keycloak:8080",
+        changeOrigin: true,
+      },
+      "/resources": {
+        target: "http://keycloak:8080",
+        changeOrigin: true,
+      },
     },
     allowedHosts: true,
     watch: {

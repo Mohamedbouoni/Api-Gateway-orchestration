@@ -59,7 +59,6 @@ services:
       KEYCLOAK_ADMIN_PASSWORD: admin
       KC_HOSTNAME_STRICT: "false"
       KC_HTTP_ENABLED: "true"
-      KC_HTTP_RELATIVE_PATH: /auth
       # Expose the management interface on :9000 so we can probe /health/ready
       # without needing curl/wget inside the (UBI-based) Keycloak image.
       KC_HEALTH_ENABLED: "true"
@@ -351,7 +350,7 @@ services:
     working_dir: /app
     command: /bin/sh -c "npm install && npm run dev -- --host 0.0.0.0 --port 80"
     environment:
-      VITE_KEYCLOAK_URL: /auth
+      VITE_KEYCLOAK_URL: ""
       VITE_KEYCLOAK_REALM: newRealm
       VITE_KEYCLOAK_CLIENT_ID: myclient
       # The URL Kong serves the frontend on (or the dev server directly)
