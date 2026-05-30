@@ -366,10 +366,8 @@ services:
     volumes:
       - ./frontend:/app
     depends_on:
-      kong-dp:
-        condition: service_healthy
-      keycloak:
-        condition: service_healthy
+      - kong-dp
+      - keycloak
 
   # --- Helper Services ---
   hello_world:
