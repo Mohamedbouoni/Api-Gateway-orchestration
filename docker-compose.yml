@@ -294,7 +294,7 @@ services:
       KEYCLOAK_REALM: newRealm
       # Internal Docker network connection to platform-db on 5432
       PLATFORM_DB_URL: postgresql://platform_admin:platform_pass@platform-db:5432/platform_permissions
-      CORS_ORIGIN: http://localhost:5173,http://localhost:3000,http://localhost:8000,http://localhost:8081,http://197.14.4.163:8000,http://197.14.4.163:5173
+      CORS_ORIGIN: http://localhost:5173,http://localhost:3000,http://localhost:8000,http://localhost:8081,http://197.14.4.163:8000,http://197.14.4.163:5173,https://departure-uneatable-tattle.ngrok-free.dev
       REDIS_URL: redis://redis:6379/0
       QUOTAS_FILE_PATH: quotas.yaml
       OPA_ENABLED: "true"
@@ -310,6 +310,10 @@ services:
       INTENT_TAXONOMY_PATH: /app/intent_taxonomy/intent_labels_v1.yaml
     ports:
       - "3000:3000"
+    networks:
+      default:
+        aliases:
+          - fastapi.ai-application.svc.cluster.local
     volumes:
       - ./fastapi_backend:/app
       - ./intent_taxonomy:/app/intent_taxonomy:ro
