@@ -58,14 +58,7 @@ export default defineConfig({
         changeOrigin: true,
       },
     },
-    allowedHosts: [
-      "localhost",
-      "127.0.0.1",
-      "::1",
-      "frontend",
-      "197.14.4.163",
-      "frontend.ai-gateway.svc.cluster.local",
-    ],
+    allowedHosts: true,
     watch: {
       usePolling: true,
     },
