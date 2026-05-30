@@ -59,6 +59,7 @@ services:
       KEYCLOAK_ADMIN_PASSWORD: admin
       KC_HOSTNAME_STRICT: "false"
       KC_HTTP_ENABLED: "true"
+      KC_PROXY_HEADERS: "xforwarded"
       # Expose the management interface on :9000 so we can probe /health/ready
       # without needing curl/wget inside the (UBI-based) Keycloak image.
       KC_HEALTH_ENABLED: "true"

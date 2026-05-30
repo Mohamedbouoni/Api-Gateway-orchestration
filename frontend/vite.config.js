@@ -59,11 +59,23 @@ export default defineConfig({
       },
       "/realms": {
         target: "http://keycloak:8080",
-        changeOrigin: true,
+        changeOrigin: false,
+        configure: (proxy) => {
+          proxy.on("proxyReq", (proxyReq, req) => {
+            proxyReq.setHeader("X-Forwarded-Proto", "https");
+            proxyReq.setHeader("X-Forwarded-Host", req.headers.host);
+          });
+        },
       },
       "/resources": {
         target: "http://keycloak:8080",
-        changeOrigin: true,
+        changeOrigin: false,
+        configure: (proxy) => {
+          proxy.on("proxyReq", (proxyReq, req) => {
+            proxyReq.setHeader("X-Forwarded-Proto", "https");
+            proxyReq.setHeader("X-Forwarded-Host", req.headers.host);
+          });
+        },
       },
     },
     allowedHosts: true,
