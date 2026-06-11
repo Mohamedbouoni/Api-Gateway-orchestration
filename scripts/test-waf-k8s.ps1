@@ -131,7 +131,7 @@ try {
 # -----------------------------------------------------------------------
 Write-Host "[7] ModSecurity audit log..." -ForegroundColor Yellow
 try {
-    $logContent = kubectl exec deploy/waf -n ai-gateway -c waf -- sh -c "cat /var/log/modsec_audit.log 2>/dev/null | head -c 2000" 2>&1
+    $logContent = kubectl exec deploy/waf -n ai-gateway -c waf -- sh -c "find /var/log/modsec_audit -type f 2>/dev/null | head -1 | xargs -r cat | head -c 2000" 2>&1
     $hasLog = ($logContent -ne $null -and ($logContent | Out-String).Length -gt 5)
     Test-Result 7 "ModSecurity audit log has content" $hasLog "Log empty or missing"
 } catch {

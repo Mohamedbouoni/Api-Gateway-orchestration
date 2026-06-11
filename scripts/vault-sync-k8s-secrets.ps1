@@ -146,6 +146,14 @@ Sync-K8sGenericSecret "redis-secret" "ai-data" @{
     REDIS_PASSWORD = $redis.password
 }
 
+$redisUrl = "redis://:$($redis.password)@redis.ai-data.svc.cluster.local:6379/0"
+$redisUrlClassifier = "redis://:$($redis.password)@redis.ai-data.svc.cluster.local:6379/1"
+Sync-K8sGenericSecret "redis-secret" "ai-application" @{
+    REDIS_PASSWORD = $redis.password
+    REDIS_URL        = $redisUrl
+    REDIS_URL_DB1    = $redisUrlClassifier
+}
+
 # ── 6. Grafana admin ─────────────────────────────────────────────────────────
 Write-Host "[6/8] Grafana admin" -ForegroundColor Yellow
 $grafana = Get-VaultSecret "monitoring/grafana"

@@ -43,11 +43,9 @@ services:
     write_timeout: 60000
     retries: 5
     plugins:
-      - name: request-transformer
+      - name: gateway-signature
         config:
-          add:
-            headers:
-              - "kong-header:true"
+          secret: dev-gateway-hmac-secret-change-me
     routes:
       - name: fastapi
         paths:
@@ -186,6 +184,15 @@ services:
         protocols:
           - http
           - https
+        plugins:
+          - name: pre-function
+            config:
+              access:
+                - |
+                  local path = kong.request.get_path()
+                  if path == "/grafana" then
+                    return kong.response.exit(302, nil, {["Location"] = "/grafana/"})
+                  end
 
 plugins:
   - name: pre-function

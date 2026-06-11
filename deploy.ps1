@@ -1,8 +1,8 @@
 ﻿# ─────────────────────────────────────────────────────────────────────────────
 # deploy.ps1  -  Enterprise AI Gateway Kubernetes Deployment Script
-#
+
 # Usage:  .\deploy.ps1
-#
+
 # Images are built as local :latest tags (imagePullPolicy Never in manifests).
 # That matches single-node dev clusters (Docker Desktop, Minikube). For
 # multi-node production, push images to your registry, point manifests at those
@@ -303,6 +303,7 @@ Write-Host ""
 Write-Host "[3/8] Creating Kong plugin & routing ConfigMaps..." -ForegroundColor Yellow
 kubectl create configmap kong-plugin-simple-validator --from-file=gateway/plugins/simple-validator -n ai-gateway --dry-run=client -o yaml | kubectl apply -f -
 kubectl create configmap kong-plugin-tenant-restriction --from-file=gateway/plugins/tenant-restriction -n ai-gateway --dry-run=client -o yaml | kubectl apply -f -
+kubectl create configmap kong-plugin-gateway-signature --from-file=gateway/plugins/gateway-signature -n ai-gateway --dry-run=client -o yaml | kubectl apply -f -
 kubectl create configmap kong-deck-config --from-file=kong_final.yaml=gateway/kong_final.yaml -n ai-gateway --dry-run=client -o yaml | kubectl apply -f -
 kubectl create configmap grafana-dashboards --from-file=monitoring/grafana/dashboards/ -n ai-monitoring --dry-run=client -o yaml | kubectl apply -f -
 kubectl create configmap grafana-provisioning-dashboards --from-file=monitoring/grafana/provisioning/dashboards/ -n ai-monitoring --dry-run=client -o yaml | kubectl apply -f -
@@ -313,6 +314,8 @@ Write-Host ""
 Write-Host "[4/8] Creating Configuration ConfigMaps..." -ForegroundColor Yellow
 kubectl create configmap keycloak-realm --from-file=realm-export.json=keycloak/realm-export.json -n ai-application --dry-run=client -o yaml | kubectl apply -f -
 kubectl create configmap prometheus-config --from-file=prometheus.yml=monitoring/prometheus.k8s.yml -n ai-monitoring --dry-run=client -o yaml | kubectl apply -f -
+kubectl create configmap promtail-kong-config --from-file=promtail.yaml=monitoring/promtail/promtail-kong.k8s.yaml -n ai-application --dry-run=client -o yaml | kubectl apply -f -
+kubectl create configmap promtail-waf-config --from-file=promtail.yaml=monitoring/promtail/promtail-waf.k8s.yaml -n ai-gateway --dry-run=client -o yaml | kubectl apply -f -
 
 # ── Step 5: Kong mTLS certificates (already synced by Vault in step 1.7) ──
 Write-Host ""

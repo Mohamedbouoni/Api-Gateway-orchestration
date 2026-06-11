@@ -1,0 +1,2138 @@
+Private University
+Horizon School of Digital Technologies
+* * * * * *
+N ° agrément :
+* * * * * *
+N° d’ordre :
+End Of Studies Project
+Report
+Presented in order to obtain the
+National Bachelor’s Degree in Computer Science
+Major :
+Software Engineering and Information Systems
+By
+Mohamed BOUAOUNI & Mohamed Aziz BEN ABDALLAH
+Design and Implementation of a Secure Enterprise AI
+Orchestration Platform
+Defended in front of the jury composed of :
+Mr. : Jihed HAMMAMI President
+Mr. : Mohamed Amine MARZOUK Reviewer
+Ms. : Asma MANSOUR Academic Supervisor
+Ms. : Houda BECHIR Professional Supervisor
+Academic Year: 2025 / 2026
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+Dedication
+To the pillars of my world
+This thesis is dedicated with heartfelt gratitude and deep love.
+To my beloved parents,
+Your love, support, and faith have shaped every step of my journey. Your sacrifices and
+encouragement are the foundation of this achievement. You are my greatest inspiration.
+To my brother,
+Through laughter, trials, and understanding, you’ve walked beside me. Our bond, both
+of blood and friendship, is a constant source of strength.
+To my sister,
+Your unwavering support, kindness, and the moments we shared have left a lasting impact.
+Your dedication, intelligence, and quiet strength have always inspired me.
+To all my professors,
+Your guidance, mentorship, and wisdom have shaped not only my academic journey but
+also my character. Thank you for believing in me and pushing me to reach my potential.
+To all my friends, old and new,
+Your laughter, companionship, and support have made this journey brighter and more
+meaningful.
+With sincere gratitude,
+Mohamed BOUAOUNI
+1
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+To the pillars of my world
+This thesis is dedicated with heartfelt gratitude and deep love.
+To my beloved parents,
+Your love, support, and faith have shaped every step of my journey. Your sacrifices and
+encouragement are the foundation of this achievement. You are my greatest inspiration.
+To all my professors,
+Your guidance, mentorship, and wisdom have shaped not only my academic journey but
+also my character. Thank you for believing in me and pushing me to reach my potential.
+To all my friends, old and new,
+Your laughter, companionship, and support have made this journey brighter and more
+meaningful.
+To everyone I’ve encountered along the way,
+Each interaction, brief or lasting, has contributed to my growth and understanding of the
+world.
+With sincere gratitude,
+Mohamed Aziz BEN ABDALLAH
+2
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+Acknowledgements
+This project would not have been possible without the steadfast support, guidance, and
+encouragement from many individuals. We are profoundly grateful to everyone who con-
+tributed, in any capacity, to the successful completion of this work.
+We wish to extend our sincere gratitude to:
+Dr. Asma MANSOUR , our academic supervisor, for her invaluable guidance,
+insightful feedback, and unwavering support throughout the duration of this project.
+Ms. Houda BECHIR , our company supervisor, for her trust, mentorship, and
+professional expertise, which significantly enriched the practical aspects of our experience.
+Mr. Yasser BEN AMMAR, for his invaluable help throughout the project. His
+expert feedback and deep insights into security architecture were instrumental in devel-
+oping and strengthening the security aspects of this platform. His guidance elevated the
+quality of this work significantly.
+Finally, to all those who supported us directly or indirectly, we extend our heartfelt
+thanks and deepest appreciation.
+With sincere gratitude,
+Mohamed BOUAOUNI & Mohamed Aziz BEN ABDALLAH
+3
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+Abstract
+The rapid adoption of Artificial Intelligence in enterprises has created a need for secure,
+scalable, and governable AI service management. TheDeterministic Enterprise AI
+Orchestration Platform, developed during an internship at Next Step IT, addresses
+this need through a centralized control plane that ensures predictable, secure, and cost-
+controlled AI interactions.
+Unlike traditional AI platforms, the system does not host models. It authenticates
+requests, enforces policies, routes them to the appropriate AI service, and maintains full
+observability and auditability. Key features include dynamic plugin discovery and
+advanced observability dashboards.
+Keywords : AI Orchestration – Kong API Gateway – Keycloak – FastAPI –
+OPA – Dynamic Plugin Discovery – Observability.
+Résumé
+L’adoption rapide de l’Intelligence Artificielle en entreprise a créé un besoin de gestion
+sécurisée, évolutive et gouvernable des services d’IA. LaPlateforme d’Orchestration
+Déterministe d’IA d’Entreprise, développée lors d’un stage chez Next Step IT, répond
+à ce besoin grâce à un plan de contrôle centralisé qui garantit des interactions prévisibles,
+sécurisées et maîtrisées.
+Contrairement aux plateformes d’IA traditionnelles, le système n’héberge pas de mod-
+èles. Il authentifie les requêtes, applique les politiques, les route vers le service d’IA
+approprié et maintient une observabilité ainsi qu’une auditabilité complètes. Ses princi-
+pales fonctionnalités incluent ladécouverte dynamique de pluginset destableaux
+de bord d’observabilité avancés.
+Mots-clés : AI Orchestration – Kong API Gateway – Keycloak – FastAPI –
+OPA – Dynamic Plugin Discovery – Observability.
+4
+Contents
+Dedication 1
+Acknowledgements 3
+Abstract 4
+List of Abbreviations 13
+General Introduction 15
+1 Project Context 17
+Introduction . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 17
+1.1 Presentation of the Host Company . . . . . . . . . . . . . . . . . . . . . . 17
+1.1.1 Overview . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 17
+1.1.2 Service Overview . . . . . . . . . . . . . . . . . . . . . . . . . . . . 18
+1.2 Project Scope . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 19
+1.2.1 Project Context . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 19
+1.2.2 Problem Statement . . . . . . . . . . . . . . . . . . . . . . . . . . . 21
+1.3 Study of the Existing System . . . . . . . . . . . . . . . . . . . . . . . . . 23
+1.3.1 Description of the Existing AI Orchestration Solutions . . . . . . . 23
+1.3.2 Critism of the Limitations of Existing Solutions . . . . . . . . . . . 24
+1.3.3 Proposed Solution . . . . . . . . . . . . . . . . . . . . . . . . . . . 25
+1.4 Work Methodology . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 26
+1.4.1 Agile Methodology . . . . . . . . . . . . . . . . . . . . . . . . . . . 27
+1.4.2 Scrum Framework . . . . . . . . . . . . . . . . . . . . . . . . . . . . 27
+1.4.3 Justification for the Choice . . . . . . . . . . . . . . . . . . . . . . . 28
+Conclusion . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 28
+2 Requirements Specifications and Used Technologies 29
+Introduction . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 29
+2.1 Identification of Requirements . . . . . . . . . . . . . . . . . . . . . . . . . 29
+2.1.1 Identification of Actors . . . . . . . . . . . . . . . . . . . . . . . . . 29
+2.1.2 Functional Requirements . . . . . . . . . . . . . . . . . . . . . . . . 29
+2.1.3 Non-Functional Requirements . . . . . . . . . . . . . . . . . . . . . 30
+5
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+2.2 General Use Case Diagram . . . . . . . . . . . . . . . . . . . . . . . . . . . 32
+2.3 Product Backlog . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 32
+2.3.1 Sprint Planning . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 34
+2.4 Technological Ecosystem & Open-Source Foundation . . . . . . . . . . . . 35
+2.4.1 Kong API Gateway . . . . . . . . . . . . . . . . . . . . . . . . . . . 35
+2.4.2 Lua . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 36
+2.4.3 Keycloak . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 36
+2.4.4 Open Policy Agent (OPA) . . . . . . . . . . . . . . . . . . . . . . . 36
+2.4.5 FastAPI . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 37
+2.4.6 PostgreSQL . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 37
+2.4.7 Redis . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 38
+2.4.8 React . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 38
+2.4.9 Hugging Face . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 38
+2.4.10 DistilBERT . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 39
+2.4.11 Microsoft Presidio . . . . . . . . . . . . . . . . . . . . . . . . . . . . 39
+2.4.12 Docker & Docker Compose . . . . . . . . . . . . . . . . . . . . . . . 39
+2.4.13 Kubernetes . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 40
+2.4.14 Helm . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 40
+2.4.15 Cloudflare Tunnels . . . . . . . . . . . . . . . . . . . . . . . . . . . 40
+2.4.16 Grafana Loki . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 41
+2.4.17 Promtail . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 41
+Conclusion . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 41
+3 System Architecture 42
+Introduction . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 42
+3.1 Global System Architecture . . . . . . . . . . . . . . . . . . . . . . . . . . 42
+3.1.1 Layered Platform Architecture . . . . . . . . . . . . . . . . . . . . . 42
+3.1.2 Kubernetes Deployment Topology . . . . . . . . . . . . . . . . . . . 48
+3.1.3 Observability & Monitoring Stack . . . . . . . . . . . . . . . . . . . 51
+3.1.4 Continuous Integration & Continuous Deployment (CI/CD) . . . . 52
+Conclusion . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 53
+4 Release 1: Platform Security & Core Orchestration 54
+Introduction . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 54
+4.1 Release 1 Objectives . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 54
+4.2 Release 1 Backlog . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 55
+4.3 Sprint 1: Platform Security Entry Layer . . . . . . . . . . . . . . . . . . . 56
+4.3.1 Use Case Analysis . . . . . . . . . . . . . . . . . . . . . . . . . . . 57
+4.3.2 Architectural Model . . . . . . . . . . . . . . . . . . . . . . . . . . 59
+4.3.3 Software Design . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 60
+6
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+4.3.4 Showcase . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 62
+4.4 Sprint 2: Core Orchestration Engine . . . . . . . . . . . . . . . . . . . . . 65
+4.4.1 Use Case Analysis . . . . . . . . . . . . . . . . . . . . . . . . . . . 66
+4.4.2 Architectural Model . . . . . . . . . . . . . . . . . . . . . . . . . . 68
+4.4.3 Database Design . . . . . . . . . . . . . . . . . . . . . . . . . . . . 68
+4.4.4 Software Design . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 69
+4.4.5 Showcase . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 72
+Conclusion . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 73
+5 Release 2: Governance & Security Hardening 74
+Introduction . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 74
+5.1 Release 2 Backlog . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 74
+5.2 Sprint 3: Governance & Policy Engine . . . . . . . . . . . . . . . . . . . . 75
+5.2.1 Use Case Analysis . . . . . . . . . . . . . . . . . . . . . . . . . . . 76
+5.2.2 Architectural Model . . . . . . . . . . . . . . . . . . . . . . . . . . 76
+5.2.3 Database Design . . . . . . . . . . . . . . . . . . . . . . . . . . . . 77
+5.2.4 Software Design . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 77
+5.2.5 Showcase . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 79
+5.3 Sprint 4: Security Hardening . . . . . . . . . . . . . . . . . . . . . . . . . . 81
+5.3.1 Use Case Analysis . . . . . . . . . . . . . . . . . . . . . . . . . . . 82
+5.3.2 Architectural Model . . . . . . . . . . . . . . . . . . . . . . . . . . 82
+5.3.3 Database Design . . . . . . . . . . . . . . . . . . . . . . . . . . . . 83
+5.3.4 Software Design . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 84
+5.3.5 Showcase . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 86
+Conclusion . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 87
+6 Release 3: Observability & Deployment 89
+Introduction . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 89
+6.1 Release 3 Plan . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 89
+6.2 Release 3 Backlog . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 89
+6.3 Sprint 5: Observability & Launch . . . . . . . . . . . . . . . . . . . . . . . 90
+6.3.1 Observability Architecture . . . . . . . . . . . . . . . . . . . . . . . 90
+6.3.2 Showcase . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 92
+6.4 Deployment . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 94
+6.4.1 Containerization Strategy . . . . . . . . . . . . . . . . . . . . . . . 94
+6.4.2 Infrastructure Architecture . . . . . . . . . . . . . . . . . . . . . . . 96
+6.4.3 Zero-Trust Ingress via Cloudflare Tunnels . . . . . . . . . . . . . . 97
+6.4.4 Deployment Workflow . . . . . . . . . . . . . . . . . . . . . . . . . 100
+Conclusion . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 101
+7
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+General Conclusion and Perspectives 102
+8
+List of Figures
+1.1 Next Step IT company logo . . . . . . . . . . . . . . . . . . . . . . . . . . 18
+1.2 Centralized AI Orchestration Architecture . . . . . . . . . . . . . . . . . . 20
+1.3 Comparison between unmanaged direct access and the Enterprise AI Gate-
+way solution . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 22
+1.4 AI Gateway Architecture Logo . . . . . . . . . . . . . . . . . . . . . . . . . 23
+1.5 Limitations of Commercial Cloud AI Platforms . . . . . . . . . . . . . . . 24
+1.6 Limitations of Open-Source AI Frameworks . . . . . . . . . . . . . . . . . 25
+1.7 Scrum Process . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 27
+2.1 General use case diagram of the Deterministic AI Orchestration Platform . 32
+2.2 Velocity distribution across the project lifecycle . . . . . . . . . . . . . . . 35
+2.3 Kong API Gateway Logo . . . . . . . . . . . . . . . . . . . . . . . . . . . . 35
+2.4 Lua Logo . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 36
+2.5 Keycloak Logo . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 36
+2.6 Open Policy Agent Logo . . . . . . . . . . . . . . . . . . . . . . . . . . . . 36
+2.7 FastAPI Logo . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 37
+2.8 PostgreSQL Logo . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 37
+2.9 Redis Logo . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 38
+2.10 React Logo . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 38
+2.11 Hugging Face Logo . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 38
+2.12 PyTorch/DistilBERT Engine Logo . . . . . . . . . . . . . . . . . . . . . . 39
+2.13 Microsoft Presidio Logo . . . . . . . . . . . . . . . . . . . . . . . . . . . . 39
+2.14 Docker Containerization Platform Logo . . . . . . . . . . . . . . . . . . . . 39
+2.15 Kubernetes Container Orchestrator Logo . . . . . . . . . . . . . . . . . . . 40
+2.16 Helm Package Manager Logo . . . . . . . . . . . . . . . . . . . . . . . . . . 40
+2.17 Cloudflare Tunnels Ingress Logo . . . . . . . . . . . . . . . . . . . . . . . . 40
+2.18 Grafana Logo . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 41
+2.19 Promtail Logo . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 41
+3.1 Global Architecture of the Deterministic Enterprise AI Orchestration Plat-
+form . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 43
+3.2 Edge Security Layer Architecture . . . . . . . . . . . . . . . . . . . . . . . 45
+3.3 FastAPI Orchestration Control Plane Architecture . . . . . . . . . . . . . . 46
+9
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+3.4 Observability layer for metrics, logs, and dashboards . . . . . . . . . . . . . 48
+3.5 Kubernetes Deployment Architecture (ai-gateway-namespace) . . . . . . 50
+3.6 CI/CD Pipeline Flow . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 52
+4.1 Zero-Trust WAF and Kong Security Pipeline . . . . . . . . . . . . . . . . . 55
+4.2 Detailed use case diagram: Authenticate and Authorize Request . . . . . . 58
+4.3 Authentication and Plugin-Based Request Validation Sequence . . . . . . . 61
+4.4 Keycloak unified login portal intercepting unauthenticated traffic at the edge. 62
+4.5 Layer 3: Zero-Trust edge authentication. FastAPI rejecting an unautho-
+rized request (401 Unauthorized) due to a missing or invalid Keycloak JWT
+signature. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 62
+4.6 Layer 4: Dynamic Authorization. OPA actively blocking a tenant’s request
+to access high-sensitivity data (Policy Decision Result: False). . . . . . . . 63
+4.7 Layer 5: Resource Protection. Kong enforcing strict client IP rate limits
+(429 Too Many Requests). . . . . . . . . . . . . . . . . . . . . . . . . . . . 63
+4.8 Custom Platform Security Dashboard showing real-time Kong plugin syn-
+chronization. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 64
+4.9 AI-Ready Plugin Marketplace for rapid deployment of security and traffic
+policies. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 64
+4.10 Layer 1: Client-side proactive blocking of HTML/Script injection attempts. 65
+4.11 Layer 2: Network-edge WAF intercepting SQL injection payloads (Top:
+inbound payload; Bottom: WAF 403 Forbidden response). . . . . . . . . . 65
+4.12 Detailed use case diagram: Route and Stream AI Request . . . . . . . . . 68
+4.13 Logical Data Model (LDM) . . . . . . . . . . . . . . . . . . . . . . . . . . 69
+4.14 FastAPI Backend Class Diagram . . . . . . . . . . . . . . . . . . . . . . . 70
+4.15 End-to-End AI Orchestration Sequence . . . . . . . . . . . . . . . . . . . . 71
+4.16 AI Orchestration interface with dynamic intent classification and model
+routing. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 72
+4.17 Low-latency AI response streaming via Server-Sent Events (SSE). . . . . . 72
+4.18 Database audit trail capturing the full request lifecycle and orchestration
+metadata. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 72
+4.19 Intent classification results before and after routing showing label, source,
+and confidence. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 73
+5.1 Governance Policy and Quota Evaluation Sequence . . . . . . . . . . . . . 78
+5.2 Governance policies in the admin UI, enforced by OPA per tenant. . . . . . 79
+5.3 Daily token quota exceeded: chat warning (top) and HTTP 429 (bottom). 80
+5.4 Quota Manager in the admin portal: per-tenant daily limits and live token
+usage from Redis counters. . . . . . . . . . . . . . . . . . . . . . . . . . . . 81
+5.5 Conceptual Data Model (CDM) for Enterprise AI Orchestration . . . . . . 83
+10
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+5.6 Prompt Injection Detection and PII Redaction Sequence . . . . . . . . . . 85
+5.7 Proactive mitigation of a prompt injection attempt using the Microsoft
+Presidio-backed Security Service. . . . . . . . . . . . . . . . . . . . . . . . 86
+5.8 Layer 1: Proactive client-side warning detecting personal data (phone num-
+bers) before transmission. . . . . . . . . . . . . . . . . . . . . . . . . . . . 86
+5.9 Layer 2: Real-time backend output sanitization: sensitive data redacted
+from the AI response stream. . . . . . . . . . . . . . . . . . . . . . . . . . 87
+5.10 Technical proof of PostgreSQL Row-Level Security (RLS) enforcing deter-
+ministic tenant isolation at the database kernel level. . . . . . . . . . . . . 87
+6.1 Three-tier observability pipeline: instrumentation sources feed Prometheus
+and Loki collectors, visualized through Grafana dashboards. . . . . . . . . 91
+6.2 Grafana dashboard showing API latency, request throughput, token usage,
+and infrastructure health in real time. . . . . . . . . . . . . . . . . . . . . . 93
+6.3 Admin security panel with live WAF events, prompt injection alerts, and
+threat pattern monitoring. . . . . . . . . . . . . . . . . . . . . . . . . . . . 93
+6.4 Tableau de bord de sécurité et de découverte des routes API. . . . . . . . . 94
+6.5 Docker Compose container architecture with internal network topology and
+persistent volume mappings. . . . . . . . . . . . . . . . . . . . . . . . . . . 95
+6.6 Three-tier production infrastructure: Data Tier (persistence), Application
+Tier (orchestration), and Edge Tier (ingress). . . . . . . . . . . . . . . . . 97
+6.7 Zero-Trust ingress via Cloudflare Tunnel with no exposed inbound ports. . 99
+6.8 Git-based deployment pipeline with Docker Compose zero-downtime updates.101
+11
+List of Tables
+2.1 Product backlog with story point estimates and sprint assignments . . . . 33
+2.2 Sprint planning roadmap and risk assessment . . . . . . . . . . . . . . . . 34
+4.1 Release 1 Backlog . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 56
+4.2 Sprint 1 Backlog . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 57
+4.3 Detailed use case: Authenticate and Authorize Request . . . . . . . . . . . 59
+4.4 Sprint 2 Backlog . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 66
+4.5 Detailed use case: Route and Stream AI Request . . . . . . . . . . . . . . 67
+5.1 Release 2 Backlog . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 75
+5.2 Sprint 3 Backlog . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 75
+5.3 Detailed use case: Manage Governance Policies . . . . . . . . . . . . . . . 76
+5.4 Sprint 4 Backlog . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 81
+5.5 Detailed use case: Detect and Redact PII . . . . . . . . . . . . . . . . . . . 82
+6.1 Release 3 Backlog (Sprint 5) . . . . . . . . . . . . . . . . . . . . . . . . . . 90
+6.2 Containerized microservices and their base images . . . . . . . . . . . . . . 95
+12
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+List of Abbreviations
+ACL Access Control List
+AI Artificial Intelligence
+API Application Programming Interface
+CI/CD Continuous Integration / Continuous Deployment
+CORS Cross-Origin Resource Sharing
+CSRF Cross-Site Request Forgery
+HTML HyperText Markup Language
+HTTP HyperText Transfer Protocol
+IBAN International Bank Account Number
+IaaS Infrastructure as a Service
+JWKS JSON Web Key Set
+JWT JSON Web Token
+LDM Logical Data Model
+LLM Large Language Model
+MLOps Machine Learning Operations
+NLP Natural Language Processing
+OAuth Open Authorization
+OIDC OpenID Connect
+OPA Open Policy Agent
+ORM Object-Relational Mapping
+OWASP Open Web Application Security Project
+PaaS Platform as a Service
+PII Personally Identifiable Information
+13
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+PKCE Proof Key for Code Exchange
+RLS Row-Level Security
+SaaS Software as a Service
+SDLC Software Development Life Cycle
+SLA Service Level Agreement
+SOC Security Operations Center
+SP Story Points
+SQL Structured Query Language
+SSE Server-Sent Events
+SSN Social Security Number
+SSO Single Sign-On
+TLS Transport Layer Security
+UI User Interface
+UML Unified Modeling Language
+URL Uniform Resource Locator
+WAF Web Application Firewall
+YAML YAML Ain’t Markup Language
+14
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+General Introduction
+In recent years, Artificial Intelligence (AI) and Large Language Models (LLMs) [21] have
+become essential in business automation, data analysis, and decision-making systems.
+Enterprise applications leverage AI services to automate customer service, generate soft-
+ware code, and analyze complex document databases. However, these platforms often
+face security and compliance challenges when deployed across multiple teams in an or-
+ganization [5]. The tight coupling between enterprise applications and external AI APIs
+limits the ability to enforce consistent governance policies, control API costs, and prevent
+data leakage [4].
+Motivated by this challenge, Next Step IT [8] has launched the Deterministic
+Enterprise AI Orchestration Platformproject, a modular and secure control plane
+designed to bridge the gap between enterprise clients and heterogeneous AI services,
+without compromising data sovereignty or inducing vendor lock-in.
+One solution is to decouple client applications from direct AI service access by in-
+troducing a centralized orchestration proxy. This proxy intercepts all requests at the
+network edge [1], validates user identities [2, 18], evaluates dynamic security policies [3],
+and routes traffic deterministically to authorized, local or cloud-hosted AI endpoints. This
+allows enterprise applications to leverage AI capabilities normally while maintaining strict
+corporate governance and security.
+The objective of this work is to design a secure, scalable, and deterministic architec-
+ture combining API gateway management, real-time policy enforcement, and cloud-native
+observability [12, 13]. We will provide a comprehensive overview of the system, covering
+its design, development, and deployment stages.
+This work proposes a governable solution for enterprise AI management while preserv-
+ing security, predictability, and flexibility for future improvements.
+The structure of this report has been carefully organized to ensure a coherent and
+progressive presentation of the work, as outlined below:
+Chapter 1introduces the general context of the project. It presents the host company
+Next Step IT, outlines the problem statement, defines the project scope, and reviews
+existing AI orchestration solutions and security risks.
+Chapter 2 presents the system analysis along with a detailed requirements specifi-
+cations analysis. It defines the core system actors, details functional and non-functional
+requirements, and establishes the project roadmap using the Agile Scrum framework [27].
+Chapter 3 describes the system’s global architecture and technological ecosystem.
+It details the open-source technologies utilized, the Kubernetes deployment topology [9],
+and the automated CI/CD pipeline.
+15
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+Chapter 4 covers Release 1 of the platform, detailing Sprint 1 (edge security and
+Keycloak identity management [2]) and Sprint 2 (the FastAPI orchestration engine [15]
+and SSE streaming pipeline).
+Chapter 5explains Release 2, which focuses on platform governance and data secu-
+rity, including Open Policy Agent integrations [3], token quota tracking [17], PostgreSQL
+Row-Level Security [6], and PII redaction [7].
+Chapter6 concludeswithRelease3, highlightingthemulti-layeredobservabilitystack
+(Prometheus [12], Grafana [13], Loki [14]), the production deployment workflow [20], and
+the zero-trust ingress network topology [25].
+Finally, the report ends with aConclusion and Perspectives, summarizing key
+achievements and outlining future directions for enhancing the platform’s capabilities
+and enterprise adoption.
+16
+Chapter 1
+Project Context
+Introduction
+TherapidintegrationofLargeLanguageModels(LLMs)intoenterpriseoperationspresents
+critical governance, cost, and security challenges. This chapter presents the host company
+Next Step IT, defines the project scope and problem statement, reviews existing AI or-
+chestration solutions and their limitations, and outlines the development methodology
+adopted to build the platform.
+1.1 Presentation of the Host Company
+1.1.1 Overview
+Founded in 2012,Next Step IT[8] has established itself as a premier technology solu-
+tions provider in Tunisia and across the broader North African and European markets.
+The company specializes in Cloud Computing, Cybersecurity, Managed IT Services, and
+cutting-edge Infrastructure Integration, with a core mission to accelerate digital transfor-
+mation while ensuring the utmost security.
+Next Step IT is distinguished as the first Tunisian enterprise to be awarded theNa-
+tional Cloud Service Provider (N-Cloud)certificate, demonstrating its commitment
+to digital trust, data sovereignty, and robust information security standards.
+Operatingwithadynamicworkforceofover90engineers, architects, andtechnicalcon-
+sultants, Next Step IT has developed a broad portfolio supporting more than 700 national
+and international clients across critical sectors including financial services, telecommuni-
+cations, public administration, and healthcare IT.
+The organization holds both ISO-9001 (Quality Management Systems) andISO-
+27001 (Information Security Management Systems) certifications, ensuring quality and
+security across all deliverables.
+17
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+Figure 1.1: Next Step IT company logo
+1.1.2 Service Overview
+Next Step IT delivers a comprehensive suite of services designed to guide enterprises
+through every phase of their digital transformation journey. The company’s core offerings
+are categorized into four primary domains:
+Cloud & Infrastructure
+Providing robust, scalable, and sovereign cloud solutions tailored to stringent latency and
+data residency requirements. Services include modernizing legacy data centers, build-
+ing hybrid cloud infrastructures, and delivering Infrastructure as a Service (IaaS) and
+Platform as a Service (PaaS) capabilities that empower agile software deployment.
+Cybersecurity
+Delivering advanced threat detection, proactive vulnerability management, and regula-
+tory compliance enforcement. Next Step IT operates state-of-the-art Security Operations
+Centers (SOC) to monitor enterprise environments continuously, utilizing zero-trust ar-
+chitectures and rigorous penetration testing to secure critical IT assets against emerging
+cyber threats.
+Managed Services
+Ensuring 24/7 operational continuity, system health monitoring, and infrastructure opti-
+mization. Through comprehensive service level agreements (SLAs), the managed services
+team assumes the operational burden of IT management, allowing enterprises to focus on
+their core business objectives without compromising on uptime or systemic reliability.
+18
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+AI & Digital Transformation
+Architecting secure and scalable intelligent automation frameworks. This rapidly expand-
+ing division focuses on securely integrating generative AI, predictive machine learning
+models, and automated orchestration workflows into enterprise operations, ensuring that
+technological adoption aligns with strict governance, compliance, and ethical AI stan-
+dards.
+1.2 Project Scope
+1.2.1 Project Context
+Asenterprisestransitionfromisolatedproof-of-conceptAIimplementationstowidespread,
+mission-critical deployment, the need for centralized orchestration becomes paramount.
+Modern infrastructures now interact with a myriad of intelligent services, ranging from
+in-house deployed LLMs to third-party cloud-based cognitive services.
+In a typical scenario, client applications or autonomous agents communicate directly
+with these downstream services without a mediating authority. While functionally vi-
+able at a small scale, this decentralized approach rapidly becomes unsustainable in an
+enterprise context.
+Centralized AI Orchestration Architecture
+The Deterministic Enterprise AI Orchestration Platformaims to resolve this ar-
+chitectural bottleneck by establishing a unified, secure control plane built on amicroser-
+vices architecture. Rather than deploying a single monolithic application, the platform
+decomposes functionality into independent, containerized microservices, each responsible
+for a specific domain (security, orchestration, data persistence, AI inference). This plat-
+form operates as an intelligent proxy serving as the definitive gateway through which all
+enterprise AI interactions must flow, ensuring that governance, identity verification, and
+intent-based routing occur predictably before any model inference takes place.
+As illustrated in Figure 1.3, traditional architectures rely on direct communication
+between clients and multiple AI services, leading to a lack of governance, increased se-
+curity risks, and uncontrolled operational costs. In contrast, the proposed architecture
+introduces a centralized control plane where all requests pass through a secure gateway
+and orchestration layer. This ensures consistent enforcement of authentication, policy
+evaluation, and deterministic routing before reaching any AI service.
+19
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+Figure 1.2: Centralized AI Orchestration Architecture
+20
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+1.2.2 Problem Statement
+Currently, most companies allow applications to communicate directly with AI models.
+While this works for simple demonstrations, it creates several critical issues in enterprise
+environments:
+• Lack of Oversight:Without a central gatekeeper, organizations cannot enforce se-
+curity policies consistently, leading to potential data leaks and compliance violations.
+• Cost Inefficiency: AI tokens are expensive. Applications often use premium models
+for basic tasks that could be handled by cheaper alternatives, resulting in unnecessary
+expenditure.
+• New Vulnerabilities:“Prompt injections” and “jailbreaking” are rising threats. Di-
+rectmodelexposureleavesorganizationsvulnerabletotheseattackswithoutcentralized
+protection mechanisms.
+• Tenant Isolation:In multi-team environments, ensuring that one team’s data never
+leaks into another’s AI session is difficult to manage at the application level.
+• Operational Blindness: Without a gateway, there are no centralized logs to audit
+what the AI said or why a specific decision was made, creating significant accountability
+gaps.
+21
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+Figure 1.3: Comparison between unmanaged direct access and the Enterprise AI Gateway
+solution
+Enterprise AI Gateway
+The proposed solution implements a centralized control plane to address the issues listed
+above. It acts as the “Foreman” of the AI ecosystem, ensuring all requests are validated,
+routed, and audited.
+22
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+Figure 1.4: AI Gateway Architecture Logo
+1.3 Study of the Existing System
+1.3.1 Description of the Existing AI Orchestration Solutions
+The rapid evolution of MLOps has given rise to numerous solutions aimed at managing
+AI workloads; however, they generally fall into two broad categories, each with distinct
+limitations regarding robust, tenant-aware enterprise orchestration.
+Commercial Cloud Solutions
+Platforms such asAzure AI Studio, AWS Bedrock,and Google Vertex AIprovide
+excellent model hosting and pipeline management systems. However, these environments
+actively encourage vendor lock-in. Their policy enforcement is typically coarse-grained
+and tightly coupled to the vendor’s distinct ecosystem, making deterministic, intent-based
+routing across heterogeneous, multi-cloud, or on-premise AI models exceedingly complex.
+Furthermore, direct-access platforms like theOpenAI API lack inherent enterprise
+governance, offering minimal features for enforcing multi-tenant data isolation, deep rout-
+ing control, or centralized threat intervention without relying on heavy external proxies.
+As illustrated in Figure 1.5, these platforms share critical limitations including vendor
+lock-in, fragmented control, coarse-grained policies, and data sovereignty challenges.
+23
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+Figure 1.5: Limitations of Commercial Cloud AI Platforms
+Open-Source Frameworks
+Tools such as LangChain and LangGraph deliver immense value in workflow com-
+position, semantic chunking, and multi-agent coordination. Yet, they are fundamen-
+tally application-layer libraries natively lacking network-level security configurations, inte-
+grated tenant validation, centralized policy enforcement, and deterministic gateway-level
+routing.
+Conversely, edge systems likeOllama excel at local model execution but provide abso-
+lutely no mechanisms for load-balanced orchestration, fine-grained access control policies,
+or enterprise-scale observability architectures. As shown in Figure 1.6, these frameworks
+consistently lack centralized security, policy enforcement, tenant isolation, deterministic
+routing, and centralized observability.
+1.3.2 Critism of the Limitations of Existing Solutions
+A comparative analysis of commercial cloud ecosystems and open-source libraries reveals
+a critical gap in enterprise-grade AI deployment. The common denominator across all
+reviewed solutions is the absence of a unified, governance-driven control plane. Enterprises
+are therefore forced to choose between security and flexibility a trade-off that is no longer
+acceptable at production scale. The primary deficiencies can be synthesized into four core
+areas:
+• Data Sovereignty and Compliance Risks:Commercial SaaS providers re-
+quire data egress to external public networks, violating strict corporate gover-
+nance policies, HIPAA, or GDPR requirements.
+24
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+Figure 1.6: Limitations of Open-Source AI Frameworks
+• Lack of Unified Edge Governance:Open-source tools require complex, frag-
+mented configurations at the application level. They fail to offer a centralized,
+gateway-enforced security boundary that uniformly applies rate-limiting, WAF
+filtering, and token authentication.
+• AbsenceofProactiveGuardrails: Neithercategorynativelyinterceptsprompts
+in transit to block injection attacks or real-time PII leaks. Existing systems rely
+on post-hoc audits rather than active inline request/response sanitization.
+• High Operational Cost and Lock-in: Proprietary clouds create steep de-
+pendencies on specific APIs and pricing tiers. Without a vendor-agnostic proxy
+layer, migrating workloads between providers or local deployments is extremely
+disruptive.
+1.3.3 Proposed Solution
+To effectively mitigate these pervasive risks, the proposed solution is the development of
+a highly scalable,Deterministic AI Orchestrator. Designed as a centralized, policy-
+enforcing proxy situated between enterprise clients and backend AI services, the system
+operates entirely on a zero-trust architecture. The platform fulfills several essential en-
+terprise capabilities:
+• Authentication and Access Control:Every incoming request is strictly au-
+thenticated using Keycloak Single Sign-On (SSO). The system enforces tenant
+isolation by evaluating cryptographically signed JSON Web Token (JWT) claims,
+ensuring requests are inherently bound to exact organizational units.
+25
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+• Deterministic Intent Classification: Rather than allowing applications to
+request arbitrary models dynamically, the platform actively parses and classifies
+the intent of the request, mapping it deterministically to exactly one authorized
+AI service. This prevents ambiguity and resource misappropriation.
+• Governance and Real-Time Policy Enforcement: Leveraging the Open
+Policy Agent (OPA), the orchestrator dynamically evaluates custom governance
+rules covering data sensitivity constraints, environmental isolation, and budget
+consumption before authorizing any downstream routing.
+• Proactive Threat Mitigation:Incoming requests undergo strict sanitization
+against jailbreak libraries and prompt injection signatures. Simultaneously, out-
+put responses are scrubbed using Microsoft Presidio to redact Personally Identi-
+fiable Information (PII) before ever reaching the end-user.
+• Complete Lifecycle Observability:Every transaction is tracked and recorded
+inanimmutableauditledger, complementedbyreal-timePrometheusmetricsand
+centralized Grafana monitoring, allowing enterprise administrators full visibility
+into AI usage and platform health.
+Given the critical limitations identified in both commercial cloud offerings and open-
+source application-layer frameworks, the strategic choice was made to build acustom,
+centralized orchestration platform. By adopting an API gateway-first design an-
+chored entirely on a robust open-source technology stack consisting of Kong API Gateway,
+Keycloak, FastAPI, OPA, and HashiCorp Vault, the project ensures absolute control over
+the routing logic, immutable security policies, and total operational observability. This
+architecture effectively democratizes AI access for the enterprise without succumbing to
+SaaS vendor lock-in or relinquishing data sovereignty.
+1.4 Work Methodology
+The development of this platform required a structured methodology because it involved
+several interconnected components, including the API gateway, authentication service,
+orchestration backend, databases, policy engine, and monitoring tools. We followed an
+SDLC-based approach in which analysis, design, implementation, testing, and deployment
+were carried out progressively. Security and integration tests were performed throughout
+the development process to verify that the main services communicated correctly and that
+access control mechanisms behaved as expected.
+26
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+1.4.1 Agile Methodology
+To ensure efficient and iterative development, we adoptedAgile as our development
+methodology and Scrum as its implementation framework [27]. The project was orga-
+nized into 8 epics and 53 tasks, which were completed across 5 sprints.
+This incremental approach allowed us to build the system layer by layer, starting
+with network security and progressing through identity management, orchestration, and
+governance components. Regular sprint reviews enabled continuous validation of security
+policies and routing mechanisms, ensuring that observability and AI governance features
+were integrated throughout the development process rather than added at the end.
+Figure 1.7: Scrum Process
+1.4.2 Scrum Framework
+To build a platform this complex where high-security networking meets real-time AI
+orchestration we needed a framework that was both rigid in its standards and flexible
+in its execution. We followed a rigorous Scrum framework that prioritized security and
+integration from the very first line of code. Instead of waiting until the end to test the
+system, we integrated continuous testing and proactive security scanning into our daily
+workflow. This approach was essential for managing the high complexity of a zero-trust
+network, ensuring that every infrastructure component worked in perfect sync.
+27
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+1.4.3 Justification for the Choice
+Scrum was purposefully selected over traditional waterfall processes due to the multi-
+faceted and rapidly evolving requirements inherent in modern AI orchestration infras-
+tructure:
+• Continuous Validation:It enabled the frequent testing and validation of de-
+terministic routing logic, token validation, and API schemas at the conclusion of
+every individual iteration.
+• Adaptive Security:Enterprise governance regulations and security policies re-
+quire progressive refinement as new threat vectors emerge and exact organiza-
+tional needs are progressively clarified.
+• Risk Mitigation: The modular, phase-gated delivery approach significantly
+reduced overall project risk, reliably producing functional microservices and de-
+liverable systemic increments consistently throughout the timeline.
+• Backlog Alignment:The chosen phased methodology aligned organically with
+the prioritization of the product backlog, directly translating abstract architec-
+tural epics into measurable story points, sprint deliverables, and tangible code
+contributions.
+Conclusion
+This chapter outlined the broader context and strategic significance of the Determinis-
+tic Enterprise AI Orchestration Platform. It introduced the host company Next Step
+IT, detailed the governance and security challenges constraining wide-scale enterprise AI
+adoption, reviewed existing solutions and their limitations, and defined the objectives of
+the deterministic proxy solution. The rationale and structured timeline of the iterative de-
+velopment methodology were also mapped out, laying the groundwork for the subsequent
+chapters.
+28
+Chapter 2
+RequirementsSpecificationsandUsedTech-
+nologies
+Introduction
+This chapter formalizes the requirements of the Deterministic Enterprise AI Orchestration
+Platform. It identifies the system actors, defines functional and non-functional require-
+ments, presents the general use case diagram, and details the product backlog and sprint
+planning.
+2.1 Identification of Requirements
+2.1.1 Identification of Actors
+Three actors interact with the platform, each operating at a different architectural layer:
+• End User- An authenticated enterprise user who submits AI requests through the
+chat interface. They select intents, choose sensitivity levels, and receive real-time
+streamed responses. They have no access to administrative functions.
+• Administrator - A privileged user responsible for configuring the orchestration
+layer. They manage intent-to-service mappings, define governance policies, set to-
+ken quotas, deploy edge security plugins, and monitor platform health through a
+dedicated admin portal.
+• Kong Gateway- A secondary, non-human actor. The API gateway automatically
+mediates all inbound traffic by enforcing rate limiting, IP restriction, CORS policies,
+and JWT validation before forwarding requests to the FastAPI backend.
+2.1.2 Functional Requirements
+The functional requirements were derived directly from the implemented system. They
+describe what the platform must do:
+29
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+1. Authenticate all users via Keycloak SSO and validate JWT tokens on every request.
+2. Classify each request’s intent using NLP and map it deterministically to exactly one
+AI service.
+3. Stream AI responses in real-time using Server-Sent Events (SSE) with token-by-
+token delivery.
+4. Enforce governance policies based on sensitivity level, tenant identity, and service
+type.
+5. Scan inbound prompts against a configurable pattern library and block injection
+attempts that exceed the scoring threshold.
+6. Enforce daily token quotas per tenant using Redis counters, rejecting requests when
+limits are exceeded.
+7. Log all policy evaluations, permission checks, and security events into immutable
+audit tables.
+8. Detect PII in user messages (SSN, email, phone, credit card, IBAN) and automati-
+cally escalate the request sensitivity.
+9. Redact PII from AI-generated output before delivering it to the end user.
+10. Provide a real-time admin dashboard displaying request health, security events, and
+system latency.
+11. Allow administrators to manage intent mappings, governance policies, and AI ser-
+vice configurations through the admin portal.
+12. Allow administrators to manage Kong Gateway plugins (apply, update, delete) di-
+rectly from the admin UI.
+2.1.3 Non-Functional Requirements
+Non-functional requirements define the quality attributes under which the platform must
+operate:
+• Performance - First-token latency under 3 seconds; all database operations use
+asynchronous I/O (SQLAlchemy AsyncSession) to avoid blocking the event loop.
+• Security-Allinter-servicecommunicationauthenticatedviaJWTandKongheader
+verification; secrets managed through HashiCorp Vault; PostgreSQL Row-Level Se-
+curity enforces tenant data isolation.
+30
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+• Scalability - Horizontal scaling via stateless backend design and externalized ses-
+sion state (Redis).
+• Portability- The entire platform deployable via a singledocker compose up com-
+mand with zero manual configuration.
+• Compliance - Complete audit trails maintained for all governance decisions, per-
+mission checks, and security events.
+• Usability - Responsive frontend with light/dark theme support and consistent de-
+sign language.
+• Observability- Prometheus-compatible metrics endpoints exposed for integration
+with Grafana and external monitoring tools.
+31
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+2.2 General Use Case Diagram
+Figure 2.1 presents the general use case diagram, grouping the platform’s functionalities
+into five subsystem packages: Authentication, AI Orchestration, Governance, Content
+Safety, and Administration.
+Figure 2.1: General use case diagram of the Deterministic AI Orchestration Platform
+The End User interacts exclusively with the AI orchestration pipeline, while the Ad-
+ministrator has access to the full administrative suite. Kong Gateway operates as an
+automated actor, enforcing edge-level security before requests reach the backend.
+2.3 Product Backlog
+Following the Scrum method adopted in Chapter 1, the product backlog consolidates 53
+user stories estimated using the Fibonacci scale. The stories are grouped into 8 epics, log-
+ically distributed across 5 consolidated sprints. Table 2.1 presents the complete backlog.
+32
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+Table 2.1: Product backlog with story point estimates and sprint assignments
+User Story SP Sprint
+As an operator, I want to deploy all services with a single command. 8 1
+As an operator, I want Kong routes configured via decK. 5 1
+As a security engineer, I want OWASP WAF at the edge. 8 1
+As a security engineer, I want TLS and network segmentation. 5 1
+As an operator, I want a Kong logging plugin. 8 1
+As a user, I want to log in via Keycloak SSO. 8 1
+As a developer, I want JWT middleware rejecting invalid tokens. 8 1
+As a security engineer, I want tenant ID enforced from JWT. 5 1
+As an admin, I want tenant-service ACLs. 5 1
+As a developer, I want permission audit logs. 5 1
+As a developer, I want a FastAPI backend with Pydantic validation. 8 2
+As a developer, I want NLP-based intent classification. 8 2
+As a developer, I want a hot-reloadable intent cache. 5 2
+As a developer, I want database models for requests and services. 8 2
+As a developer, I want auto-creation of tables on startup. 5 2
+As a user, I want deterministic routing to one AI service. 8 2
+As a user, I want token-by-token SSE streaming. 13 2
+As a developer, I want an Ollama client with error recovery. 8 2
+As a developer, I want request lifecycle tracking. 8 2
+As an admin, I want YAML-driven governance policies. 8 3
+As a developer, I want a policy evaluation engine. 8 3
+As a developer, I want policy audit logs. 5 3
+As an admin, I want configurable daily token quotas. 5 3
+As a developer, I want Redis-backed quota counters. 8 3
+As a security engineer, I want PostgreSQL RLS. 8 4
+As an operator, I want Vault managing secrets. 8 4
+As a developer, I want a usage tracking table. 5 4
+As a developer, I want automated database migrations. 8 4
+As a security engineer, I want prompt injection detection. 8 4
+As a security engineer, I want database-driven security patterns. 5 4
+As a developer, I want PII detection (SSN, IBAN, credit card). 8 4
+As a developer, I want auto sensitivity escalation on PII. 5 4
+As a developer, I want output PII redaction. 5 4
+As an admin, I want a real-time metrics dashboard. 8 5
+As an admin, I want Kong plugin management from the UI. 8 5
+As an admin, I want a security events log. 5 5
+As an operator, I want Prometheus metrics endpoints. 5 5
+As a developer, I want light/dark theme toggle. 3 5
+33
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+2.3.1 Sprint Planning
+The backlog was distributed across 5 consolidated sprints. Each sprint targets a specific
+architectural layer, following a bottom-up approach where infrastructure and security are
+established before orchestration and governance.
+Table 2.2: Sprint planning roadmap and risk assessment
+Sprint Theme & Focus Area SP Risk
+Sprint 1 Platform Security Entry Layer:WAF (public
+entry), Kong Gateway, JWT validation, Keycloak SSO,
+and tenant-level blocking.
+63 HIGH
+Sprint 2 Orchestration Engine:FastAPI core, ML intent
+classifier, routing map engine, and service registry
+proxy.
+70 CRITICAL
+Sprint 3 Governance & Policy Engine:OPA policy
+evaluator, data sensitivity rules, and Redis per-tenant
+quota system.
+37 HIGH
+Sprint 4 Security Hardening:PostgreSQL RLS, Vault
+integration, prompt injection scanner, and PII
+redaction (Presidio).
+55 HIGH
+Sprint 5 Observability & Launch:Prometheus metrics,
+Grafana dashboards, audit logs, and load/penetration
+testing.
+27 MEDIUM
+Total 5 Sprints 252
+The velocity distribution across the five sprints is shown in Figure 2.2.
+34
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+Figure 2.2: Velocity distribution across the project lifecycle
+2.4 Technological Ecosystem & Open-Source Founda-
+tion
+A core constraint of the Deterministic Enterprise AI Orchestration Platform was the
+absolute requirement for data sovereignty and transparent security. To achieve this, the
+entire ecosystem was built leveraging industry-leading open-source technologies.
+2.4.1 Kong API Gateway
+Figure 2.3: Kong API Gateway Logo
+Kong API Gateway [1] acts as the high-performanceinternal API router behind the
+WAF, enforcing Zero-Trust gateway policies (JWT and tenant headers, rate limits, rout-
+ing, access logs) before traffic reaches the backend. Rather than adopting a monolithic
+architecture where the backend application is burdened with cross-cutting concerns (such
+asauthenticationandrate-limiting), theAPIGatewaypatternwasimplemented. OWASP
+WAF filtering remains on the public edge; Kong handles gateway plugins only. By central-
+izing these responsibilities, the FastAPI orchestration engine remains strictly decoupled.
+This Separation of Concernsensures that the backend code is exclusively dedicated to
+35
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+AI processing, massively reducing architectural complexity and minimizing the platform’s
+attack surface.
+2.4.2 Lua
+Figure 2.4: Lua Logo
+Lua [22] is a lightweight, high-level scripting language. It serves as the native execution
+environment for OpenResty and Kong, empowering the creation of high-performance,
+custom API gateway plugins directly within the request lifecycle.
+2.4.3 Keycloak
+Figure 2.5: Keycloak Logo
+Keycloak [2] provides federated identity management, issuing deterministically verifiable
+RS256 JSON Web Tokens (JWTs) via the OAuth 2.0 PKCE flow.
+2.4.4 Open Policy Agent (OPA)
+Figure 2.6: Open Policy Agent Logo
+36
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+Open Policy Agent (OPA) [3] decouples authorization logic from application code by
+evaluating dynamic, declarative Rego policies at the gateway layer.
+2.4.5 FastAPI
+Figure 2.7: FastAPI Logo
+FastAPI [15] powers the core orchestration engine. It was specifically chosen for its native
+asynchronous capabilities (asyncio), which are essential for streaming AI text. Tradi-
+tional frameworks (like Flask or Django) quickly bottleneck when waiting for AI models to
+generate text word-by-word because they lock up a server thread for each active request.
+FastAPI solves this using an async event loop that frees up the thread while waiting for
+the next word. This allows the platform to efficiently manage thousands of concurrent
+streams without slowing down or exhausting server resources.
+2.4.6 PostgreSQL
+Figure 2.8: PostgreSQL Logo
+PostgreSQL [6] serves as the primary, highly partitioned data persistence layer, enforcing
+strict data sovereignty via Row-Level Security (RLS).
+37
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+2.4.7 Redis
+Figure 2.9: Redis Logo
+Redis [17] is an in-memory data store utilized for ultra-low latency, atomic tenant quota
+tracking (INCRBY), shielding the platform from resource exhaustion.
+2.4.8 React
+Figure 2.10: React Logo
+The client-side interface is built using React [16] to provide a highly responsive and
+dynamic User Interface (UI). React enables component-based modularity, allowing for
+efficient rendering of active conversational components, real-time message streams, and
+token usage updates.
+2.4.9 Hugging Face
+Figure 2.11: Hugging Face Logo
+For intelligent semantic governance and routing, the platform integrates with Hugging
+Face’s [23] model ecosystem, which is used to load and run specialized local models for
+secure client classification tasks.
+38
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+2.4.10 DistilBERT
+Figure 2.12: PyTorch/DistilBERT Engine Logo
+Thespecificmodelutilizedforreal-timesemanticanalysisis distilbert-base-uncased-mnli[21].
+This model performs high-speed Zero-Shot Intent Classification on user prompts, catego-
+rizing intents immediately to enable dynamic policy evaluations in the gateway layer.
+2.4.11 Microsoft Presidio
+Figure 2.13: Microsoft Presidio Logo
+To guarantee data privacy, Microsoft Presidio [7] is integrated into the streaming pipeline
+as an Output Guard. It performs real-time Natural Language Processing (NLP) to detect
+and redact Personally Identifiable Information (PII) before the AI response ever reaches
+the client.
+2.4.12 Docker & Docker Compose
+Figure 2.14: Docker Containerization Platform Logo
+Docker [20] containerizes all platform microservices, ensuring architectural consistency
+across development, staging, and production environments. Together with Docker Com-
+pose, it simplifies multi-container orchestrations and service dependency management on
+on-premise infrastructure.
+39
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+2.4.13 Kubernetes
+Figure 2.15: Kubernetes Container Orchestrator Logo
+Kubernetes [9] serves as our cloud-native orchestration framework, managing deployment
+scaling, pod scheduling, network routing, and high availability for the microservices topol-
+ogy.
+2.4.14 Helm
+Figure 2.16: Helm Package Manager Logo
+Helm [24] acts as the package manager for Kubernetes, packaging application resources,
+configurations, and secrets into unified, reusable Helm Charts for reproducible deploy-
+ments.
+2.4.15 Cloudflare Tunnels
+Figure 2.17: Cloudflare Tunnels Ingress Logo
+40
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+Cloudflare Tunnel [25] securely connects the local environment to Cloudflare’s global
+network, allowing external access to the gateway without opening inbound firewall ports.
+2.4.16 Grafana Loki
+Figure 2.18: Grafana Logo
+Grafana Loki [14] is a scalable log management system that stores log metadata instead
+of indexing full log contents, improving efficiency and reducing operational costs.
+2.4.17 Promtail
+Figure 2.19: Promtail Logo
+Promtail [26] collects logs from containers running on each host and sends them to Loki
+for centralized storage and analysis.
+This robust open-source foundation ensures maximum scalability, auditability, and
+sovereign control over all enterprise AI workloads, completely avoiding vendor lock-in.
+Conclusion
+This chapter formalized the project requirements into a structured technical blueprint. By
+identifying the system actors and defining functional and non-functional requirements, we
+established a foundation centered on security and deterministic logic. The general use case
+diagram mapped out the key interactions that define the platform’s behavior. Finally, by
+organizing the 53-story backlog into five risk-assessed sprints, a clear path for development
+was established. The following chapter details the architectural foundation upon which
+all releases are built.
+41
+Chapter 3
+System Architecture
+Introduction
+This chapter presents the architectural foundation of the platform. It begins with the
+global system architecture, then describes the open-source technology stack, the Kuber-
+netes deployment topology, and the CI/CD pipeline.
+3.1 Global System Architecture
+In this section, we present the overall topology of the integrated system, illustrating how
+the open-source ecosystem interacts to deliver a secure orchestration experience. The
+system is composed of several independent yet interconnected microservices, reflecting a
+modular and scalable design.
+3.1.1 Layered Platform Architecture
+Figure 3.1 presents the complete layered architecture of the Deterministic Enterprise AI
+Orchestration Platform. The design follows a defense-in-depth approach organized into
+distinct functional layers: the Client Layer, Edge Security Layer, Identity Provider, Or-
+chestration Engine, Data Layer, AI Provider, Observability Stack, and Secrets Manage-
+ment. Each layer operates as an independent set of microservices within the Kubernetes
+cluster, ensuring strict separation of concerns and fault isolation.
+42
+Figure3.1: GlobalArchitectureoftheDeterministicEnterpriseAIOrchestrationPlatform
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+The architecture is designed as a sequence of controlled layers rather than a direct
+connection between users and AI services. Each request crosses the same path: it starts
+from the client interface, passes through the security edge, is validated by the identity and
+policyservices, reachestheorchestrationengine, andisfinallyroutedtotheappropriateAI
+provider. This organization improves security, observability, and maintainability because
+each layer has a clearly defined responsibility.
+Client and Access Layer
+The first layer represents the entry point used by end users, administrators, or external
+applications. Users interact with the platform through the web interface or API clients,
+while administrators access dashboards and configuration panels. This layer does not
+communicate directly with backend AI services. Instead, every request is sent to the
+public WAF endpoint, which ensures that all traffic follows the same controlled path.
+At this level, the main objective is to provide a simple access interface while pre-
+venting uncontrolled communication with internal services. The client layer therefore
+remains lightweight and delegates authentication, authorization, routing, and monitoring
+responsibilities to the lower platform layers.
+Edge Security Layer
+The edge security layer is the first technical control point of the platform. It comprises
+two cooperating tiers. The ModSecurity WAF is the sole public entry point: it
+terminates external traffic (port 8081 in Docker Compose,LoadBalancer port 80 in Ku-
+bernetes), applies OWASP CRS rules, and forwards only clean requests to the internal
+tier. Behind it, Kong API Gateway(data plane) performs route validation, plugin
+execution, JWT and tenant enforcement, rate limiting, and access logging.
+This design reduces the exposure of internal microservices because clients never reach
+Kong or the orchestration backend directly. Only requests that pass WAF inspection
+and satisfy Kong gateway rules are forwarded downstream. As a result, the platform
+centralizes security enforcement and avoids duplicating authentication and filtering logic
+inside each backend service.
+44
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+Figure 3.2: Edge Security Layer Architecture
+Identity and Policy Layer
+After Kong receives a WAF-forwarded request, the identity and policy layer verifies who
+is making the request and whether the requested action is allowed.Keycloak provides
+identity management and issues signed JWT tokens containing user and tenant informa-
+tion. These tokens are validated at the gateway and reused by the backend to preserve
+the identity context throughout the request lifecycle.
+The policy part of this layer relies onOpen Policy Agent (OPA). Instead of hard-
+coding authorization decisions inside the application, the platform evaluates external gov-
+ernance rules. These rules can include tenant restrictions, environment constraints, quota
+limits, or access conditions based on the sensitivity of the requested AI service. This sep-
+aration makes the governance logic easier to update without modifying the orchestration
+code.
+45
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+Orchestration and Routing Layer
+The orchestration layer represents the core intelligence of the platform. It is implemented
+with FastAPIand acts as the control plane responsible for receiving validated requests,
+classifying their intent, selecting the appropriate backend AI service, and forwarding the
+request through a controlled proxy mechanism. This layer does not execute AI models
+itself; it coordinates access to them.
+The routing process is deterministic: for a given request type and context, the system
+selects a predefined service according to routing rules and policy decisions. This avoids
+arbitrary model selection, improves cost control, and ensures that sensitive requests are
+handled by authorized services only. The orchestration layer also enriches requests with
+metadata required for auditing, monitoring, and tenant isolation.
+Figure 3.3: FastAPI Orchestration Control Plane Architecture
+46
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+Data and Secrets Layer
+The data layer stores the persistent information required by the platform, such as users,
+tenants, service mappings, audit events, and routing metadata.PostgreSQL is used as
+the main relational database, with Row Level Security supporting tenant isolation at the
+database level. This ensures that data access is restricted not only by application logic
+but also by database policies.
+Sensitive configuration values, credentials, and tokens are not stored directly in the
+application code. They are managed throughHashiCorp Vault, which provides a ded-
+icated secrets management layer. Separating operational secrets from the application
+improves security and simplifies credential rotation during deployment.
+AI Provider Layer
+The AI provider layer contains the backend AI services that process the final request.
+These services may include local models, external APIs, or specialized inference endpoints.
+They remain hidden behind the orchestration layer and are never exposed directly to end
+users. This allows the platform to change or extend AI providers without changing the
+client-facing interface.
+By isolating AI providers behind the gateway and orchestrator, the platform can apply
+consistent governance, logging, and redaction rules before and after model execution. This
+layer therefore focuses only on inference, while security and routing concerns are handled
+by the upper layers.
+Observability Layer
+The observability layer collects technical and functional information about the platform.
+Prometheus gathers metrics, Grafana displays operational dashboards, and logs are
+used to support troubleshooting and auditability. This layer gives administrators visibility
+into request volume, latency, blocked requests, quota usage, and service health.
+Observability is essential in this architecture because the platform acts as a central
+control point for AI traffic. Without monitoring, it would be difficult to detect misconfig-
+urations, abnormal usage, policy failures, or performance degradation. The observability
+layer therefore supports both operational reliability and governance accountability.
+47
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+Figure 3.4: Observability layer for metrics, logs, and dashboards
+In summary, the layered architecture separates responsibilities across clearly identified
+components. The client layer initiates the request, the edge layer protects the platform,
+the identity and policy layer validates access, the orchestration layer performs determin-
+istic routing, the data and secrets layer preserves state and credentials, the AI provider
+layer executes inference, and the observability layer supervises the full lifecycle. This
+separation improves scalability, security, and maintainability while keeping the platform
+aligned with enterprise governance requirements.
+3.1.2 Kubernetes Deployment Topology
+The Kubernetes deployment topology defines how the platform components are deployed,
+isolated, exposed, and connected inside the runtime environment. Instead of running
+the system as a single application, each major component is deployed as an independent
+workload. This makes the platform easier to scale, update, monitor, and recover in case
+48
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+of failure.
+The architecture is organized around theai-gateway namespace, which groups the
+public edge and gateway workloads: the WAF, Kong data plane, and frontend. The
+FastAPI orchestration backend runs in the separateai-application namespace. By
+isolating these services, the deployment becomes easier to manage and can be extended
+with network policies, resource quotas, and role-based access control rules.
+Figure 3.5 illustrates the Kubernetes deployment topology adopted for the platform. It
+shows how external users reach the system through the exposed WAF service, how traffic
+is forwarded to Kong and then to internal services, and how the backend communicates
+with external dependencies such as the identity provider, databases, and observability
+tools.
+49
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+Figure 3.5: Kubernetes Deployment Architecture (ai-gateway-namespace)
+The request flow begins when a user or client application sends traffic to the exposed
+WAFservice—the sole public entry point of the cluster. The WAF applies ModSecurity
+CRS rules, then forwards clean traffic to the internalKong data plane(ClusterIP),
+50
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+which enforces gateway plugins before reaching the FastAPI service. Neither Kong nor
+the backend is directly exposed outside the cluster, which limits the attack surface and
+ensures that all incoming traffic passes through WAF and gateway controls first.
+Inside Kubernetes, each application component is managed through aDeployment.
+A deployment maintains the desired number of running pods and automatically replaces
+unhealthy instances. This mechanism supports high availability because several replicas
+can be created for critical components such as the frontend, gateway, and backend. Ku-
+bernetes Service objects then provide stable internal addresses for these pods, even when
+individual pod IP addresses change.
+The topology also separates application workloads from supporting services. Key-
+cloak, databases, Vault, Redis, and monitoring components are treated as external or
+supporting dependencies, allowing the orchestration platform to remain modular. This
+separation makes maintenance easier because identity management, persistence, secrets,
+and observability can be upgraded or scaled independently from the core application ser-
+vices.
+• Kubernetes Namespaces: The WAF, Kong data plane, and frontend run in
+ai-gateway; the FastAPI orchestrator runs inai-application. Network policies
+restrict lateral movement (e.g., Kong accepts proxied traffic only from the WAF
+pods).
+• Deployments&Pods: EachmicroserviceismanagedviaaKubernetes Deployment.
+As illustrated, the architecture scales horizontally by deploying multiplePods for
+the Frontend (React), WAF, Kong data plane, and FastAPI backend, guaranteeing
+high availability.
+• Kubernetes Services:Traffic is routed to ephemeral Pods via stableService ab-
+stractions. ALoadBalancerontheWAFserviceprovidesexternalingress; ClusterIP
+services expose Kong and FastAPI only inside the cluster.
+• External Integrations: Core dependencies such as Keycloak (running as an
+externalDockerizedIdentityProvider)andtheDataPersistencelayersremainhighly
+decoupled from the volatile application workloads.
+3.1.3 Observability & Monitoring Stack
+A critical requirement for any production-grade orchestration platform is deep, real-time
+visibility into the system’s health.
+• Prometheus: Acts as the central time-series database, continuously scraping met-
+rics from the Kubernetes cluster, Kong, and FastAPI.
+51
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+• Grafana: Serves as the visualization layer, displaying comprehensive dashboards
+to track tenant token quotas, WAF security events, and AI streaming latency.
+3.1.4 ContinuousIntegration&ContinuousDeployment(CI/CD)
+To ensure absolute stability across iterations, a rigorous Continuous Integration and Con-
+tinuous Deployment (CI/CD) pipeline was orchestrated via GitHub Actions.
+Figure 3.6: CI/CD Pipeline Flow
+Upon every commit to themain branch, the system triggers an automated workflow
+that executes static analysis (linting, type-checking) and runs the Pytest suite. Upon
+successful validation, Docker images are built, tagged dynamically, and pushed to a secure
+registry. Finally, Kubernetes declarative manifests are applied, ensuring zero-downtime
+52
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+rolling updates.
+Conclusion
+This chapter presented the solution’s architecture, the open-source technology stack, and
+the global system topology. We covered the layered microservices architecture, the Ku-
+bernetes deployment strategy, and the CI/CD pipeline that ensures continuous delivery.
+The next chapter details the first release of the project, covering the platform security
+entry layer and the core orchestration engine.
+53
+Chapter 4
+Release 1: Platform Security & Core Or-
+chestration
+Introduction
+This chapter presents the first release of the platform, structured around two sprints.
+Sprint 1 establishes the Platform Security Entry Layer (WAF as the public entry point,
+Kong Gateway behind it, Keycloak SSO, JWT validation), and Sprint 2 builds the Core
+Orchestration Engine (FastAPI backend, NLP intent classification, SSE streaming). Each
+sprint is covered through its backlog, use case analysis, architectural model, database
+design, software design, and implementation showcase.
+4.1 Release 1 Objectives
+We structured the objectives of Release 1 around the most critical building blocks of the
+platform:
+1. Sprint 1: Platform Security Entry Layer- The focus here was establishing a
+strict zero-trust perimeter. We deployed the ModSecurity WAF as the sole public
+entry point, placed Kong Gateway behind it for gateway enforcement, integrated
+Keycloak for OAuth 2.0 PKCE authentication, and configured JWT validation at
+Kong before traffic reaches the backend.
+2. Sprint 2: Core Orchestration Engine- With the gates secured, we built the
+actual brain of the platform. This involved developing the FastAPI backend, imple-
+menting NLP-based intent classification to route prompts dynamically, and building
+the token-by-token SSE streaming engine connected to Ollama.
+Byknockingoutthesefundamentalareasearly, wecreatedasecuresandboxandafully
+functional AI pipeline. This gave us the stable foundation needed to focus on governance
+and security hardening in the subsequent releases.
+54
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+Figure 4.1 summarizes the main security controls targeted by this release at the edge.
+It shows how each incoming request is processed: WAF inspection first, then a sequence
+of Kong plugins (tracing, JWT verification, rate limiting, logging), followed by OPA
+governance in FastAPI. Placing this pipeline at the beginning of the release clarifies the
+objectives of Sprint 1 and explains how the security perimeter is expected to protect the
+orchestration engine.
+Figure 4.1: Zero-Trust WAF and Kong Security Pipeline
+The rest of the chapter follows the implementation logic of the release: first, the
+backlog and use case analysis define what must be delivered; then, the software design
+explains the architectural choices; finally, the realization part validates the implemented
+security and orchestration mechanisms through screenshots and tests.
+4.2 Release 1 Backlog
+The following table outlines the specific backlog items completed for Release 1.
+55
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+Table 4.1: Release 1 Backlog
+F eature ID User Stories Priority
+Infrastructure
+Deployment
+1 As an operator, I want to deploy all services with a single
+command.
++ + +
+Kong Configuration 2 As an operator, I want Kong routes configured via decK. + + +
+WAF Protection 3 As a security engineer, I want OWASP WAF at the edge.+ + +
+Network Security 4 As a security engineer, I want TLS and network
+segmentation.
++ +
+Logging 5 As an operator, I want a Kong logging plugin. + + +
+Authentication 6 As a user, I want to log in via Keycloak SSO. + + +
+JWT Middleware 7 As a developer, I want JWT middleware rejecting invalid
+tokens.
++ + +
+Tenant Enforcement 8 As a security engineer, I want tenant ID enforced from
+JWT.
++ + +
+ACL Management 9 As an admin, I want tenant-service ACLs. + +
+Audit Logging 10 As a developer, I want permission audit logs. + +
+Backend Core 11 As a developer, I want a FastAPI backend with Pydantic
+validation.
++ + +
+Intent Classification 12 As a developer, I want NLP-based intent classification. + + +
+Intent Cache 13 As a developer, I want a hot-reloadable intent cache. + +
+Database Models 14 As a developer, I want database models for requests and
+services.
++ + +
+Auto Schema 15 As a developer, I want auto-creation of tables on startup. + +
+Deterministic Routing 16 As a user, I want deterministic routing to one AI service. + + +
+SSE Streaming 17 As a user, I want token-by-token SSE streaming. + + +
+Ollama Client 18 As a developer, I want an Ollama client with error
+recovery.
++ + +
+Lifecycle Tracking 19 As a developer, I want request lifecycle tracking. + +
+4.3 Sprint 1: Platform Security Entry Layer
+The primary goal of Sprint 1 was to establish a zero-trust security perimeter. We needed a
+system that could cryptographically validate every incoming request before it ever touched
+backend logic. To achieve this, we deployed the WAF as the public entry point, placed
+Kong Gateway behind it, integrated Keycloak, and enforced security through WAF CRS
+rules and Kong gateway plugins.
+56
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+Table 4.2: Sprint 1 Backlog
+F eature ID User Stories Priority
+Infrastructure
+Deployment
+1 As an operator, I want to deploy all services with a single
+command.
++ + +
+Kong Configuration 2 As an operator, I want Kong routes configured via decK. + + +
+WAF Protection 3 As a security engineer, I want OWASP WAF at the edge.+ + +
+Network Security 4 As a security engineer, I want TLS and network
+segmentation.
++ +
+Logging 5 As an operator, I want a Kong logging plugin. + + +
+Authentication 6 As a user, I want to log in via Keycloak SSO. + + +
+JWT Middleware 7 As a developer, I want JWT middleware rejecting invalid
+tokens.
++ + +
+Tenant Enforcement 8 As a security engineer, I want tenant ID enforced from
+JWT.
++ + +
+ACL Management 9 As an admin, I want tenant-service ACLs. + +
+Audit Logging 10 As a developer, I want permission audit logs. + +
+4.3.1 Use Case Analysis
+Figure 4.12 presents the use case diagram for authenticated and authorized access to the
+platform. The descriptive table that follows details the same use case by specifying its
+actor, preconditions, postconditions, main flow, and exception scenarios.
+57
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+Figure 4.2: Detailed use case diagram: Authenticate and Authorize Request
+58
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+Table 4.3: Detailed use case: Authenticate and Authorize Request
+Field Description
+Use Case Authenticate and Authorize Request
+Actor End User
+Preconditions User has valid Keycloak credentials; WAF (public entry) and Kong
+Gateway are operational.
+Postconditions Request forwarded to backend with verified tenant identity
+injected into headers.
+Main Flow
+1. User opens the frontend and is redirected to Keycloak login.
+2. User authenticates via OAuth 2.0 PKCE flow.
+3. Keycloak issues an RS256-signed JWT.
+4. User sends an API request with the JWT as a Bearer token to
+the public WAF endpoint.
+5. WAF (ModSecurity CRS) scans the payload for malicious
+patterns.
+6. Kong tenant-restriction plugin verifies the JWT and
+extracts tenant claims.
+7. Kong injectstenant_id and roles into upstream headers.
+8. Request is forwarded to the FastAPI backend.
+Exceptions • 5a. WAF detects injection→ 403 Forbidden.
+• 6a. Invalid or expired JWT→ 401 Unauthorized.
+4.3.2 Architectural Model
+Sprint 1 follows aGateway-Centric Security Architecture, where all cross-cutting
+security concerns are externalized to the API Gateway layer rather than embedded in
+application code. This pattern is rooted in theSeparation of Concernsprinciple:
+• Edge Layer (WAF):The public entry point; applies OWASP ModSecurity CRS
+rules and blocks or audits malicious traffic before it reaches Kong.
+• Gateway Layer (Kong):Internal API gateway behind the WAF; handles JWT
+and tenant enforcement, rate limiting, correlation ID injection, and access logging
+59
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+through a composable plugin pipeline.
+• Identity Layer (Keycloak):Acts as an external identity broker, issuing cryp-
+tographically verifiable tokens. Kong validates these tokens at the gateway using
+JWKS, requiring zero network calls back to Keycloak.
+• Backend Layer (FastAPI):Receives only pre-authenticated, pre-authorized
+traffic. It trusts the upstream headers injected by Kong, keeping business logic
+completely decoupled from security logic.
+This architecture guarantees that the backend never processes unauthenticated traffic,
+dramatically reducing the attack surface and simplifying the application codebase.
+4.3.3 Software Design
+Securing the platform meant we needed a rock-solid authentication system capable of
+issuing deterministic, verifiable identities. Rather than cluttering the FastAPI backend
+with complex security logic, we externalized all security checks to the API Gateway,
+selecting Keycloak as our identity broker.
+As shown in Figure 4.1, we built a two-tier edge: the WAF performs CRS threat
+detection on all inbound traffic, then Kong applies Correlation-IDs, JWT and tenant
+enforcement, and rate limiting. OPA governance runs in FastAPI after Kong forwards
+trusted headers. This guarantees that the backend only processes requests that are in-
+spected, verified, traceable, and authorized.
+Keycloak and OAuth 2.0 PKCE
+For identity management, Keycloak handles Single Sign-On (SSO) via the OpenID Con-
+nect (OIDC) protocol. It runs atop its own dedicated PostgreSQL database and issues
+RS256-signed JSON Web Tokens (JWTs). To maximize security, especially for frontend
+client applications, we implemented the OAuth 2.0 Authorization Code flow with Proof
+Key for Code Exchange (PKCE).
+PKCE introduces a dynamic, per-request secret (thecode_verifier and its hash, the
+code_challenge). By strictly enforcing this at the edge, we completely eliminate the risk
+of authorization code interception and Cross-Site Request Forgery (CSRF) attacks. Even
+if an attacker intercepts the authorization code, it is mathematically useless without the
+original verifier.
+Dynamic View: Authentication Sequence Diagram
+Instead of forcing the FastAPI application to manually decrypt and validate tokens, we
+leverage Kong’stenant-restriction plugin (JWT verification and header injection) be-
+60
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+hind the WAF. This ensures that unauthenticated traffic is dropped before the backend,
+keeping the orchestration layer completely shielded.
+Figure 4.3: Authentication and Plugin-Based Request Validation Sequence
+The interaction flow works as follows:
+1. The client application logs in and retrieves a secure JWT from Keycloak.
+2. The client attaches this JWT as aBearer token and sends its AI request to the
+public WAF endpoint.
+3. The WAF forwards clean traffic to Kong; thetenant-restriction plugin verifies
+the JWT and extractstenant_id from Keycloak-issued claims, without a network
+call back to Keycloak.
+4. If valid, Kong injects thetenant_id and user roles into the HTTP headers and
+forwards traffic to the backend. If invalid or expired, Kong drops the connection
+with a401 Unauthorized status.
+61
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+This “Identity Propagation” approach is the core of our Zero-Trust architecture. The
+FastAPI backend implicitly trusts the upstream headers injected by Kong, resulting in a
+highly optimized, heavily protected environment.
+4.3.4 Showcase
+ThefollowingfiguresdemonstratethesuccessfulimplementationoftheZero-Trustsecurity
+perimeter.
+Figure 4.4: Keycloak unified login portal intercepting unauthenticated traffic at the edge.
+Figure 4.5: Layer 3: Zero-Trust edge authentication. FastAPI rejecting an unauthorized
+request (401 Unauthorized) due to a missing or invalid Keycloak JWT signature.
+62
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+Figure 4.6: Layer 4: Dynamic Authorization. OPA actively blocking a tenant’s request
+to access high-sensitivity data (Policy Decision Result: False).
+Figure 4.7: Layer 5: Resource Protection. Kong enforcing strict client IP rate limits (429
+Too Many Requests).
+63
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+Figure 4.8: Custom Platform Security Dashboard showing real-time Kong plugin synchro-
+nization.
+Figure 4.9: AI-Ready Plugin Marketplace for rapid deployment of security and traffic
+policies.
+64
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+Figure 4.10: Layer 1: Client-side proactive blocking of HTML/Script injection attempts.
+Figure 4.11: Layer 2: Network-edge WAF intercepting SQL injection payloads (Top:
+inbound payload; Bottom: WAF 403 Forbidden response).
+4.4 Sprint 2: Core Orchestration Engine
+With the security perimeter locked down, Sprint 2 focused entirely on building the orches-
+tration engine. We designed the FastAPI backend using a Clean Architecture pattern,
+65
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+cleanly separating the HTTP transport layer from business logic and database interac-
+tions.
+Table 4.4: Sprint 2 Backlog
+F eature ID User Stories Priority
+Backend Core 11 As a developer, I want a FastAPI backend with Pydantic
+validation.
++ + +
+Intent Classification 12 As a developer, I want NLP-based intent classification. + + +
+Intent Cache 13 As a developer, I want a hot-reloadable intent cache. + +
+Database Models 14 As a developer, I want database models for requests and
+services.
++ + +
+Auto Schema 15 As a developer, I want auto-creation of tables on startup. + +
+Deterministic Routing 16 As a user, I want deterministic routing to one AI service. + + +
+SSE Streaming 17 As a user, I want token-by-token SSE streaming. + + +
+Ollama Client 18 As a developer, I want an Ollama client with error
+recovery.
++ + +
+Lifecycle Tracking 19 As a developer, I want request lifecycle tracking. + +
+4.4.1 Use Case Analysis
+The following table describes the primary use case of the orchestration engine: routing
+and streaming an AI request.
+66
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+Table 4.5: Detailed use case: Route and Stream AI Request
+Field Description
+Use Case Route and Stream AI Request
+Actor Authenticated User
+Preconditions User authenticated via Keycloak; valid JWT present; tenant quota
+not exceeded.
+Postconditions AI response streamed to user via SSE; request lifecycle persisted
+to database.
+Main Flow
+1. User submits a prompt via the chat interface.
+2. Frontend sends POST to/api/ai/request with SSE headers.
+3. FastAPI validates the upstream JWT headers and extracts
+tenant ID.
+4. IntentClassifier analyzes the prompt semantics using Zero-Shot
+NLP.
+5. Intent is resolved to a specific AI model via the intent cache.
+6. Request is forwarded to Ollama for inference.
+7. Tokens are streamed back via SSE, each chunk sanitized by
+OutputGuard.
+8. Request lifecycle metadata is persisted to PostgreSQL.
+Exceptions • 4a. Unrecognized intent→ fallback to default model.
+• 6a. Ollama unreachable→ 503 Service Unavailable with retry.
+• 7a. PII detected in output→ token redacted before delivery.
+67
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+Figure 4.12: Detailed use case diagram: Route and Stream AI Request
+4.4.2 Architectural Model
+Sprint 2 implements aClean Architecturepattern with strict layer separation, enabling
+independent testing and evolution of each component:
+• Transport Layer (Routers):HTTP endpoints and SSE stream handlers. Re-
+sponsible only for request parsing and response formatting.
+• Service Layer (Business Logic): The AIRequestService orchestrates the
+entire pipeline: intent classification, model routing, streaming, and output sani-
+tization. Dependencies are injected via theApplicationFactory.
+• Infrastructure Layer (Repositories): Async SQLAlchemy repositories and
+the Ollama HTTP client. These are fully interchangeable, enabling future migra-
+tion to alternative LLM providers without modifying business logic.
+This layered approach ensures that adding new AI providers, intent categories, or
+guardrail rules requires changes in only one layer, preserving the stability of the overall
+system.
+4.4.3 Database Design
+Logical Data Model (LDM)
+Application state is managed by an isolated PostgreSQL cluster using SQLAlchemy’s
+async ORM. Because multi-tenant isolation is a strict requirement for enterprise environ-
+ments, our database schema enforces this separation from the ground up.
+68
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+Figure 4.13: Logical Data Model (LDM)
+Every AIRequestRecord is immutably bound to a specifictenant_id. Rather than
+relying on application-level filtering (e.g.,WHERE tenant_id = X), which is prone to hu-
+man error, we use PostgreSQL Row-Level Security (RLS). This means the database kernel
+itself physically prevents cross-tenant data access, even if the application code contains a
+bug.
+4.4.4 Software Design
+Static View: Class Diagram
+Handling thousands of concurrent AI streams without freezing the server is a major tech-
+nical challenge. To solve this, we heavily leveraged Python’sasyncio capabilities and
+built the system using strict Dependency Injection.
+69
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+Figure 4.14: FastAPI Backend Class Diagram
+The ApplicationFactory is responsible for wiring up routers and middlewares during
+startup. TheAIRequestServiceorchestratestheflowbytalkingtothe IntentCacheService
+(which maps user prompts to the correct LLM) and theOutputGuardService (which san-
+itizes the AI’s text stream before sending it to the user).
+70
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+Dynamic View: End-to-End Orchestration Sequence
+Figure 4.15: End-to-End AI Orchestration Sequence
+As mapped out in Figure 4.15, every request is governed across three distinct layers:
+1. The Zero-Trust Perimeter:The prompt is scrubbed by the WAF, the JWT is
+verified by Kong, OPA checks tenant permissions, and Redis verifies the quota. Any
+failed check kills the request instantly.
+2. Cognitive Routing: The IntentClassifier analyzes the semantic meaning of
+the prompt and routes it to a specialized AI model.
+3. Streaming & Guardrails: The OutputGuardService inspects every SSE token
+chunk in real-time, redacting any detected PII before it reaches the user.
+71
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+4.4.5 Showcase
+Figure 4.16: AI Orchestration interface with dynamic intent classification and model
+routing.
+Figure 4.17: Low-latency AI response streaming via Server-Sent Events (SSE).
+Figure 4.18: Database audit trail capturing the full request lifecycle and orchestration
+metadata.
+72
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+Figure 4.19: Intent classification results before and after routing showing label, source,
+and confidence.
+Conclusion
+In this chapter, we successfully delivered the platform’s first major release. Through
+Sprint 1, we established a Zero-Trust security perimeter using the WAF as the public entry
+point, Kongforgatewayenforcement, andKeycloakforidentity, ensuringthatmaliciousor
+unauthenticated traffic is dropped before it reaches the orchestration backend. In Sprint
+2, we built the core FastAPI orchestration engine, enabling intelligent intent routing
+and real-time, token-by-token streaming. The next chapter builds upon this foundation
+by integrating advanced governance policies, strict data quotas, and proactive security
+hardening.
+73
+Chapter 5
+Release 2: Governance & Security Hard-
+ening
+Introduction
+This chapter presents the second release of the platform, spanning two sprints. Sprint
+3 introduces the Governance and Policy Engine (OPA, Redis quota enforcement), and
+Sprint 4 covers Security Hardening (PostgreSQL RLS, HashiCorp Vault, Microsoft Pre-
+sidio). Each sprint is detailed through its backlog, use case analysis, architectural model,
+database design, software design, and implementation showcase.
+5.1 Release 2 Backlog
+The following table outlines the backlog items for Release 2, covering both Sprint 3 and
+Sprint 4.
+74
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+Table 5.1: Release 2 Backlog
+F eature ID User Stories Priority
+Policy Definitions 20 As an admin, I want YAML-driven governance policies. + + +
+Policy Engine 21 As a developer, I want a policy evaluation engine. + + +
+Policy Auditing 22 As a developer, I want policy audit logs. + +
+Token Quotas 23 As an admin, I want configurable daily token quotas. + + +
+Quota Counters 24 As a developer, I want Redis-backed quota counters. + + +
+Tenant Isolation 25 As a security engineer, I want PostgreSQL RLS. + + +
+Secrets Management 26 As an operator, I want Vault managing secrets. + + +
+Usage Tracking 27 As a developer, I want a usage tracking table. + +
+Database Migrations 28 As a developer, I want automated database migrations. + +
+Injection Detection 29 As a security engineer, I want prompt injection detection. + + +
+Security Patterns 30 As a security engineer, I want database-driven security
+patterns.
++ +
+PII Detection 31 As a developer, I want PII detection (SSN, IBAN, credit
+card).
++ + +
+Sensitivity Escalation 32 As a developer, I want auto sensitivity escalation on PII. + +
+Data Redaction 33 As a developer, I want output PII redaction. + + +
+5.2 Sprint 3: Governance & Policy Engine
+The goal of Sprint 3 is to introduce dynamic policy evaluation and cost control mecha-
+nisms. By leveraging Open Policy Agent (OPA) and Redis, the platform ensures that AI
+requests comply with organizational data sensitivity constraints and adhere to allocated
+budgets.
+Table 5.2: Sprint 3 Backlog
+F eature ID User Stories Priority
+Policy Definitions 20 As an admin, I want YAML-driven governance policies. + + +
+Policy Engine 21 As a developer, I want a policy evaluation engine. + + +
+Policy Auditing 22 As a developer, I want policy audit logs. + +
+Token Quotas 23 As an admin, I want configurable daily token quotas. + + +
+Quota Counters 24 As a developer, I want Redis-backed quota counters. + + +
+75
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+5.2.1 Use Case Analysis
+Table 5.3: Detailed use case: Manage Governance Policies
+Field Description
+Use Case Manage Governance Policies
+Actor Administrator
+Preconditions Admin authenticated with access to the Admin Portal.
+Postconditions Policy persisted to database; OPA in-memory cache refreshed;
+quota limits updated.
+Main Flow
+1. Admin navigates to the Policies tab in the Admin Portal.
+2. System displays all active and inactive governance policies.
+3. Admin creates a policy with conditions (sensitivity level,
+tenant) and effect (Allow/Deny).
+4. System validates and persists the policy to PostgreSQL.
+5. OPA policy engine reloads its in-memory cache.
+6. Redis quota counters are updated to reflect new limits.
+Exceptions • 3a. Invalid condition→ validation error returned.
+• 4a. Duplicate policy → conflict error returned.
+5.2.2 Architectural Model
+Sprint 3 introduces aPolicy-as-Code architectural pattern, decoupling authorization
+logic from the application code. Two components are added to the platform:
+• Open Policy Agent (OPA):Evaluates declarative Rego policies at runtime.
+The FastAPI backend queries OPA before processing any request, passing the
+tenant context, sensitivity level, and target service. OPA returns an Allow or
+Deny decision.
+• Redis Quota Layer:Maintains atomic per-tenant token counters usingINCRBY.
+When the daily limit is reached, subsequent requests are rejected with HTTP 429
+before reaching the AI model.
+76
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+5.2.3 Database Design
+Sprint 3 introduces two new persistence structures to the data model:
+• policy_evaluation_audit_logs: RecordseveryOPAgovernanceevaluation. Each
+row captures therequest_id, the matchedpolicy_id, the resultingeffect (Al-
+low or Deny), the full evaluationcontext as a JSONB object, and thecreated_at
+timestamp. This table establishes a fully immutable audit trail for every governance
+decision made by the platform.
+• Redis Quota State: Token quota counters are maintained in Redis rather than
+PostgreSQL to ensure sub-millisecond enforcement latency. Each tenant’s daily
+consumption is tracked via atomicINCR operations on keys following the pattern
+quota:<tenant_id>:<date>, with configurable TTL-based expiration.
+5.2.4 Software Design
+Dynamic View: Governance Policy Evaluation Sequence
+Governance and Real-Time Policy Enforcement rely on the Open Policy Agent (OPA).
+The orchestrator dynamically evaluates custom governance rules covering data sensitiv-
+ity constraints, environmental isolation, and budget consumption before authorizing any
+downstream routing. Additionally, Redis is used for ultra-low latency, atomic tenant
+quota tracking, shielding the platform from resource exhaustion.
+77
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+Figure 5.1: Governance Policy and Quota Evaluation Sequence
+The sequence diagram illustrates the policy enforcement flow:
+1. The FastAPI backend receives an authenticated request.
+2. The backend queries Redis to verify the tenant’s daily token quota.
+3. Ifthequotaisexceeded, therequestisimmediatelyrejectedtopreventcostoverruns.
+4. If valid, the backend queries the OPA engine with the tenant context, request sen-
+sitivity, and requested service.
+5. OPA evaluates the declarative Rego policies and returns an Allow or Deny decision.
+6. The backend enforces the decision and logs the outcome in the audit ledger.
+78
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+5.2.5 Showcase
+Figure 5.2: Governance policies in the admin UI, enforced by OPA per tenant.
+79
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+Figure 5.3: Daily token quota exceeded: chat warning (top) and HTTP 429 (bottom).
+80
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+Figure 5.4: Quota Manager in the admin portal: per-tenant daily limits and live token
+usage from Redis counters.
+5.3 Sprint 4: Security Hardening
+With governance in place, Sprint 4 focuses on absolute data sovereignty and mitigating
+AI-specific vulnerabilities such as prompt injection and data exfiltration. The system
+introduces PostgreSQL Row-Level Security (RLS) and integrates Microsoft Presidio for
+proactive threat mitigation and data sanitization.
+Table 5.4: Sprint 4 Backlog
+F eature ID User Stories Priority
+Tenant Isolation 25 As a security engineer, I want PostgreSQL RLS. + + +
+Secrets Management 26 As an operator, I want Vault managing secrets. + + +
+Usage Tracking 27 As a developer, I want a usage tracking table. + +
+Database Migrations 28 As a developer, I want automated database migrations. + +
+Injection Detection 29 As a security engineer, I want prompt injection detection. + + +
+Security Patterns 30 As a security engineer, I want database-driven security
+patterns.
++ +
+PII Detection 31 As a developer, I want PII detection (SSN, IBAN, credit
+card).
++ + +
+Sensitivity Escalation 32 As a developer, I want auto sensitivity escalation on PII. + +
+Data Redaction 33 As a developer, I want output PII redaction. + + +
+81
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+5.3.1 Use Case Analysis
+Table 5.5: Detailed use case: Detect and Redact PII
+Field Description
+Use Case Detect and Redact PII
+Actor End User (triggered automatically on every request)
+Preconditions Request has passed JWT validation, OPA policy check, and quota
+verification.
+Postconditions PII removed from prompt and AI response; sensitivity level
+escalated if PII found.
+Main Flow
+1. User submits a prompt to the FastAPI backend.
+2. ContentInspector scans the prompt against regex patterns and
+spaCy NER models.
+3. If PII is detected (SSN, IBAN, phone, credit card), sensitivity is
+automatically escalated.
+4. Escalated sensitivity may trigger stricter OPA governance rules.
+5. AI model generates a response streamed token by token.
+6. OutputGuardService intercepts each chunk and redacts any
+detected PII.
+7. Sanitized tokens are delivered to the user via SSE.
+Exceptions • 3a. High-risk PII detected→ request blocked entirely by OPA.
+• 6a. Redaction fails → chunk withheld and error logged.
+5.3.2 Architectural Model
+Sprint 4 introduces aDefense-in-Depth Data Sovereigntyarchitecture across three
+layers:
+• Secrets Layer (HashiCorp Vault):All API keys, database credentials, and
+service tokens are stored in Vault and injected dynamically at runtime. No secrets
+are stored in environment files or configuration repositories.
+82
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+• Database Layer (PostgreSQL RLS):Row-Level Security policies are enforced
+directly at the PostgreSQL kernel level, ensuring each tenant’s data is physically
+isolated regardless of application-level query logic.
+• Content Layer (Microsoft Presidio):The ContentInspector service scans
+both inbound prompts and outbound AI responses in real time, redacting any
+PII before it reaches the user or the audit log.
+5.3.3 Database Design
+To support the multi-tenant isolation, intent routing, token budget logging, security event
+tracking, and governance audit policies, the database schema is structured as shown in
+the Conceptual Data Model (CDM) below:
+Figure 5.5: Conceptual Data Model (CDM) for Enterprise AI Orchestration
+The database schema partitions tables into three primary domains:
+1. Core Configuration: ai_services defines downstream model endpoints, while
+intent_routing handles deterministic mapping from user intents to services.
+2. Access&Isolation: tenant_service_permissionswhitelistsservicespertenant,
+enforced by PostgreSQL Row-Level Security (RLS).
+83
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+3. Auditing & Logs: ai_requests tracks overall request execution, while child
+tables (usage_token_logs, security_events, policy_evaluation_audit_logs)
+store detailed bookkeeping data for cost, compliance, and security auditing.
+Row-Level Security (RLS)
+Traditional multi-tenant architectures often rely on Application-Level Filtering (e.g., ap-
+pending WHERE tenant_id = X to database queries). This approach is highly susceptible
+to human error and data leaks. To guarantee absolute data sovereignty, the platform
+implements Row-Level Security (RLS) directly at the PostgreSQL kernel level. During
+request execution, the authenticatedtenant_id extracted from the JWT is passed as a
+session variable to the database engine. RLS policies dynamically restrict the visibility of
+rows at the lowest storage tier, ensuring deterministic tenant isolation regardless of how
+the application layer attempts to query the data.
+5.3.4 Software Design
+Dynamic View: Threat Mitigation and PII Redaction
+Proactive threat mitigation requires inspecting both the inbound user prompt and the
+outbound AI response.
+84
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+Figure 5.6: Prompt Injection Detection and PII Redaction Sequence
+The sequence diagram details the security hardening workflow:
+1. Inbound Sanitization:Incoming user prompts undergo strict sanitization against
+known jailbreak libraries and prompt injection signatures.
+2. PII Detection: The prompt is scanned for PII using Microsoft Presidio. If sen-
+sitive data (e.g., Credit Card, SSN) is detected, the request’s sensitivity level is
+automatically escalated, potentially triggering stricter OPA governance rules.
+3. OutboundRedaction: AstheAIgeneratestheresponsestream, the OutputGuardService
+intercepts the text chunks in real-time and redacts any PII before the response is
+delivered to the end-user.
+85
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+5.3.5 Showcase
+Figure 5.7: Proactive mitigation of a prompt injection attempt using the Microsoft
+Presidio-backed Security Service.
+Figure 5.8: Layer 1: Proactive client-side warning detecting personal data (phone num-
+bers) before transmission.
+86
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+Figure 5.9: Layer 2: Real-time backend output sanitization: sensitive data redacted from
+the AI response stream.
+Figure 5.10: Technical proof of PostgreSQL Row-Level Security (RLS) enforcing deter-
+ministic tenant isolation at the database kernel level.
+Conclusion
+In this chapter, we successfully implemented Release 2, significantly enhancing the plat-
+form’s governance and security posture. Sprint 3 integrated OPA and Redis to enforce
+87
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+dynamic data policies and token quotas, providing administrators with granular control
+over AI consumption. Sprint 4 hardened the data layer with PostgreSQL Row-Level
+Security and established active threat mitigation guardrails, including prompt injection
+detection and real-time PII redaction. With a fully secured, governed, and orchestrated
+AI pipeline, the final release will focus on delivering complete operational visibility and
+deploying the platform for production use.
+88
+Chapter 6
+Release 3: Observability & Deployment
+Introduction
+ThisfinalreleasecompletesthetransitionoftheDeterministicEnterpriseAIOrchestration
+Platformtoproduction. Itfocusesontwocriticalcapabilities: establishingfulloperational
+visibility through a unified observability stack (Prometheus, Grafana, Loki, Promtail) and
+packaging our microservices into a secure, Docker-based environment with Zero-Trust
+public access via Cloudflare Tunnels.
+6.1 Release 3 Plan
+The development plan for Release 3 is structured around two complementary objectives:
+1. Sprint 5: Observability & Launch Instruments every layer of the platform
+with metrics endpoints, integrates Grafana for real-time operational dashboarding,
+deploys the Loki/Promtail log pipeline for centralized log aggregation, and delivers
+the final administrative portal for managing gateway plugins, reviewing security
+audit logs, and monitoring AI usage quotas.
+2. DeploymentPhase Definesthecompletecontainerizationstrategyforallmicroser-
+vices, architects the production infrastructure on a dedicated Linux server using
+Docker Compose, integrates Cloudflare Tunnels for secure Zero-Trust public access,
+and establishes the Git-based continuous deployment workflow.
+By completing these objectives, the platform achieves full operational maturity, allow-
+ingenterpriseteamstomonitor, manage, andscaletheirAIinfrastructurewithconfidence.
+6.2 Release 3 Backlog
+The following table outlines the backlog items identified for Sprint 5.
+89
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+Table 6.1: Release 3 Backlog (Sprint 5)
+F eature ID User Stories Priority
+Metrics Dashboard 34 As an admin, I want a real-time metrics dashboard to
+monitor platform health.
++ + +
+UI Plugin
+Management
+35 As an admin, I want to manage Kong plugins directly
+from the UI.
++ + +
+Security Auditing 36 As an admin, I want a real-time security events log. + + +
+Prometheus Endpoints 37 As an operator, I want Prometheus-compatible metrics
+endpoints.
++ + +
+Log Aggregation 38 As an operator, I want centralized log collection and
+querying.
++ + +
+UI Theming 39 As a user, I want light/dark theme toggle for accessibility. + +
+6.3 Sprint 5: Observability & Launch
+Without centralized metrics and logs, administrators operate in the dark unable to audit
+AI usage patterns, diagnose performance bottlenecks, or detect security anomalies in real
+time. Thegoalofthissprintistoeliminatethisoperationalblindnessbyinstrumentingthe
+entire platform with a multi-layered observability stack and delivering a comprehensive
+administrative portal.
+6.3.1 Observability Architecture
+Observability Stack Components
+The observability architecture follows a three-tier data pipeline model:instrumentation
+at the source, collection via dedicated scrapers, and visualization through centralized
+dashboards. Each layer of the platform exposes telemetry data independently, ensuring
+complete lifecycle visibility from the network edge to the AI model response.
+• Kong Prometheus Plugin:Installed on the Data Plane, this plugin extracts real-
+time network-level metrics at the gateway edge tracking ingress request rates, HTTP
+statuscode distributions, upstreamlatency percentiles, andbandwidthconsumption
+before traffic ever reaches the backend application layer.
+• FastAPI Metrics Middleware:A custom middleware layer exposes application-
+level metrics via a dedicated/metrics endpoint. These include intent classification
+distribution across AI models, average token generation speed, OPA policy evalua-
+tion latency, and per-tenant quota consumption rates.
+90
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+• Centralized Audit Ledger: Every significant transaction including policy de-
+cisions, security interventions (WAF blocks, injection attempts), and token usage
+events is recorded in an immutable PostgreSQL audit table (usage_logs), providing
+a complete forensic trail for compliance auditing.
+• Log Aggregation Pipeline:Promtail agents are deployed alongside each service
+container to tail stdout/stderr logs and ship them to a centralized Loki instance.
+This enables administrators to query, filter, and correlate logs across all sixteen
+microservices from a single Grafana interface.
+Figure 6.1: Three-tier observability pipeline: instrumentation sources feed Prometheus
+and Loki collectors, visualized through Grafana dashboards.
+These data sources are continuously scraped by a Prometheus instance at configurable
+intervals and visualized through pre-configured Grafana dashboards, providing adminis-
+trators with a unified, real-time operational view of the entire AI orchestration platform.
+91
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+Dynamic View: Admin Portal Interaction
+The administrative portal serves as the operational command center for the platform.
+It consolidates observability data, security monitoring, and gateway management into a
+single, role-protected interface accessible only to authenticated administrators.
+The portal exposes the following critical capabilities:
+• Embedded Grafana Dashboards:Real-time visualization of API traffic volume,
+responselatencydistributions, AImodelusagebreakdown, andinfrastructurehealth
+all embedded directly within the admin interface via iframe integration.
+• Kong Plugin Marketplace:A dynamic interface that queries the Kong Admin
+API to discover, enable, configure, and disable gateway plugins (rate-limiting, IP
+restriction, CORS, bot detection) without requiring CLI access or service restarts.
+• Security Event Monitor:A real-time feed of WAF-intercepted threats, prompt
+injection attempts, and anomalous traffic patterns, sourced from the kong-logger
+microservice and the platform audit ledger.
+• Quota Management Console:Displays per-tenant token consumption, remain-
+ing daily quotas, and historical usage trends, enabling administrators to adjust
+governance policies dynamically.
+6.3.2 Showcase
+The following figures demonstrate the observability, administration, and user experience
+capabilities delivered in this final sprint.
+92
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+Figure 6.2: Grafana dashboard showing API latency, request throughput, token usage,
+and infrastructure health in real time.
+Figure 6.3: Admin security panel with live WAF events, prompt injection alerts, and
+threat pattern monitoring.
+93
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+Figure 6.4: Tableau de bord de sécurité et de découverte des routes API.
+6.4 Deployment
+With the software development lifecycle complete, the final phase focuses on packag-
+ing the entire orchestration platform sixteen interconnected microservices into a repro-
+ducible, secure, and publicly accessible production environment. This section details the
+containerization strategy, the infrastructure architecture, and the innovative Zero-Trust
+ingress solution that enables global access without exposing the server to direct internet
+traffic.
+6.4.1 Containerization Strategy
+To guarantee strict environment consistency across development, testing, and production,
+every microservice within the platform is containerized using Docker. Multi-stage Dock-
+erfiles were engineered following industry best practices to minimize final image sizes and
+reducetheattacksurfacebyexcludingunnecessarybuildtools, developmentdependencies,
+and source maps from production images.
+94
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+Service Base Image Description
+Frontend Node 22 Alpine Serves the compiled React single-page application with
+Vite’s development server, proxying API and
+authentication requests to internal services.
+Backend (FastAPI) Python Slim Runs the AI orchestration engine via the Uvicorn ASGI
+server, exposing REST and SSE streaming endpoints.
+Kong Gateway
+(CP/DP)
+Kong 3.9.1
+Official
+Pre-loaded with custom Lua plugins (simple-validator,
+tenant-restriction, ai-proxy) and declarative decK
+configuration.
+Intent Classifier Python Slim Hosts the hybrid keyword/semantic intent classification
+model with Redis-backed response caching.
+Kong Logger Node Alpine Captures and persists Kong gateway logs and security
+events into PostgreSQL for audit compliance.
+Observability Stack Prometheus,
+Grafana, Loki,
+Promtail
+Collects metrics, aggregates logs, and provides real-time
+visual dashboards for platform monitoring.
+Table 6.2: Containerized microservices and their base images
+Figure 6.5: Docker Compose container architecture with internal network topology and
+persistent volume mappings.
+95
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+6.4.2 Infrastructure Architecture
+A key architectural decision was to deploy the production environment on adedicated
+on-premise Linux serverusing Docker Compose, rather than relying on external man-
+aged Kubernetes clusters or cloud-hosted container services. This decision was driven by
+three strategic requirements:
+1. Data Sovereignty: Hosting locally ensures that all enterprise data, AI prompts,
+and model responses remain entirely within the organization’s physical infrastruc-
+ture, satisfying strict compliance requirements (GDPR, HIPAA) without any data
+egress to third-party cloud providers.
+2. Low-Latency AI Execution:Local Large Language Models (Ollama with Llama
+3.2 and Qwen 2.5 Coder) are hosted directly on the bare-metal server’s hardware.
+By eliminating network round-trips to external cloud APIs, the platform achieves
+significantly lower inference latency for on-premise AI workloads.
+3. Cost Efficiency:Utilizing existing on-premise hardware eliminates recurring cloud
+compute charges, making the platform economically viable for organizations that
+already maintain dedicated server infrastructure.
+The infrastructure is organized into three logical tiers within the Docker Compose
+orchestration:
+• DataTier: PostgreSQLdatabases(forKongstateandtheplatformpermission/audit
+ledger) and Redis (for session caching, rate-limiting counters, and intent classifica-
+tioncache)aredeployedwithpersistentDockervolumes( kong_db_data,platform_db_data)
+to ensure data durability across container restarts.
+• Application Tier: The FastAPI orchestration engine, intent classifier, OPA pol-
+icy engine, and Kong Logger are deployed as stateless containers communicating
+over an isolated internal Docker bridge network. The backend utilizes Docker’s
+extra_hosts directive to securely route AI inference requests to the Ollama models
+running directly on the host machine.
+• Edge Tier: The Kong API Gateway operates in a hybrid Control Plane / Data
+Plane topology, with mTLS-secured cluster communication between the CP (con-
+figuration management) and DP (traffic proxying) nodes. All external API traffic
+enters exclusively through the Data Plane.
+96
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+Figure 6.6: Three-tier production infrastructure: Data Tier (persistence), Application
+Tier (orchestration), and Edge Tier (ingress).
+6.4.3 Zero-Trust Ingress via Cloudflare Tunnels
+A critical deployment challenge arose from the network constraints of the hosting envi-
+ronment. The dedicated Linux server operates behind a university network firewall and
+a Carrier-Grade NAT (CGNAT), making traditional port-forwarding and dynamic DNS
+solutions impossible. Conventional tunneling services (such as Ngrok) were evaluated but
+deemed insufficient for a professional, enterprise-grade deployment due to session time
+limits, unstable URLs, and lack of custom domain support.
+To solve this challenge, we designed aZero-Trust ingress architectureusing Cloud-
+flare Tunnels, integrated directly into the Docker Compose stack as thecloudflared
+service.
+97
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+How It Works
+The Cloudflare Tunnel operates on a fundamentally different networking model than
+traditional reverse proxies. Instead of requiring inbound firewall ports to be opened which
+would expose the server to direct internet attacks thecloudflared daemon initiates a
+secure outbound-onlyconnection from the server to Cloudflare’s global edge network. This
+connection is maintained persistently, and all external client traffic is routed through
+Cloudflare’s infrastructure before being forwarded to the internal Docker services.
+1. A user navigates tohttps://enterprise-ai.online from any device worldwide.
+2. Cloudflare’s global CDN receives the request and terminates TLS at the edge.
+3. The request is forwarded through the encrypted tunnel to thecloudflared con-
+tainer.
+4. The cloudflared container routes the request to the internalfrontend service on
+port 80.
+5. The frontend proxies API requests (/api/*, /ai/*) to the Kong Data Plane inter-
+nally.
+98
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+Figure 6.7: Zero-Trust ingress via Cloudflare Tunnel with no exposed inbound ports.
+Security Benefits
+This architecture provides multiple layers of enterprise-grade security at zero additional
+cost:
+• Zero Exposed Ports:No inbound firewall rules are required. The server’s public
+IP address is never revealed to end users, eliminating the entire class of direct-access
+attack vectors (port scanning, DDoS targeting, SSH brute-force).
+• Automatic TLS/SSL:Cloudflare provisions and manages TLS certificates auto-
+matically for the custom domain, ensuring all traffic is encrypted end-to-end without
+manual certificate management.
+• Edge DDoS Protection: All traffic passes through Cloudflare’s global network,
+which automatically absorbs and mitigates volumetric DDoS attacks before they
+reach the origin server.
+99
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+• CGNAT and Firewall Bypass:Because the tunnel uses outbound connections
+only, it works seamlessly behind any restrictive network environment including cor-
+porate firewalls, university networks, and mobile hotspot CGNAT without requiring
+special network configuration.
+6.4.4 Deployment Workflow
+To ensure rapid and reliable deployments, a streamlined Git-based continuous deployment
+workflow was established. The workflow follows four stages:
+1. Development: Engineers commit code changes and infrastructure configurations
+to the central GitHub repository from their development machines.
+2. Synchronization: On the production Linux server, the latest changes are pulled
+from the repository usinggit pull, ensuring the server’s codebase is always in sync
+with the latest stable version.
+3. Deployment: Executing docker compose up -d –force-recreate intelligently
+rebuilds and restarts only the containers whose configurations or source code have
+changed, performing zero-downtime updates.
+4. Verification: Post-deployment health checks are performed by querying the Kong
+status API (/status), Prometheus metrics endpoints, and the frontend application
+to confirm all services are operational.
+100
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+Figure 6.8: Git-based deployment pipeline with Docker Compose zero-downtime updates.
+Conclusion
+This chapter finalized the platform’s production-ready state by addressing observability
+and deployment. Sprint 5 successfully eliminated operational blindness using Prometheus,
+Grafana, and Loki, while the deployment phase established a containerized on-premise
+infrastructure secured globally by a Cloudflare Zero-Trust ingress tunnel. The resulting
+orchestration system delivers a complete, highly secure, and observable control plane
+tailored for enterprise AI workloads.
+101
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+General Conclusion and Perspectives
+The Deterministic Enterprise AI Orchestration Platform provides a production-grade dis-
+tributed control plane for secure, governed enterprise AI service management. Following
+strict zero-trust architectural principles, the system implements a highly modular, secure,
+and observable request/response pipeline designed to prevent data leakage, control API
+costs, and enforce organizational compliance. Developed during a five-month internship at
+Next Step IT, this project successfully addresses the challenges of uncontrolled shadow
+AI usage in modern business environments by introducing a centralized proxy architecture
+that intercepts, evaluates, and logs all company-wide interactions with Large Language
+Models.
+On the edge and identity management layer, we integratedKong GatewayandKey-
+cloak to establish a cryptographic security perimeter, validating tokens at the edge and
+protecting internal resources from unauthorized access. The backend was developed using
+FastAPI, chosen for its asynchronous execution model and low-latency performance in
+streaming text token-by-token via Server-Sent Events (SSE). To enforce strict regulatory
+compliance and corporate safety rules, we built a governance engine using theOpen
+Policy Agent (OPA)and Redis for real-time quota tracking, alongsidePostgreSQL
+Row-Level Security (RLS)and Microsoft Presidiofor kernel-level tenant isolation
+and automated personally identifiable information (PII) redaction. This comprehensive
+security and routing stack was fully containerized usingDocker and deployed on a dedi-
+cated server, utilizingCloudflare Tunnelsto establish secure, zero-trust ingress without
+exposing inbound ports.
+Throughout this internship, I have acquired and consolidated key engineering com-
+petencies across security architecture, distributed systems design, and DevOps practices.
+Designing a multi-tenant platform with strict separation of layers allowed me to mas-
+ter real-world distributed architectures, including cryptographic JWT validation at the
+edge, session propagation, and kernel-level database isolation. I gained extensive practical
+experience working with cloud-native tooling, configuring enterprise API gateways with
+custom Lua extensions, managing authorization policies as code via OPA, and fine-tuning
+machine learning models like DistilBERT for real-time intent classification. Additionally,
+working within an Agile Scrum framework refined my project management skills, collab-
+orative software design practices, and version control workflows.
+Looking ahead, the platform’s architectural foundation is designed for continuous evo-
+102
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+lution. Future developments will focus on scaling the infrastructure from Docker Compose
+to a fully orchestratedKubernetes cluster using Helm charts for automated scaling and
+high availability, combined withGitHub Actionspipelines to automate unit testing and
+policy verification before production releases. The intent classification model can be fur-
+ther optimized by fine-tuning its parameters against production telemetry logs aggregated
+by Prometheus and Grafana Loki. Furthermore, a major extension involves exposing
+secure proxy endpoints for AI-powered development environments likeAntigravity and
+Cursor, alongside directly embedding a web-basedVS Codedevelopment environment
+(such ascode-server) within the platform’s web dashboard. This would provide devel-
+opers with a single, unified interface to write code, manage development files, and query
+the gateway’s AI services seamlessly. By routing code generation requests through the
+orchestrator, enterprises can extend zero-trust controls, authentication, and PII redaction
+directly to developer workflows. To ensure cost-efficiency, the routing engine will sup-
+port an intelligent, tier-based routing policy that maps up to 90% of routine coding and
+conversational requests to locally hosted, high-performance open-source models retaining
+capabilities comparable to premium models like Claude at zero external API cost while
+reserving cloud-hosted models strictly for complex reasoning tasks.
+103
+Bibliography
+[1] Kong Inc. (2024).Kong API Gateway - Cloud Native API Management. Retrieved
+from https://konghq.com/kong/
+[2] Red Hat (2024).Keycloak - Open Source Identity and Access Management. Retrieved
+from https://www.keycloak.org/
+[3] Styra (2024).Open Policy Agent (OPA) - Policy-based control for cloud native envi-
+ronments. Retrieved fromhttps://www.openpolicyagent.org/
+[4] NIST (2023). AI Risk Management Framework (AI RMF). Retrieved fromhttps:
+//www.nist.gov/itl/ai-risk-management-framework
+[5] OWASP Foundation (2023). OWASP Top 10 for
+LLM Applications . Retrieved from https://owasp.org/
+www-project-top-10-for-large-language-model-applications/
+[6] PostgreSQL Global Development Group (2024). PostgreSQL Documentation:
+Row-Level Security Policies. Retrieved fromhttps://www.postgresql.org/docs/
+current/ddl-rowsecurity.html
+[7] Microsoft (2024). Presidio - Data Protection and Anonymization SDK. Retrieved
+from https://microsoft.github.io/presidio/
+[8] Next Step IT (2024).Next Step IT – Official Website. Retrieved fromhttps://www.
+nextstep-it.com/
+[9] Cloud Native Computing Foundation (2024).Kubernetes Documentation: Concepts
+and Network Policies. Retrieved fromhttps://kubernetes.io/docs/
+[10] HashiCorp (2024).HashiCorp Vault: Secrets Management and Data Protection. Re-
+trieved fromhttps://www.vaultproject.io/
+[11] OWASP CRS Project (2024).OWASP ModSecurity Core Rule Set. Retrieved from
+https://coreruleset.org/
+[12] Cloud Native Computing Foundation (2024).Prometheus - Monitoring system and
+time series database. Retrieved fromhttps://prometheus.io/
+104
+Deterministic Enterprise AI Orchestration Platform Horizon School of Digital Technologies
+[13] Grafana Labs (2024). Grafana - The open observability platform. Retrieved from
+https://grafana.com/
+[14] Grafana Labs (2024).Grafana Loki - Like Prometheus, but for logs. Retrieved from
+https://grafana.com/oss/loki/
+[15] Ramírez, S. (2024).FastAPI web framework, high performance, easy to learn, fast to
+code, ready for production. Retrieved fromhttps://fastapi.tiangolo.com/
+[16] Vite Team (2024).Vite - Next Generation Frontend Tooling. Retrieved fromhttps:
+//vite.dev/
+[17] Redis Ltd. (2024). Redis - In-Memory Data Store for Caching and Rate Limiting.
+Retrieved fromhttps://redis.io/
+[18] Hardt, D. (2012). The OAuth 2.0 Authorization Framework. IETF RFC 6749. Re-
+trieved fromhttps://datatracker.ietf.org/doc/html/rfc6749
+[19] Jones, M., Bradley, J., Sakimura, N. (2015).JSON Web Token (JWT). IETF RFC
+7519. Retrieved fromhttps://datatracker.ietf.org/doc/html/rfc7519
+[20] Docker Inc. (2024). Docker: Accelerated Container Application Development. Re-
+trieved fromhttps://www.docker.com/
+[21] Sanh, V., Debut, L., Chaumond, J., Wolf, T. (2019).DistilBERT, a distilled ver-
+sion of BERT: smaller, faster, cheaper and lighter. arXiv preprint arXiv:1910.01108.
+Retrieved fromhttps://arxiv.org/abs/1910.01108
+[22] Lua.org (2024).The Programming Language Lua. Retrieved fromhttps://www.lua.
+org/
+[23] Hugging Face Inc. (2024).Hugging Face - The AI community building the future.
+Retrieved fromhttps://huggingface.co/
+[24] Cloud Native Computing Foundation (2024).Helm - The Kubernetes Package Man-
+ager. Retrieved fromhttps://helm.sh/
+[25] Cloudflare Inc. (2024). Cloudflare Tunnel: Secure outbound-only connections to
+Cloudflare. Retrieved fromhttps://www.cloudflare.com/products/tunnel/
+[26] Grafana Labs (2024).Promtail log shipping agent. Retrieved fromhttps://grafana.
+com/docs/loki/latest/send-data/promtail/
+[27] Schwaber, K. & Sutherland, J. (2020). The Scrum Guide: The Definitive Guide
+to Scrum – The Rules of the Game. Retrieved from https://scrumguides.org/
+scrum-guide.html
+105

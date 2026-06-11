@@ -1,0 +1,48 @@
+# Promtail sidecar config for WAF pod (K8s).
+# Tails ModSecurity JSON audit files (Concurrent mode) and pushes compact one-line summaries to Loki.
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions-waf.yaml
+
+clients:
+  - url: http://loki.ai-monitoring.svc.cluster.local:3100/loki/api/v1/push
+
+scrape_configs:
+  - job_name: waf-modsec
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: waf-modsec
+          __path__: /var/log/modsec_audit/**/*
+    pipeline_stages:
+      - multiline:
+          firstline: '^\{'
+          max_wait_time: 3s
+          max_lines: 256
+      - json:
+          expressions:
+            uri: transaction.request.uri
+            method: transaction.request.method
+            status: transaction.response.http_code
+            client_ip: transaction.client_ip
+            timestamp: transaction.time_stamp
+      - template:
+          source: summary
+          template: '{{ .method }} {{ .uri }} → HTTP {{ .status }} | client {{ .client_ip }}'
+      - labels:
+          status:
+      - labeldrop:
+          - filename
+      - timestamp:
+          source: timestamp
+          format: "Mon Jan 02 15:04:05 2006"
+          fallback_formats:
+            - "02/Jan/2006:15:04:05 -0700"
+            - RFC3339
+          action_on_failure: fudge
+      - output:
+          source: summary

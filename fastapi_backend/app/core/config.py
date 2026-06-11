@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import logging
+import os
 from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -16,13 +17,23 @@ class Settings(BaseSettings):
     def _load_from_vault(cls, values: dict) -> dict:
         """Overlay secrets from Vault before field validation.
 
-        Only secrets not already present in the environment are overridden,
-        so local .env files and explicit environment variables always win.
+        When ``VAULT_ENABLED=true``, Vault wins for credential-bearing keys even
+        if a passwordless ConfigMap fallback is present. Otherwise only empty
+        env values are filled in so local ``.env`` files keep working.
         """
         from app.core.vault_secrets import load_vault_secrets  # noqa: PLC0415
+
         vault_overrides = load_vault_secrets()
+        vault_enabled = os.environ.get("VAULT_ENABLED", "").lower() == "true"
+        vault_authoritative_keys = {
+            "PLATFORM_DB_URL",
+            "REDIS_URL",
+            "GATEWAY_SIGNATURE_SECRET",
+        }
         for key, val in vault_overrides.items():
-            if key not in values or not values[key]:
+            if vault_enabled and key in vault_authoritative_keys:
+                values[key] = val
+            elif key not in values or not values[key]:
                 values[key] = val
         return values
 
@@ -31,6 +42,11 @@ class Settings(BaseSettings):
     keycloak_realm: str = Field(alias="KEYCLOAK_REALM")
     cors_origin: str = Field(alias="CORS_ORIGIN")
     kong_header_value: str = Field(default="true", alias="KONG_HEADER_VALUE")
+    gateway_signature_secret: str = Field(default="", alias="GATEWAY_SIGNATURE_SECRET")
+    gateway_signature_max_skew_seconds: int = Field(
+        default=300,
+        alias="GATEWAY_SIGNATURE_MAX_SKEW_SECONDS",
+    )
     environment: str = Field(default="development", alias="ENVIRONMENT")
     policy_file_path: str = Field(default="policies.yaml", alias="POLICY_FILE_PATH")
     port: int = Field(default=3000, alias="PORT")

@@ -1,6 +1,10 @@
 #rapport files:
 rapport_stage_extracted_images/
 rapport_stage.pdf
+pfe_project.zip
+pfe_project/
+raport_diagram_sources/
+raport_stage_extracted_images/
 # Python
 __pycache__/
 *.pyc

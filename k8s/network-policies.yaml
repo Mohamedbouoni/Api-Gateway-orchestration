@@ -694,6 +694,16 @@ spec:
     - to:
         - namespaceSelector:
             matchLabels:
+              kubernetes.io/metadata.name: ai-monitoring
+          podSelector:
+            matchLabels:
+              app: loki
+      ports:
+        - port: 3100
+          protocol: TCP
+    - to:
+        - namespaceSelector:
+            matchLabels:
               kubernetes.io/metadata.name: kube-system
       ports:
         - port: 53
@@ -904,6 +914,16 @@ spec:
           protocol: UDP
         - port: 53
           protocol: TCP
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ai-monitoring
+          podSelector:
+            matchLabels:
+              app: loki
+      ports:
+        - port: 3100
+          protocol: TCP
 ---
 # ── RULE 30: kong-dp accepts inbound from WAF only ───────────────────────────
 # Kong DP is now ClusterIP-only; WAF is the single permitted ingress source
@@ -955,4 +975,127 @@ spec:
               app: prometheus
       ports:
         - port: 9113
+          protocol: TCP
+---
+# ── RULE 32: Loki accepts log pushes from Promtail sidecars ──────────────────
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-loki-ingress
+  namespace: ai-monitoring
+  labels:
+    project: enterprise-ai-gateway
+spec:
+  podSelector:
+    matchLabels:
+      app: loki
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ai-application
+          podSelector:
+            matchLabels:
+              app: kong-logger
+      ports:
+        - port: 3100
+          protocol: TCP
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ai-gateway
+          podSelector:
+            matchLabels:
+              app: waf
+      ports:
+        - port: 3100
+          protocol: TCP
+    - from:
+        - podSelector:
+            matchLabels:
+              app: grafana
+      ports:
+        - port: 3100
+          protocol: TCP
+---
+# ── RULE 33: Loki egress — DNS only ──────────────────────────────────────────
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-loki-egress
+  namespace: ai-monitoring
+  labels:
+    project: enterprise-ai-gateway
+spec:
+  podSelector:
+    matchLabels:
+      app: loki
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+---
+# ── RULE 34: kong-logger egress — Postgres, Vault, Loki, DNS ───────────────
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-kong-logger-egress
+  namespace: ai-application
+  labels:
+    project: enterprise-ai-gateway
+spec:
+  podSelector:
+    matchLabels:
+      app: kong-logger
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ai-data
+          podSelector:
+            matchLabels:
+              app: platform-db
+      ports:
+        - port: 5432
+          protocol: TCP
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ai-data
+          podSelector:
+            matchLabels:
+              app: vault
+      ports:
+        - port: 8200
+          protocol: TCP
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ai-monitoring
+          podSelector:
+            matchLabels:
+              app: loki
+      ports:
+        - port: 3100
+          protocol: TCP
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
           protocol: TCP

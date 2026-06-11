@@ -47,3 +47,8 @@ echo 'SecRuleUpdateTargetById 942290 "!REQUEST_COOKIES:/^KC_/"' \
 # (prevents SQLi/XSS/Command Injection rules from blocking legitimate AI chat context)
 echo 'SecRule REQUEST_URI "@beginsWith /api/v1/ai/" "id:1005,phase:1,pass,nolog,ctl:ruleRemoveById=949110,ctl:ruleRemoveById=959100,ctl:ruleRemoveById=942100-942999,ctl:ruleRemoveById=941100-941999"' \
   >> /etc/modsecurity.d/owasp-crs/rules/REQUEST-999-COMMON-EXCEPTIONS-AFTER.conf
+
+# Grafana UI under /grafana: HTML/JS/CSS responses trigger outbound CRS XSS rules
+# (symptom: browser shows infinite Grafana loading spinner via localhost/grafana)
+echo 'SecRule REQUEST_URI "@beginsWith /grafana" "id:1006,phase:1,pass,nolog,ctl:ruleEngine=Off"' \
+  >> /etc/modsecurity.d/owasp-crs/rules/REQUEST-999-COMMON-EXCEPTIONS-AFTER.conf

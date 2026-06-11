@@ -87,7 +87,10 @@ def app_client() -> Dict[str, Any]:
 
     fake_service = FakeAIRequestService()
 
-    app.dependency_overrides[verify_kong_header] = lambda: None
+    async def _skip_kong_header() -> None:
+        return None
+
+    app.dependency_overrides[verify_kong_header] = _skip_kong_header
     app.dependency_overrides[get_current_user] = lambda: {
         "sub": "user-1",
         "email": "user@example.com",

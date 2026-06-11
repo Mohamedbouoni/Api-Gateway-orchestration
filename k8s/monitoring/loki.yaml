@@ -1,0 +1,151 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# loki.yaml  —  Log aggregation for Kong access + WAF ModSecurity audit logs
+# Promtail sidecars in kong-logger and WAF pods push to this service.
+# ─────────────────────────────────────────────────────────────────────────────
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: loki-config
+  namespace: ai-monitoring
+  labels:
+    app: loki
+    project: enterprise-ai-gateway
+data:
+  config.yaml: |
+    auth_enabled: false
+
+    server:
+      http_listen_port: 3100
+      grpc_listen_port: 9096
+      # WAF audit JSON lines can be large; default 4MB gRPC cap hangs Grafana log panels.
+      grpc_server_max_recv_msg_size: 16777216
+      grpc_server_max_send_msg_size: 16777216
+
+    common:
+      path_prefix: /loki
+      storage:
+        filesystem:
+          chunks_directory: /loki/chunks
+          rules_directory: /loki/rules
+      replication_factor: 1
+      ring:
+        kvstore:
+          store: inmemory
+
+    schema_config:
+      configs:
+        - from: 2024-01-01
+          store: boltdb-shipper
+          object_store: filesystem
+          schema: v12
+          index:
+            prefix: index_
+            period: 24h
+
+    ruler:
+      alertmanager_url: http://alertmanager:9093
+
+    limits_config:
+      allow_structured_metadata: false
+      reject_old_samples: true
+      reject_old_samples_max_age: 168h
+      ingestion_rate_mb: 8
+      ingestion_burst_size_mb: 16
+      max_entries_limit_per_query: 5000
+      max_query_series: 500
+
+    analytics:
+      reporting_enabled: false
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: loki-pvc
+  namespace: ai-monitoring
+  labels:
+    app: loki
+    project: enterprise-ai-gateway
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: loki
+  namespace: ai-monitoring
+  labels:
+    app: loki
+    project: enterprise-ai-gateway
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: loki
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: loki
+        project: enterprise-ai-gateway
+    spec:
+      containers:
+        - name: loki
+          image: grafana/loki:2.9.6
+          args:
+            - -config.file=/etc/loki/config.yaml
+          ports:
+            - containerPort: 3100
+              name: http
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          livenessProbe:
+            httpGet:
+              path: /ready
+              port: 3100
+            initialDelaySeconds: 30
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 3100
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          volumeMounts:
+            - name: data
+              mountPath: /loki
+            - name: config
+              mountPath: /etc/loki
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: loki-pvc
+        - name: config
+          configMap:
+            name: loki-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: loki
+  namespace: ai-monitoring
+  labels:
+    app: loki
+    project: enterprise-ai-gateway
+spec:
+  selector:
+    app: loki
+  ports:
+    - name: http
+      port: 3100
+      targetPort: 3100
+  type: ClusterIP

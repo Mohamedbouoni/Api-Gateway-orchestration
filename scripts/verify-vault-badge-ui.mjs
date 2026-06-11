@@ -24,7 +24,7 @@ async function getToken() {
 async function main() {
   const token = await getToken();
   const res = await fetch(`${API_BASE}/admin/metrics`, {
-    headers: { Authorization: `Bearer ${token}`, "kong-header": "true" },
+    headers: { Authorization: `Bearer ${token}` },
   });
   if (!res.ok) throw new Error(`metrics failed: ${res.status} ${await res.text()}`);
   const metrics = await res.json();

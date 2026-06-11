@@ -43,6 +43,7 @@ deploy: preflight build-local-images
 	$(KUBECTL) create configmap platform-db-usage-scripts --from-file=init-platform-db-usage.sql=backend/scripts/init-platform-db-usage.sql -n ai-data --dry-run=client -o yaml | $(KUBECTL) apply -f -
 	$(KUBECTL) create configmap kong-plugin-simple-validator --from-file=gateway/plugins/simple-validator -n ai-gateway --dry-run=client -o yaml | $(KUBECTL) apply -f -
 	$(KUBECTL) create configmap kong-plugin-tenant-restriction --from-file=gateway/plugins/tenant-restriction -n ai-gateway --dry-run=client -o yaml | $(KUBECTL) apply -f -
+	$(KUBECTL) create configmap kong-plugin-gateway-signature --from-file=gateway/plugins/gateway-signature -n ai-gateway --dry-run=client -o yaml | $(KUBECTL) apply -f -
 	$(KUBECTL) create configmap kong-deck-config --from-file=kong_final.yaml=gateway/kong_final.yaml -n ai-gateway --dry-run=client -o yaml | $(KUBECTL) apply -f -
 	@echo "🔑 Generating Configuration ConfigMaps..."
 	$(KUBECTL) create configmap keycloak-realm --from-file=realm-export.json=keycloak/realm-export.json -n ai-application --dry-run=client -o yaml | $(KUBECTL) apply -f -

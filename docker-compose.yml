@@ -175,12 +175,13 @@ services:
       KONG_ADMIN_ACCESS_LOG: /dev/stdout
       KONG_ADMIN_ERROR_LOG: /dev/stderr
       KONG_UNTRUSTED_LUA_SANDBOX_REQUIRES: cjson
-      KONG_PLUGINS: bundled,simple-validator,ai-proxy,tenant-restriction
+      KONG_PLUGINS: bundled,simple-validator,ai-proxy,tenant-restriction,gateway-signature
       KONG_LOG_LEVEL: debug
     volumes:
       - kong_cluster_certs:/certs:ro
       - ./gateway/plugins/simple-validator:/usr/local/share/lua/5.1/kong/plugins/simple-validator
       - ./gateway/plugins/tenant-restriction:/usr/local/share/lua/5.1/kong/plugins/tenant-restriction
+      - ./gateway/plugins/gateway-signature:/usr/local/share/lua/5.1/kong/plugins/gateway-signature
     expose:
       - "8001"
       - "8002"
@@ -225,12 +226,13 @@ services:
       KONG_PROXY_ACCESS_LOG: /dev/stdout
       KONG_PROXY_ERROR_LOG: /dev/stderr
       KONG_UNTRUSTED_LUA_SANDBOX_REQUIRES: cjson
-      KONG_PLUGINS: bundled,simple-validator,ai-proxy,tenant-restriction
+      KONG_PLUGINS: bundled,simple-validator,ai-proxy,tenant-restriction,gateway-signature
       KONG_LOG_LEVEL: debug
     volumes:
       - kong_cluster_certs:/certs:ro
       - ./gateway/plugins/simple-validator:/usr/local/share/lua/5.1/kong/plugins/simple-validator
       - ./gateway/plugins/tenant-restriction:/usr/local/share/lua/5.1/kong/plugins/tenant-restriction
+      - ./gateway/plugins/gateway-signature:/usr/local/share/lua/5.1/kong/plugins/gateway-signature
     ports:
       - "8000:8000"
       - "8443:8443"
@@ -303,6 +305,8 @@ services:
       INTENT_CLASSIFIER_ENABLED: "true"
       INTENT_CLASSIFIER_SHADOW: "false"
       INTENT_TAXONOMY_PATH: /app/intent_taxonomy/intent_labels_v1.yaml
+      GATEWAY_SIGNATURE_SECRET: dev-gateway-hmac-secret-change-me
+      GATEWAY_SIGNATURE_MAX_SKEW_SECONDS: "300"
     ports:
       - "3000:3000"
     volumes:

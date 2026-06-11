@@ -12,6 +12,7 @@ This module provides:
 from __future__ import annotations
 
 import logging
+import time
 import uuid
 from contextvars import ContextVar
 
@@ -20,8 +21,16 @@ from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoin
 from starlette.responses import Response
 
 from app.core.config import settings
+from app.core.gateway_signature import gateway_verify_signature
+from app.infrastructure.redis_client import get_shared_redis
 
 logger = logging.getLogger(__name__)
+
+_GATEWAY_FORBIDDEN = HTTPException(
+    status_code=403,
+    detail="all requests should come from kong gateway",
+)
+_NONCE_KEY_PREFIX = "gw:nonce:"
 
 
 # ── Context Variable for Correlation ID ─────────────────────────────────────
@@ -32,22 +41,72 @@ correlation_id_ctx: ContextVar[str] = ContextVar("correlation_id", default="-")
 
 # ── Kong Header Verification (FastAPI Dependency) ───────────────────────────
 
-def verify_kong_header(request: Request) -> None:
+def _verify_legacy_kong_header(request: Request) -> None:
+    """Fallback check when HMAC signing is not configured."""
+    header_value = request.headers.get("kong-header")
+    if header_value is None:
+        raise _GATEWAY_FORBIDDEN
+
+    if settings.kong_header_value != "true" and header_value != settings.kong_header_value:
+        raise _GATEWAY_FORBIDDEN
+
+
+async def _verify_gateway_hmac(request: Request) -> None:
+    """Verify Kong gateway-signature HMAC headers and reject replayed nonces."""
+    timestamp = request.headers.get("X-Gateway-Timestamp")
+    nonce = request.headers.get("X-Gateway-Nonce")
+    signature = request.headers.get("X-Gateway-Signature")
+
+    if not timestamp or not nonce or not signature:
+        raise _GATEWAY_FORBIDDEN
+
+    try:
+        ts = int(timestamp)
+    except ValueError:
+        raise _GATEWAY_FORBIDDEN from None
+
+    now = int(time.time())
+    max_skew = settings.gateway_signature_max_skew_seconds
+    if abs(now - ts) > max_skew:
+        raise _GATEWAY_FORBIDDEN
+
+    if not gateway_verify_signature(
+        secret=settings.gateway_signature_secret,
+        method=request.method,
+        path=request.url.path,
+        timestamp=timestamp,
+        nonce=nonce,
+        provided_signature=signature,
+    ):
+        raise _GATEWAY_FORBIDDEN
+
+    try:
+        redis_client = await get_shared_redis()
+        nonce_key = f"{_NONCE_KEY_PREFIX}{nonce}"
+        was_set = await redis_client.set(nonce_key, "1", nx=True, ex=max(max_skew * 2, 60))
+    except Exception:
+        logger.exception("Gateway nonce replay check failed (Redis unavailable)")
+        raise HTTPException(
+            status_code=503,
+            detail="gateway verification temporarily unavailable",
+        ) from None
+
+    if not was_set:
+        logger.warning("Rejected replayed gateway nonce")
+        raise _GATEWAY_FORBIDDEN
+
+
+async def verify_kong_header(request: Request) -> None:
     """Reject requests that are not coming from Kong gateway."""
 
     if request.method == "OPTIONS":
         return
 
-    header_value = request.headers.get("kong-header")
-    if header_value is None:
-        raise HTTPException(status_code=403, detail="all requests should come from kong gateway")
+    if settings.gateway_signature_secret:
+        await _verify_gateway_hmac(request)
+        return
 
-    # If you set KONG_HEADER_VALUE, enforce it; otherwise accept any truthy header value.
-    if settings.kong_header_value is not None and settings.kong_header_value != "true":
-        if header_value != settings.kong_header_value:
-            raise HTTPException(status_code=403, detail="all requests should come from kong gateway")
-
-    return
+    _verify_legacy_kong_header(request)
 
 
 # ── Correlation ID Middleware ───────────────────────────────────────────────

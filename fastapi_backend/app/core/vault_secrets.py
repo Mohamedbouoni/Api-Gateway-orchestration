@@ -84,6 +84,11 @@ def load_vault_secrets() -> dict[str, str]:
         )
         logger.info("Vault: loaded REDIS_URL from secret/redis/platform")
 
+    gateway = _read_kv2(client, vault_mount, "gateway/signature")
+    if gateway.get("secret"):
+        overrides["GATEWAY_SIGNATURE_SECRET"] = gateway["secret"]
+        logger.info("Vault: loaded GATEWAY_SIGNATURE_SECRET from secret/gateway/signature")
+
     if overrides:
         logger.info("Loaded %d secret(s) from Vault", len(overrides))
     return overrides

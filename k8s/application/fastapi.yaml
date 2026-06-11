@@ -25,8 +25,7 @@ data:
   KEYCLOAK_URL: "http://keycloak.ai-application.svc.cluster.local:8080/auth"
   KEYCLOAK_REALM: "newRealm"
   CORS_ORIGIN: "http://localhost,http://127.0.0.1,http://localhost:5173,http://127.0.0.1:5173,http://localhost:8000"
-  # REDIS_URL is overridden at runtime by Vault (secret/redis/platform); this is the fallback
-  REDIS_URL: "redis://redis.ai-data.svc.cluster.local:6379/0"
+  # REDIS_URL comes from redis-secret (synced from Vault); do not use passwordless URLs here
   OPA_ENABLED: "true"
   OPA_URL: "http://opa.ai-application.svc.cluster.local:8181"
   OPA_POLICY_PATH: "/v1/data/orchestrator"
@@ -50,6 +49,8 @@ data:
   HF_HOME: "/var/cache/huggingface"
   # Presidio spaCy model — must match `python -m spacy download` in Dockerfile
   PRESIDIO_SPACY_MODEL: "en_core_web_sm"
+  GATEWAY_SIGNATURE_SECRET: "dev-gateway-hmac-secret-change-me"
+  GATEWAY_SIGNATURE_MAX_SKEW_SECONDS: "300"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -86,6 +87,11 @@ spec:
                 secretKeyRef:
                   name: platform-db-secret
                   key: DATABASE_URL
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: redis-secret
+                  key: REDIS_URL
           volumeMounts:
             - name: intent-taxonomy
               mountPath: /etc/intent-taxonomy

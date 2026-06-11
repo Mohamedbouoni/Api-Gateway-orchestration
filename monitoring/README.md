@@ -56,6 +56,10 @@ Pods reach the host Ollama API via `host.docker.internal:11434`. On Windows, **`
 
 Cluster Grafana listens on **container port 3000**, with `GF_SERVER_ROOT_URL` pointing at **`http://localhost:3000/grafana/`** when exposed via port-forward.
 
+**Loki** is deployed in `ai-monitoring` (`k8s/monitoring/loki.yaml`). Promtail sidecars in the **kong-logger** and **WAF** pods tail JSONL / ModSecurity audit files and push to Loki. Grafana datasource `Loki` is provisioned via `datasource.k8s.yml`.
+
+Dashboard: **Edge Access Logs (Kong + WAF)** (`edge_access_logs.json`, uid `edge-access-logs`). Default range **last 24h**; Kong list comes from Postgres (`api_usage_records`, up to 500 rows); WAF audit from Loki (`job=waf-modsec`, up to 1000 lines). WAF uses **Concurrent** audit files (one JSON per transaction) for reliable Promtail ingestion.
+
 The SPA’s **Admin Portal → Observability** iframes still use **`http://localhost:3001/...`** so they match Docker Compose. Forward the in-cluster Service to local **3001** (not 3000):
 
 ```bash
@@ -73,6 +77,7 @@ kubectl port-forward -n ai-monitoring svc/grafana 3001:3000
 | Errors with full request context (status, error_type, source IP) | Postgres + Loki | `API Gateway - Errors` dashboard (Postgres table + Loki Logs panel) |
 | Billing aggregates (requests/bytes per API per hour) | Postgres view `api_usage_hourly` | Direct SQL or per-consumer dashboard |
 | Raw access log lines (CloudWatch-Logs-Insights-style) | Loki via Grafana Explore | `{job="kong-access"} \| json \| ...` |
+| Kong + WAF access/audit logs (24h list + filters) | Postgres + Loki dashboard **Edge Access Logs (Kong + WAF)** | Grafana → `edge-access-logs` (uid); Kong table from Postgres, WAF from Loki |
 | Active alerts (Prometheus or Grafana-managed) | Alertmanager / Grafana Alerting | `:9093` or Grafana -> Alerting -> Alert rules |
 | Is kong-logger ingesting? | Grafana alert + `kong-logger/health` | `KongLoggerIngestionStalled` alert + `curl localhost:8888/health` |
 
@@ -85,6 +90,8 @@ kubectl port-forward -n ai-monitoring svc/grafana 3001:3000
 - `api_gateway_per_api` - drill-down by `api_id` (template var). Latency heatmap, top consumers, recent 50 requests. **Postgres-backed.**
 - `api_gateway_per_consumer` - drill-down by `consumer_username` (template var). Bytes processed, APIs touched, 4xx/5xx counts. **Postgres-backed.**
 - `api_gateway_errors` - 4xx/5xx rate, integration errors, recent error table, **plus a Loki logs panel** for the same time window.
+- `edge_access_logs` - **K8s Loki dashboard**: live Kong access JSONL (`job=kong-access`) and WAF ModSecurity audit log (`job=waf-modsec`).
+- `waf-edge-security` - WAF Prometheus metrics (connections, request rate); audit log text panel links to Loki dashboard above.
 
 ## Alerts
 

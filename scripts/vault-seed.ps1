@@ -109,6 +109,11 @@ Set-VaultSecret "redis/platform" @{
     password = "redis-dev-pass"
 }
 
+# ── 5b. Kong → FastAPI HMAC (must match gateway-signature plugin secret) ───
+Set-VaultSecret "gateway/signature" @{
+    secret = "dev-gateway-hmac-secret-change-me"
+}
+
 # ── 6. Hugging Face token ─────────────────────────────────────────────────────
 $hfTokenPath = Join-Path $Root "fastapi_backend\.hf_token"
 if (Test-Path $hfTokenPath) {

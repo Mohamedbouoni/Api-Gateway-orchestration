@@ -34,7 +34,6 @@ def measure_once() -> dict:
             "Content-Type": "application/json",
             "Authorization": f"Bearer {TOKEN}",
             "Accept": "text/event-stream",
-            "kong-header": "true",
         },
     )
 

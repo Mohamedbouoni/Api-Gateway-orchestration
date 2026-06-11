@@ -29,7 +29,10 @@ data:
 
   # ── Audit logging ─────────────────────────────────────────────────────────
   MODSEC_AUDIT_ENGINE: "On"
-  MODSEC_AUDIT_LOG: "/var/log/modsec_audit.log"
+  # Concurrent = one JSON file per transaction (Promtail-friendly for Loki)
+  MODSEC_AUDIT_LOG_TYPE: "Concurrent"
+  MODSEC_AUDIT_LOG: "/var/log/modsec_audit.index"
+  MODSEC_AUDIT_STORAGE_DIR: "/var/log/modsec_audit"
   MODSEC_AUDIT_LOG_FORMAT: "JSON"
 
   # ── CRS tuning (mirrors docker-compose.yml) ───────────────────────────────
@@ -69,7 +72,7 @@ spec:
         # at /var/log so we create the nginx subdirectory before nginx starts.
         - name: init-log-dirs
           image: busybox:1.36
-          command: ['sh', '-c', 'mkdir -p /var/log/nginx && chmod -R 777 /var/log']
+          command: ['sh', '-c', 'mkdir -p /var/log/nginx /var/log/modsec_audit && chmod -R 777 /var/log']
           volumeMounts:
             - name: modsec-logs
               mountPath: /var/log
@@ -138,9 +141,35 @@ spec:
             timeoutSeconds: 5
             failureThreshold: 3
 
+        # ── Promtail sidecar — ships ModSecurity audit log to Loki ───────────
+        - name: promtail
+          image: grafana/promtail:2.9.6
+          args:
+            - -config.file=/etc/promtail/promtail.yaml
+          resources:
+            requests:
+              memory: "32Mi"
+              cpu: "25m"
+            limits:
+              memory: "128Mi"
+              cpu: "100m"
+          volumeMounts:
+            - name: modsec-logs
+              mountPath: /var/log
+              readOnly: true
+            - name: promtail-config
+              mountPath: /etc/promtail
+            - name: promtail-positions
+              mountPath: /tmp
+
       volumes:
-        # emptyDir for ModSecurity audit log — readable via kubectl exec
+        # emptyDir for ModSecurity audit log — shared with promtail sidecar
         - name: modsec-logs
+          emptyDir: {}
+        - name: promtail-config
+          configMap:
+            name: promtail-waf-config
+        - name: promtail-positions
           emptyDir: {}
 ---
 apiVersion: v1

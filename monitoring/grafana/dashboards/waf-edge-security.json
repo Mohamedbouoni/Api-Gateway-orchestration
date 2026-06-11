@@ -161,7 +161,7 @@
       "type": "text",
       "gridPos": { "h": 6, "w": 24, "x": 0, "y": 12 },
       "options": {
-        "content": "## ModSecurity Audit Log\n\nBlocked requests are written as JSON to `/var/log/modsec_audit.log` inside the WAF pod.\n\n**Inspect live:**\n```sh\nkubectl exec -n ai-gateway deploy/waf -c waf -- tail -f /var/log/modsec_audit.log\n```\n\n**Count blocked requests:**\n```sh\nkubectl exec -n ai-gateway deploy/waf -c waf -- grep -c '\"action\"' /var/log/modsec_audit.log\n```\n\n**Test a SQLi attack (should return 403):**\n```sh\ncurl -i 'http://localhost/?id=1%27+OR+%271%27%3D%271'\n```\n\n**Pod health:**\n```sh\nkubectl get pod -n ai-gateway -l app=waf\nkubectl logs -n ai-gateway deploy/waf -c waf --tail=40\n```",
+        "content": "## ModSecurity Audit Log\n\nBlocked requests are written as **JSON** under `/var/log/modsec_audit/` (Concurrent mode, one file per transaction). Index: `/var/log/modsec_audit.index`.\n\n**Grafana (recommended):** dashboard **Edge Access Logs (Kong + WAF)** (`edge-access-logs`) — last 24h WAF audit list with filters.\n\n**Inspect live in pod:**\n```sh\nkubectl exec -n ai-gateway deploy/waf -c waf -- find /var/log/modsec_audit -type f | tail -3\nkubectl exec -n ai-gateway deploy/waf -c waf -- tail -f /var/log/modsec_audit.index\n```\n\n**Test a SQLi attack (should return 403):**\n```sh\ncurl -i 'http://localhost/?id=1%27+OR+%271%27%3D%271'\n```",
         "mode": "markdown"
       }
     }

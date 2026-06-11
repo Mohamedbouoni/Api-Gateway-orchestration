@@ -11,7 +11,6 @@ const apiClient = axios.create({
   baseURL: "/api/v1",
   headers: {
     "Content-Type": "application/json",
-    "kong-header": "true",
   },
 });
 

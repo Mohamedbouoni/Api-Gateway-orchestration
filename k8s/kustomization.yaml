@@ -25,6 +25,7 @@ resources:
 
   # ── Step 6: Frontend and Monitoring ──────────────────────────────────────
   - frontend-and-monitoring.yaml
+  - monitoring/loki.yaml
 
   # ── Step 7: Network Policies (applied after everything is created) ────────
   - network-policies.yaml
