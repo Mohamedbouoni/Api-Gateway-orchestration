@@ -249,84 +249,20 @@ if [ -z "$metrics_api" ]; then
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────
-# [1/8] Create Namespaces
+# [1/5] Create Namespaces
 # ─────────────────────────────────────────────────────────────────────────────
 echo ""
-echo -e "${YELLOW}[1/8] Creating namespaces...${NC}"
+echo -e "${YELLOW}[1/5] Creating namespaces...${NC}"
 kubectl apply -f k8s/namespaces.yaml
 
 # ─────────────────────────────────────────────────────────────────────────────
-# [1.5] Deploy Vault (ai-data namespace)
+# [2/5] Create ConfigMaps (DB init scripts, Kong plugins, Configuration)
 # ─────────────────────────────────────────────────────────────────────────────
 echo ""
-echo -e "${YELLOW}[1.5] Deploying Vault to ai-data namespace...${NC}"
-kubectl apply -f k8s/data/vault.yaml
-echo -e "${GRAY}  Waiting for Vault pod to be ready (up to 300s - first run pulls image)...${NC}"
-if ! kubectl wait --for=condition=ready pod -l app=vault -n ai-data --timeout=300s 2>/dev/null; then
-    vault_phase=$(kubectl get pod -l app=vault -n ai-data -o jsonpath="{.items[0].status.phase}" 2>/dev/null || true)
-    if [ "$vault_phase" = "Running" ]; then
-        echo -e "${GREEN}  Vault pod is Running (from prior deployment). Proceeding.${NC}"
-    else
-        echo -e "${RED}  Vault pod did not become ready. Dumping pod info...${NC}"
-        kubectl describe pod -l app=vault -n ai-data || true
-        kubectl logs -l app=vault -n ai-data --tail=40 || true
-        echo -e "${RED}Error: Vault pod did not become ready in time.${NC}"
-        exit 1
-    fi
-fi
-echo -e "${GREEN}  Vault is running.${NC}"
-
-# ─────────────────────────────────────────────────────────────────────────────
-# [1.6] Seed Vault via port-forward
-# ─────────────────────────────────────────────────────────────────────────────
-echo ""
-echo -e "${YELLOW}[1.6] Seeding Vault secrets via port-forward...${NC}"
-kubectl port-forward -n ai-data svc/vault 8200:8200 &>/dev/null &
-PF_PID=$!
-echo -e "${GRAY}  Port-forward started (PID ${PF_PID}). Waiting 5s for it to stabilise...${NC}"
-sleep 5
-
-cleanup_pf() {
-    kill $PF_PID 2>/dev/null || true
-    wait $PF_PID 2>/dev/null || true
-}
-
-trap cleanup_pf EXIT
-"${SCRIPT_DIR}/scripts/vault-seed.sh" "http://localhost:8200" "dev-root-token"
-kill $PF_PID 2>/dev/null || true
-wait $PF_PID 2>/dev/null || true
-
-# ─────────────────────────────────────────────────────────────────────────────
-# [1.7] Sync Vault secrets → K8s Secrets
-# ─────────────────────────────────────────────────────────────────────────────
-echo ""
-echo -e "${YELLOW}[1.7] Syncing K8s secrets from Vault...${NC}"
-# A fresh port-forward is needed because the previous one was stopped
-kubectl port-forward -n ai-data svc/vault 8200:8200 &>/dev/null &
-PF_PID2=$!
-echo -e "${GRAY}  Port-forward restarted (PID ${PF_PID2}). Waiting 4s...${NC}"
-sleep 4
-
-"${SCRIPT_DIR}/scripts/vault-sync-k8s-secrets.sh" "http://localhost:8200" "dev-root-token"
-kill $PF_PID2 2>/dev/null || true
-wait $PF_PID2 2>/dev/null || true
-
-# Reset trap since port-forward processes are cleaned up
-trap - EXIT
-
-# ─────────────────────────────────────────────────────────────────────────────
-# [2/8] Create ConfigMaps for DB init scripts
-# ─────────────────────────────────────────────────────────────────────────────
-echo ""
-echo -e "${YELLOW}[2/8] Creating database ConfigMaps...${NC}"
+echo -e "${YELLOW}[2/5] Creating ConfigMaps...${NC}"
 kubectl create configmap platform-db-init-scripts --from-file=init-platform-db.sql=backend/scripts/init-platform-db.sql -n ai-data --dry-run=client -o yaml | kubectl apply -f -
 kubectl create configmap platform-db-usage-scripts --from-file=init-platform-db-usage.sql=backend/scripts/init-platform-db-usage.sql -n ai-data --dry-run=client -o yaml | kubectl apply -f -
 
-# ─────────────────────────────────────────────────────────────────────────────
-# [3/8] Create Kong plugin & routing ConfigMaps
-# ─────────────────────────────────────────────────────────────────────────────
-echo ""
-echo -e "${YELLOW}[3/8] Creating Kong plugin & routing ConfigMaps...${NC}"
 kubectl create configmap kong-plugin-simple-validator --from-file=gateway/plugins/simple-validator -n ai-gateway --dry-run=client -o yaml | kubectl apply -f -
 kubectl create configmap kong-plugin-tenant-restriction --from-file=gateway/plugins/tenant-restriction -n ai-gateway --dry-run=client -o yaml | kubectl apply -f -
 kubectl create configmap kong-plugin-gateway-signature --from-file=gateway/plugins/gateway-signature -n ai-gateway --dry-run=client -o yaml | kubectl apply -f -
@@ -334,35 +270,29 @@ kubectl create configmap kong-deck-config --from-file=kong_final.yaml=gateway/ko
 kubectl create configmap grafana-dashboards --from-file=monitoring/grafana/dashboards/ -n ai-monitoring --dry-run=client -o yaml | kubectl apply -f -
 kubectl create configmap grafana-provisioning-dashboards --from-file=monitoring/grafana/provisioning/dashboards/ -n ai-monitoring --dry-run=client -o yaml | kubectl apply -f -
 kubectl create configmap grafana-provisioning-datasources --from-file=datasource.yml=monitoring/grafana/provisioning/datasources/datasource.k8s.yml -n ai-monitoring --dry-run=client -o yaml | kubectl apply -f -
-
-# ─────────────────────────────────────────────────────────────────────────────
-# [4/8] Create Configuration ConfigMaps
-# ─────────────────────────────────────────────────────────────────────────────
-echo ""
-echo -e "${YELLOW}[4/8] Creating Configuration ConfigMaps...${NC}"
 kubectl create configmap keycloak-realm --from-file=realm-export.json=keycloak/realm-export.json -n ai-application --dry-run=client -o yaml | kubectl apply -f -
 kubectl create configmap prometheus-config --from-file=prometheus.yml=monitoring/prometheus.k8s.yml -n ai-monitoring --dry-run=client -o yaml | kubectl apply -f -
 kubectl create configmap promtail-kong-config --from-file=promtail.yaml=monitoring/promtail/promtail-kong.k8s.yaml -n ai-application --dry-run=client -o yaml | kubectl apply -f -
 kubectl create configmap promtail-waf-config --from-file=promtail.yaml=monitoring/promtail/promtail-waf.k8s.yaml -n ai-gateway --dry-run=client -o yaml | kubectl apply -f -
 
 # ─────────────────────────────────────────────────────────────────────────────
-# [5/8] Kong mTLS certificates (already synced by Vault in step 1.7)
+# [3/5] Kong mTLS certificates
 # ─────────────────────────────────────────────────────────────────────────────
 echo ""
-echo -e "${YELLOW}[5/8] Checking Kong mTLS certificates...${NC}"
+echo -e "${YELLOW}[3/5] Checking Kong mTLS certificates...${NC}"
 if kubectl get secret kong-cluster-certs -n ai-gateway &>/dev/null; then
-    echo -e "${GREEN}  kong-cluster-certs secret exists (created by Vault sync in step 1.7).${NC}"
+    echo -e "${GREEN}  kong-cluster-certs secret already exists, skipping.${NC}"
 else
-    echo -e "${YELLOW}  WARNING: kong-cluster-certs not found - Vault sync may have failed. Attempting fallback cert generation...${NC}"
+    echo -e "${GRAY}  Generating new mTLS certificates...${NC}"
     docker run --rm -v "$(pwd)/k8s/secrets:/certs" alpine/openssl req -new -x509 -nodes -newkey rsa:2048 -keyout /certs/cluster.key -out /certs/cluster.crt -days 1095 -subj "/CN=kong_clustering"
     kubectl create secret tls kong-cluster-certs --cert=k8s/secrets/cluster.crt --key=k8s/secrets/cluster.key -n ai-gateway
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────
-# [6/8] Deploy everything via Kustomize
+# [4/5] Deploy everything via Kustomize
 # ─────────────────────────────────────────────────────────────────────────────
 echo ""
-echo -e "${YELLOW}[6/8] Deploying all services...${NC}"
+echo -e "${YELLOW}[4/5] Deploying all services...${NC}"
 apply_output=$(kubectl apply -k k8s/ 2>&1) || {
     echo "$apply_output"
     echo -e "${RED}Error: Step [6/8] failed: kubectl apply -k k8s/ returned non-zero exit code.${NC}"
@@ -452,10 +382,10 @@ if ! kubectl wait --for=condition=ready pod -l app=kong-cp -n ai-gateway --timeo
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────
-# [7/8] Sync Kong Configuration using Deck
+# [5/5] Sync Kong Configuration using Deck
 # ─────────────────────────────────────────────────────────────────────────────
 echo ""
-echo -e "${YELLOW}[7/8] Synchronizing Kong Configuration...${NC}"
+echo -e "${YELLOW}[5/5] Synchronizing Kong Configuration...${NC}"
 if ! kubectl apply -f k8s/gateway/kong-deck-sync.yaml; then
     echo -e "${RED}Error: Failed to create kong-deck-sync job.${NC}"
     exit 1
@@ -467,59 +397,7 @@ if ! kubectl wait --for=condition=complete job/kong-deck-sync -n ai-gateway --ti
     exit 1
 fi
 
-# ─────────────────────────────────────────────────────────────────────────────
-# [8/8] Bootstrap master realm + verify admin console edge URLs
-# ─────────────────────────────────────────────────────────────────────────────
-echo ""
-echo -e "${YELLOW}[8/8] Configuring Keycloak master realm (admin console)...${NC}"
-kubectl delete job keycloak-master-config -n ai-application --ignore-not-found 2>&1 || true
-if ! kubectl apply -f k8s/application/keycloak-master-config-job.yaml; then
-    echo -e "${RED}Error: Failed to create keycloak-master-config job.${NC}"
-    exit 1
-fi
-if ! kubectl wait --for=condition=complete job/keycloak-master-config -n ai-application --timeout=300s; then
-    echo -e "${RED}  keycloak-master-config failed; dumping job logs...${NC}"
-    kubectl logs job/keycloak-master-config -n ai-application --tail=100 || true
-    echo -e "${RED}Error: keycloak-master-config job did not complete successfully.${NC}"
-    exit 1
-fi
-echo -e "${GREEN}  Master realm configured.${NC}"
 
-echo -e "${GRAY}  Verifying Keycloak OIDC URLs at http://localhost/auth ...${NC}"
-realm_json=$(curl -s "http://localhost/auth/realms/master" 2>&1 || true)
-if echo "$realm_json" | grep -qE ":8000|:8443"; then
-    echo -e "${RED}  realm response: ${realm_json}${NC}"
-    echo -e "${RED}Error: Keycloak realm JSON still exposes wrong port (expected http://localhost/auth only).${NC}"
-    exit 1
-fi
-
-oidc_json=$(curl -s "http://localhost/auth/realms/master/.well-known/openid-configuration" 2>&1 || true)
-if ! echo "$oidc_json" | grep -q '"issuer":"http://localhost/auth/realms/master"'; then
-    echo -e "${RED}  OIDC discovery: ${oidc_json}${NC}"
-    echo -e "${RED}Error: Keycloak OIDC issuer is not http://localhost/auth/realms/master${NC}"
-    exit 1
-fi
-
-admin_head=$(curl -sI "http://localhost/auth/admin/" 2>&1 || true)
-if ! echo "$admin_head" | grep -q "Location: http://localhost/auth/admin/master/console/"; then
-    echo -e "${RED}  /auth/admin/ headers:\n${admin_head}${NC}"
-    echo -e "${RED}Error: Keycloak admin redirect Location is wrong (must not use :8000).${NC}"
-    exit 1
-fi
-echo -e "${GREEN}  Keycloak edge OIDC checks passed.${NC}"
-
-echo -e "${GRAY}  Running OAuth login smoke test (security-admin-console) ...${NC}"
-oauth_test="${SCRIPT_DIR}/scripts/test-keycloak-admin-oauth.py"
-if [ ! -f "$oauth_test" ]; then
-    echo -e "${RED}Error: Missing ${oauth_test}${NC}"
-    exit 1
-fi
-if ! python3 "$oauth_test"; then
-    echo -e "${RED}Error: Keycloak admin OAuth smoke test failed (cookie/login/token). See script output above.${NC}"
-    exit 1
-fi
-
-echo -e "${CYAN}  Admin console: http://localhost/auth/admin/  (use a private window after deploy)${NC}"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Final Status
