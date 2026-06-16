@@ -526,18 +526,20 @@ fi
 echo ""
 echo -e "${YELLOW}[4/5] Deploying all services...${NC}"
 
-# Convert PVCs to emptyDir dynamically for server execution (fixes unbound PVC issues)
-echo -e "${GRAY}  Converting PVC volumes to emptyDir for server execution...${NC}"
+# Convert PVCs to emptyDir and disable Vault dynamically for server execution
+echo -e "${GRAY}  Converting PVC volumes to emptyDir and disabling Vault for server execution...${NC}"
 python3 -c "
 import glob, re
 for f in glob.glob('k8s/**/*.yaml', recursive=True):
     with open(f, 'r') as fh:
         content = fh.read()
     new_content = re.sub(r'persistentVolumeClaim:\s*\n\s*claimName:\s*\S+', 'emptyDir: {}', content)
+    new_content = re.sub(r'VAULT_ENABLED:\s*\"true\"', 'VAULT_ENABLED: \"false\"', new_content)
+    new_content = re.sub(r'(name:\s*VAULT_ENABLED\s*\n\s*)value:\s*\"true\"', r'\1value: \"false\"', new_content)
     if new_content != content:
         with open(f, 'w') as fh:
             fh.write(new_content)
-        print(f'  [OK] Patched {f} to use emptyDir')
+        print(f'  [OK] Patched {f}')
 "
 
 apply_output=$(kubectl apply -k k8s/ 2>&1) || {
