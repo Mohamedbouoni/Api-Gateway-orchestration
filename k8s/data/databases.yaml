@@ -84,8 +84,7 @@ spec:
               mountPath: /var/lib/postgresql/data
       volumes:
         - name: data
-          persistentVolumeClaim:
-            claimName: kong-db-pvc
+          emptyDir: {}
 ---
 apiVersion: v1
 kind: Service
@@ -189,8 +188,7 @@ spec:
               mountPath: /var/lib/postgresql/data
       volumes:
         - name: data
-          persistentVolumeClaim:
-            claimName: keycloak-db-pvc
+          emptyDir: {}
 ---
 apiVersion: v1
 kind: Service

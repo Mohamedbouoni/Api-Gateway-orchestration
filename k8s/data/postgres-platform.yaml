@@ -108,8 +108,7 @@ spec:
               subPath: init-platform-db-usage.sql
       volumes:
         - name: data
-          persistentVolumeClaim:
-            claimName: platform-db-pvc
+          emptyDir: {}
         - name: init-platform
           configMap:
             name: platform-db-init-scripts
