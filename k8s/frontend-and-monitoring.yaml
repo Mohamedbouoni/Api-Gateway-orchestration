@@ -160,7 +160,8 @@ spec:
               subPath: prometheus.yml
       volumes:
         - name: data
-          emptyDir: {}
+          persistentVolumeClaim:
+            claimName: prometheus-pvc
         - name: config
           configMap:
             name: prometheus-config
@@ -263,7 +264,8 @@ spec:
               mountPath: /etc/grafana/provisioning/datasources
       volumes:
         - name: data
-          emptyDir: {}
+          persistentVolumeClaim:
+            claimName: grafana-pvc
         - name: dashboards
           configMap:
             name: grafana-dashboards

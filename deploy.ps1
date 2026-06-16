@@ -1,4 +1,4 @@
-# ─────────────────────────────────────────────────────────────────────────────
+﻿# ─────────────────────────────────────────────────────────────────────────────
 # deploy.ps1  -  Enterprise AI Gateway Kubernetes Deployment Script
 
 # Usage:  .\deploy.ps1
@@ -12,8 +12,7 @@
 $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 if (-not $isAdmin) {
     Write-Host "Warning: Not running as Administrator. Skipping machine-level OLLAMA_KEEP_ALIVE configuration." -ForegroundColor Yellow
-}
-else {
+} else {
     $ollamaKeepAlive = [Environment]::GetEnvironmentVariable("OLLAMA_KEEP_ALIVE", "Machine")
     if ($ollamaKeepAlive -ne "-1") {
         Write-Host "Configuring OLLAMA_KEEP_ALIVE=-1 (keep models loaded in memory)..." -ForegroundColor Yellow
@@ -24,16 +23,13 @@ else {
         $ollamaApp = Join-Path $env:LOCALAPPDATA "Programs\Ollama\ollama app.exe"
         if (Test-Path $ollamaApp) {
             Start-Process -FilePath $ollamaApp -WindowStyle Hidden
-        }
-        elseif (Get-Command ollama -ErrorAction SilentlyContinue) {
+        } elseif (Get-Command ollama -ErrorAction SilentlyContinue) {
             Start-Process -FilePath "ollama" -ArgumentList "serve" -WindowStyle Hidden
-        }
-        else {
+        } else {
             $svc = Get-Service -Name "Ollama" -ErrorAction SilentlyContinue
             if ($svc) {
                 Restart-Service -Name "Ollama" -Force -ErrorAction SilentlyContinue
-            }
-            else {
+            } else {
                 Write-Host "  Warning: Ollama not found; install Ollama on the host for local LLM routing." -ForegroundColor DarkYellow
             }
         }
@@ -41,12 +37,10 @@ else {
         try {
             $null = Invoke-WebRequest -Uri "http://localhost:11434/api/tags" -UseBasicParsing -TimeoutSec 5
             Write-Host "  Ollama API is reachable on :11434" -ForegroundColor Green
-        }
-        catch {
+        } catch {
             Write-Host "  Warning: Ollama API not reachable yet at http://localhost:11434" -ForegroundColor DarkYellow
         }
-    }
-    else {
+    } else {
         Write-Host "OLLAMA_KEEP_ALIVE already set to -1 (models stay warm)." -ForegroundColor Gray
     }
 }
@@ -58,10 +52,9 @@ $installedTags = @()
 try {
     $installedTags = @(
         (Invoke-RestMethod -Uri "http://localhost:11434/api/tags" -TimeoutSec 5).models |
-        ForEach-Object { $_.name }
+            ForEach-Object { $_.name }
     )
-}
-catch {
+} catch {
     Write-Host "  Warning: Ollama API not reachable; skipping model warmup." -ForegroundColor DarkYellow
 }
 
@@ -92,8 +85,7 @@ foreach ($baseName in $requiredModels) {
             -TimeoutSec 300
 
         Write-Host "  $tag warmed up (keep_alive=-1)" -ForegroundColor Green
-    }
-    catch {
+    } catch {
         Write-Host "  Warning: could not warm up $tag - $($_.Exception.Message)" -ForegroundColor DarkYellow
     }
 }
@@ -179,8 +171,7 @@ function Build-LocalImage {
             if ($exitCode -ne 0 -and (Test-Path $logFile)) {
                 $buildText = Get-Content $logFile -Raw -ErrorAction SilentlyContinue
             }
-        }
-        finally {
+        } finally {
             if (Test-Path $logFile) {
                 Remove-Item $logFile -Force -ErrorAction SilentlyContinue
             }
@@ -202,7 +193,7 @@ function Build-LocalImage {
     }
 }
 
-Write-Host "[0/5] Running preflight checks..." -ForegroundColor Yellow
+Write-Host "[0/8] Running preflight checks..." -ForegroundColor Yellow
 Ensure-Command "kubectl"
 Ensure-Command "docker"
 kubectl cluster-info | Out-Null
@@ -210,7 +201,8 @@ if ($LASTEXITCODE -ne 0) {
     throw "kubectl cannot reach the active cluster context."
 }
 Ensure-Path "k8s\kustomization.yaml"
-Ensure-Path "k8s\secrets\secrets.yaml"
+# secrets/secrets.yaml is no longer applied statically; Vault sync creates K8s secrets dynamically
+# Ensure-Path "k8s\secrets\secrets.yaml"
 Ensure-Path "backend\scripts\init-platform-db.sql"
 Ensure-Path "backend\scripts\init-platform-db-usage.sql"
 Ensure-Path "gateway\plugins\simple-validator"
@@ -235,7 +227,7 @@ Build-LocalImage "api-gateways-kong-logger:latest" "kong-logger"
 # the shebang in the Linux container on first copy from a Windows checkout).
 $wafScript = "waf\99-exclusions.sh"
 $raw = Get-Content $wafScript -Raw
-$lf = $raw -replace "`r`n", "`n" -replace "`r", "`n"
+$lf  = $raw -replace "`r`n", "`n" -replace "`r", "`n"
 [System.IO.File]::WriteAllText("$PSScriptRoot\$wafScript", $lf)
 Build-LocalImage "api-gateways-waf:latest" "waf"
 
@@ -246,19 +238,69 @@ if (-not $metricsApi) {
 
 # ── Step 1: Create Namespaces ──────────────────────────────────────────────
 Write-Host ""
-Write-Host "[1/5] Creating namespaces..." -ForegroundColor Yellow
+Write-Host "[1/8] Creating namespaces..." -ForegroundColor Yellow
 kubectl apply -f k8s/namespaces.yaml
 
+# ── Step 1.5: Deploy Vault (ai-data namespace) ────────────────────────────
+Write-Host ""
+Write-Host "[1.5] Deploying Vault to ai-data namespace..." -ForegroundColor Yellow
+kubectl apply -f k8s/data/vault.yaml
+Write-Host "  Waiting for Vault pod to be ready (up to 300s - first run pulls image)..." -ForegroundColor Gray
+kubectl wait --for=condition=ready pod -l app=vault -n ai-data --timeout=300s
+if ($LASTEXITCODE -ne 0) {
+    # Vault image pull takes time on first run; on subsequent runs check if already Running
+    $vaultPhase = kubectl get pod -l app=vault -n ai-data -o jsonpath="{.items[0].status.phase}" 2>$null
+    if ($vaultPhase -eq "Running") {
+        Write-Host "  Vault pod is Running (from prior deployment). Proceeding." -ForegroundColor Green
+    } else {
+        Write-Host "  Vault pod did not become ready. Dumping pod info..." -ForegroundColor Red
+        kubectl describe pod -l app=vault -n ai-data
+        kubectl logs -l app=vault -n ai-data --tail=40
+        throw "Vault pod did not become ready in time."
+    }
+}
+Write-Host "  Vault is running." -ForegroundColor Green
+
+# ── Step 1.6: Seed Vault via port-forward ────────────────────────────────
+Write-Host ""
+Write-Host "[1.6] Seeding Vault secrets via port-forward..." -ForegroundColor Yellow
+$pfJob = Start-Job -ScriptBlock {
+    kubectl port-forward -n ai-data svc/vault 8200:8200 2>&1
+}
+Write-Host "  Port-forward started (job $($pfJob.Id)). Waiting 5s for it to stabilise..." -ForegroundColor Gray
+Start-Sleep -Seconds 5
+try {
+    & "$PSScriptRoot\scripts\vault-seed.ps1" -VaultAddr "http://localhost:8200" -VaultToken "dev-root-token"
+} finally {
+    Stop-Job  $pfJob | Out-Null
+    Remove-Job $pfJob | Out-Null
+}
+
+# ── Step 1.7: Sync Vault secrets → K8s Secrets ───────────────────────────
+Write-Host ""
+Write-Host "[1.7] Syncing K8s secrets from Vault..." -ForegroundColor Yellow
+# A fresh port-forward is needed because the previous job was stopped
+$pfJob2 = Start-Job -ScriptBlock {
+    kubectl port-forward -n ai-data svc/vault 8200:8200 2>&1
+}
+Write-Host "  Port-forward restarted (job $($pfJob2.Id)). Waiting 4s..." -ForegroundColor Gray
+Start-Sleep -Seconds 4
+try {
+    & "$PSScriptRoot\scripts\vault-sync-k8s-secrets.ps1" -VaultAddr "http://localhost:8200" -VaultToken "dev-root-token"
+} finally {
+    Stop-Job  $pfJob2 | Out-Null
+    Remove-Job $pfJob2 | Out-Null
+}
 
 # ── Step 2: Create ConfigMaps for DB init scripts ─────────────────────────
 Write-Host ""
-Write-Host "[2/5] Creating database ConfigMaps..." -ForegroundColor Yellow
+Write-Host "[2/8] Creating database ConfigMaps..." -ForegroundColor Yellow
 kubectl create configmap platform-db-init-scripts --from-file=init-platform-db.sql=backend/scripts/init-platform-db.sql -n ai-data --dry-run=client -o yaml | kubectl apply -f -
 kubectl create configmap platform-db-usage-scripts --from-file=init-platform-db-usage.sql=backend/scripts/init-platform-db-usage.sql -n ai-data --dry-run=client -o yaml | kubectl apply -f -
 
 # ── Step 3: Create Kong plugin & routing ConfigMaps ───────────────────────
 Write-Host ""
-Write-Host "[2/5] Creating Kong plugin & routing ConfigMaps..." -ForegroundColor Yellow
+Write-Host "[3/8] Creating Kong plugin & routing ConfigMaps..." -ForegroundColor Yellow
 kubectl create configmap kong-plugin-simple-validator --from-file=gateway/plugins/simple-validator -n ai-gateway --dry-run=client -o yaml | kubectl apply -f -
 kubectl create configmap kong-plugin-tenant-restriction --from-file=gateway/plugins/tenant-restriction -n ai-gateway --dry-run=client -o yaml | kubectl apply -f -
 kubectl create configmap kong-plugin-gateway-signature --from-file=gateway/plugins/gateway-signature -n ai-gateway --dry-run=client -o yaml | kubectl apply -f -
@@ -269,28 +311,27 @@ kubectl create configmap grafana-provisioning-datasources --from-file=datasource
 
 # ── Step 4: Create Configuration ConfigMaps ───────────────────────────────
 Write-Host ""
-Write-Host "[2/5] Creating Configuration ConfigMaps..." -ForegroundColor Yellow
+Write-Host "[4/8] Creating Configuration ConfigMaps..." -ForegroundColor Yellow
 kubectl create configmap keycloak-realm --from-file=realm-export.json=keycloak/realm-export.json -n ai-application --dry-run=client -o yaml | kubectl apply -f -
 kubectl create configmap prometheus-config --from-file=prometheus.yml=monitoring/prometheus.k8s.yml -n ai-monitoring --dry-run=client -o yaml | kubectl apply -f -
 kubectl create configmap promtail-kong-config --from-file=promtail.yaml=monitoring/promtail/promtail-kong.k8s.yaml -n ai-application --dry-run=client -o yaml | kubectl apply -f -
 kubectl create configmap promtail-waf-config --from-file=promtail.yaml=monitoring/promtail/promtail-waf.k8s.yaml -n ai-gateway --dry-run=client -o yaml | kubectl apply -f -
 
-# ── Step 3: Kong mTLS certificates ────────────────────────────────────────
+# ── Step 5: Kong mTLS certificates (already synced by Vault in step 1.7) ──
 Write-Host ""
-Write-Host "[3/5] Checking Kong mTLS certificates..." -ForegroundColor Yellow
+Write-Host "[5/8] Checking Kong mTLS certificates..." -ForegroundColor Yellow
 $certExists = kubectl get secret kong-cluster-certs -n ai-gateway 2>$null
 if ($certExists) {
-    Write-Host "  kong-cluster-certs secret already exists, skipping." -ForegroundColor Green
-}
-else {
-    Write-Host "  Generating new mTLS certificates..." -ForegroundColor Gray
+    Write-Host "  kong-cluster-certs secret exists (created by Vault sync in step 1.7)." -ForegroundColor Green
+} else {
+    Write-Host "  WARNING: kong-cluster-certs not found - Vault sync may have failed. Attempting fallback cert generation..." -ForegroundColor Yellow
     docker run --rm -v "${PWD}\k8s\secrets:/certs" alpine/openssl req -new -x509 -nodes -newkey rsa:2048 -keyout /certs/cluster.key -out /certs/cluster.crt -days 1095 -subj "/CN=kong_clustering"
     kubectl create secret tls kong-cluster-certs --cert=k8s/secrets/cluster.crt --key=k8s/secrets/cluster.key -n ai-gateway
 }
 
-# ── Step 4: Deploy everything via Kustomize ───────────────────────────────
+# ── Step 6: Deploy everything via Kustomize ───────────────────────────────
 Write-Host ""
-Write-Host "[4/5] Deploying all services..." -ForegroundColor Yellow
+Write-Host "[6/8] Deploying all services..." -ForegroundColor Yellow
 $applyOutput = kubectl apply -k k8s/ 2>&1
 $applyText = ($applyOutput | Out-String)
 if ($applyText) {
@@ -360,8 +401,7 @@ if ($LASTEXITCODE -ne 0) {
     $wafPhase = kubectl get pod -l app=waf -n ai-gateway -o jsonpath="{.items[0].status.phase}" 2>$null
     if ($wafPhase -eq "Running") {
         Write-Host "  WAF pod is Running (from prior deployment). Proceeding." -ForegroundColor Green
-    }
-    else {
+    } else {
         Write-Host "  WAF pod did not become ready. Dumping pod info..." -ForegroundColor Red
         kubectl describe pod -l app=waf -n ai-gateway
         kubectl logs -l app=waf -n ai-gateway --all-containers=true --tail=50
@@ -379,9 +419,9 @@ if ($LASTEXITCODE -ne 0) {
     if ($LASTEXITCODE -ne 0) { throw "kong-cp failed to become ready after restart." }
 }
 
-# ── Step 5: Sync Kong Configuration using Deck ────────────────────────────
+# ── Step 7: Sync Kong Configuration using Deck ────────────────────────────
 Write-Host ""
-Write-Host "[5/5] Synchronizing Kong Configuration..." -ForegroundColor Yellow
+Write-Host "[7/8] Synchronizing Kong Configuration..." -ForegroundColor Yellow
 kubectl apply -f k8s/gateway/kong-deck-sync.yaml
 if ($LASTEXITCODE -ne 0) { throw "Failed to create kong-deck-sync job." }
 kubectl wait --for=condition=complete job/kong-deck-sync -n ai-gateway --timeout=180s
@@ -391,7 +431,45 @@ if ($LASTEXITCODE -ne 0) {
     throw "kong-deck-sync job did not complete successfully."
 }
 
+# ── Step 8: Bootstrap master realm + verify admin console edge URLs ─────────
+Write-Host ""
+Write-Host "[8/8] Configuring Keycloak master realm (admin console)..." -ForegroundColor Yellow
+kubectl delete job keycloak-master-config -n ai-application --ignore-not-found 2>&1 | Out-Null
+kubectl apply -f k8s/application/keycloak-master-config-job.yaml
+if ($LASTEXITCODE -ne 0) { throw "Failed to create keycloak-master-config job." }
+kubectl wait --for=condition=complete job/keycloak-master-config -n ai-application --timeout=300s
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "  keycloak-master-config failed; dumping job logs..." -ForegroundColor Red
+    kubectl logs job/keycloak-master-config -n ai-application --tail=100
+    throw "keycloak-master-config job did not complete successfully."
+}
+Write-Host "  Master realm configured." -ForegroundColor Green
 
+Write-Host "  Verifying Keycloak OIDC URLs at http://localhost/auth ..." -ForegroundColor Gray
+$realmJson = curl.exe -s "http://localhost/auth/realms/master" 2>&1
+if ($realmJson -match ":8000|:8443") {
+    Write-Host "  realm response: $realmJson" -ForegroundColor Red
+    throw "Keycloak realm JSON still exposes wrong port (expected http://localhost/auth only)."
+}
+$oidcJson = curl.exe -s "http://localhost/auth/realms/master/.well-known/openid-configuration" 2>&1
+if ($oidcJson -notmatch '"issuer":"http://localhost/auth/realms/master"') {
+    Write-Host "  OIDC discovery: $oidcJson" -ForegroundColor Red
+    throw "Keycloak OIDC issuer is not http://localhost/auth/realms/master"
+}
+$adminHead = curl.exe -sI "http://localhost/auth/admin/" 2>&1 | Out-String
+if ($adminHead -notmatch "Location: http://localhost/auth/admin/master/console/") {
+    Write-Host "  /auth/admin/ headers:`n$adminHead" -ForegroundColor Red
+    throw "Keycloak admin redirect Location is wrong (must not use :8000)."
+}
+Write-Host "  Keycloak edge OIDC checks passed." -ForegroundColor Green
+
+Write-Host "  Running OAuth login smoke test (security-admin-console) ..." -ForegroundColor Gray
+$oauthTest = Join-Path $PSScriptRoot "scripts\test-keycloak-admin-oauth.py"
+if (-not (Test-Path $oauthTest)) { throw "Missing $oauthTest" }
+python $oauthTest
+if ($LASTEXITCODE -ne 0) { throw "Keycloak admin OAuth smoke test failed (cookie/login/token). See script output above." }
+
+Write-Host "  Admin console: http://localhost/auth/admin/  (use a private window after deploy)" -ForegroundColor Cyan
 
 # ── Final Status ──────────────────────────────────────────────────────────
 Write-Host ""

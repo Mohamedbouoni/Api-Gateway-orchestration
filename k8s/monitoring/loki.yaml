@@ -127,7 +127,8 @@ spec:
               mountPath: /etc/loki
       volumes:
         - name: data
-          emptyDir: {}
+          persistentVolumeClaim:
+            claimName: loki-pvc
         - name: config
           configMap:
             name: loki-config

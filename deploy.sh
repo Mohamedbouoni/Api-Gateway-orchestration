@@ -368,6 +368,21 @@ fi
 # ─────────────────────────────────────────────────────────────────────────────
 echo ""
 echo -e "${YELLOW}[4/5] Deploying all services...${NC}"
+
+# Convert PVCs to emptyDir dynamically for server execution (fixes unbound PVC issues)
+echo -e "${GRAY}  Converting PVC volumes to emptyDir for server execution...${NC}"
+python3 -c "
+import glob, re
+for f in glob.glob('k8s/**/*.yaml', recursive=True):
+    with open(f, 'r') as fh:
+        content = fh.read()
+    new_content = re.sub(r'persistentVolumeClaim:\s*\n\s*claimName:\s*\S+', 'emptyDir: {}', content)
+    if new_content != content:
+        with open(f, 'w') as fh:
+            fh.write(new_content)
+        print(f'  [OK] Patched {f} to use emptyDir')
+"
+
 apply_output=$(kubectl apply -k k8s/ 2>&1) || {
     echo "$apply_output"
     echo -e "${RED}Error: Step [6/8] failed: kubectl apply -k k8s/ returned non-zero exit code.${NC}"
@@ -383,71 +398,66 @@ echo -e "${GRAY}Sleeping 10s to let Kubernetes schedule new pods...${NC}"
 sleep 10
 
 echo -e "${GRAY}Waiting for databases...${NC}"
-if ! kubectl wait --for=condition=ready pod -l app=platform-db -n ai-data --timeout=300s; then
+if ! kubectl rollout status deployment/platform-db -n ai-data --timeout=300s; then
     echo -e "${RED}  platform-db failed to become ready. Dumping pod info...${NC}"
     kubectl describe pod -l app=platform-db -n ai-data || true
     kubectl logs -l app=platform-db -n ai-data --all-containers=true --tail=50 || true
-    echo -e "${RED}Error: platform-db pods did not become ready in time.${NC}"
+    echo -e "${RED}Error: platform-db failed to roll out in time.${NC}"
     exit 1
 fi
-if ! kubectl wait --for=condition=ready pod -l app=kong-db -n ai-data --timeout=300s; then
+if ! kubectl rollout status deployment/postgres-kong -n ai-data --timeout=300s; then
     echo -e "${RED}  kong-db failed to become ready. Dumping pod info...${NC}"
     kubectl describe pod -l app=kong-db -n ai-data || true
     kubectl logs -l app=kong-db -n ai-data --all-containers=true --tail=50 || true
-    echo -e "${RED}Error: kong-db pods did not become ready in time.${NC}"
+    echo -e "${RED}Error: postgres-kong failed to roll out in time.${NC}"
     exit 1
 fi
 
 echo -e "${GRAY}Waiting for application layer...${NC}"
-if ! kubectl wait --for=condition=ready pod -l app=fastapi -n ai-application --timeout=1200s; then
+if ! kubectl rollout status deployment/fastapi -n ai-application --timeout=1200s; then
     echo -e "${RED}  fastapi failed to become ready. Dumping pod info...${NC}"
     kubectl describe pod -l app=fastapi -n ai-application || true
     kubectl logs -l app=fastapi -n ai-application --all-containers=true --tail=50 || true
-    echo -e "${RED}Error: fastapi pods did not become ready in time.${NC}"
+    echo -e "${RED}Error: fastapi failed to roll out in time.${NC}"
     exit 1
 fi
-if ! kubectl wait --for=condition=ready pod -l app=intent-classifier -n ai-application --timeout=300s; then
+if ! kubectl rollout status deployment/intent-classifier -n ai-application --timeout=300s; then
     echo -e "${RED}  intent-classifier failed to become ready. Dumping pod info...${NC}"
     kubectl describe pod -l app=intent-classifier -n ai-application || true
     kubectl logs -l app=intent-classifier -n ai-application --all-containers=true --tail=50 || true
-    echo -e "${RED}Error: intent-classifier pods did not become ready in time.${NC}"
+    echo -e "${RED}Error: intent-classifier failed to roll out in time.${NC}"
     exit 1
 fi
-if ! kubectl wait --for=condition=ready pod -l app=opa -n ai-application --timeout=180s; then
+if ! kubectl rollout status deployment/opa -n ai-application --timeout=180s; then
     echo -e "${RED}  opa failed to become ready. Dumping pod info...${NC}"
     kubectl describe pod -l app=opa -n ai-application || true
     kubectl logs -l app=opa -n ai-application --all-containers=true --tail=50 || true
-    echo -e "${RED}Error: opa pods did not become ready in time.${NC}"
+    echo -e "${RED}Error: opa failed to roll out in time.${NC}"
     exit 1
 fi
 
 echo -e "${GRAY}Waiting for Keycloak...${NC}"
-if ! kubectl wait --for=condition=ready pod -l app=keycloak -n ai-application --timeout=600s; then
+if ! kubectl rollout status deployment/keycloak -n ai-application --timeout=600s; then
     echo -e "${RED}  keycloak failed to become ready. Dumping pod info...${NC}"
     kubectl describe pod -l app=keycloak -n ai-application || true
     kubectl logs -l app=keycloak -n ai-application --tail=80 || true
-    echo -e "${RED}Error: keycloak pod did not become ready in time.${NC}"
+    echo -e "${RED}Error: keycloak failed to roll out in time.${NC}"
     exit 1
 fi
 echo -e "${GREEN}  Keycloak is running.${NC}"
 
 echo -e "${GRAY}Waiting for WAF edge pod...${NC}"
-if ! kubectl wait --for=condition=ready pod -l app=waf -n ai-gateway --timeout=300s; then
-    waf_phase=$(kubectl get pod -l app=waf -n ai-gateway -o jsonpath="{.items[0].status.phase}" 2>/dev/null || true)
-    if [ "$waf_phase" = "Running" ]; then
-        echo -e "${GREEN}  WAF pod is Running (from prior deployment). Proceeding.${NC}"
-    else
-        echo -e "${RED}  WAF pod did not become ready. Dumping pod info...${NC}"
-        kubectl describe pod -l app=waf -n ai-gateway || true
-        kubectl logs -l app=waf -n ai-gateway --all-containers=true --tail=50 || true
-        echo -e "${RED}Error: WAF pod did not become ready in time.${NC}"
-        exit 1
-    fi
+if ! kubectl rollout status deployment/waf -n ai-gateway --timeout=300s; then
+    echo -e "${RED}  waf failed to become ready. Dumping pod info...${NC}"
+    kubectl describe pod -l app=waf -n ai-gateway || true
+    kubectl logs -l app=waf -n ai-gateway --all-containers=true --tail=50 || true
+    echo -e "${RED}Error: waf failed to roll out in time.${NC}"
+    exit 1
 fi
 echo -e "${GREEN}  WAF is running.${NC}"
 
 echo -e "${GRAY}Waiting for gateway...${NC}"
-if ! kubectl wait --for=condition=ready pod -l app=kong-cp -n ai-gateway --timeout=240s; then
+if ! kubectl rollout status deployment/kong-cp -n ai-gateway --timeout=240s; then
     echo -e "${YELLOW}  Kong CP did not become ready; restarting control plane once...${NC}"
     kubectl rollout restart deployment/kong-cp -n ai-gateway
     if ! kubectl rollout status deployment/kong-cp -n ai-gateway --timeout=240s; then
