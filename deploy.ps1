@@ -12,7 +12,8 @@
 $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 if (-not $isAdmin) {
     Write-Host "Warning: Not running as Administrator. Skipping machine-level OLLAMA_KEEP_ALIVE configuration." -ForegroundColor Yellow
-} else {
+}
+else {
     $ollamaKeepAlive = [Environment]::GetEnvironmentVariable("OLLAMA_KEEP_ALIVE", "Machine")
     if ($ollamaKeepAlive -ne "-1") {
         Write-Host "Configuring OLLAMA_KEEP_ALIVE=-1 (keep models loaded in memory)..." -ForegroundColor Yellow
@@ -23,13 +24,16 @@ if (-not $isAdmin) {
         $ollamaApp = Join-Path $env:LOCALAPPDATA "Programs\Ollama\ollama app.exe"
         if (Test-Path $ollamaApp) {
             Start-Process -FilePath $ollamaApp -WindowStyle Hidden
-        } elseif (Get-Command ollama -ErrorAction SilentlyContinue) {
+        }
+        elseif (Get-Command ollama -ErrorAction SilentlyContinue) {
             Start-Process -FilePath "ollama" -ArgumentList "serve" -WindowStyle Hidden
-        } else {
+        }
+        else {
             $svc = Get-Service -Name "Ollama" -ErrorAction SilentlyContinue
             if ($svc) {
                 Restart-Service -Name "Ollama" -Force -ErrorAction SilentlyContinue
-            } else {
+            }
+            else {
                 Write-Host "  Warning: Ollama not found; install Ollama on the host for local LLM routing." -ForegroundColor DarkYellow
             }
         }
@@ -37,10 +41,12 @@ if (-not $isAdmin) {
         try {
             $null = Invoke-WebRequest -Uri "http://localhost:11434/api/tags" -UseBasicParsing -TimeoutSec 5
             Write-Host "  Ollama API is reachable on :11434" -ForegroundColor Green
-        } catch {
+        }
+        catch {
             Write-Host "  Warning: Ollama API not reachable yet at http://localhost:11434" -ForegroundColor DarkYellow
         }
-    } else {
+    }
+    else {
         Write-Host "OLLAMA_KEEP_ALIVE already set to -1 (models stay warm)." -ForegroundColor Gray
     }
 }
@@ -52,9 +58,10 @@ $installedTags = @()
 try {
     $installedTags = @(
         (Invoke-RestMethod -Uri "http://localhost:11434/api/tags" -TimeoutSec 5).models |
-            ForEach-Object { $_.name }
+        ForEach-Object { $_.name }
     )
-} catch {
+}
+catch {
     Write-Host "  Warning: Ollama API not reachable; skipping model warmup." -ForegroundColor DarkYellow
 }
 
@@ -85,7 +92,8 @@ foreach ($baseName in $requiredModels) {
             -TimeoutSec 300
 
         Write-Host "  $tag warmed up (keep_alive=-1)" -ForegroundColor Green
-    } catch {
+    }
+    catch {
         Write-Host "  Warning: could not warm up $tag - $($_.Exception.Message)" -ForegroundColor DarkYellow
     }
 }
@@ -171,7 +179,8 @@ function Build-LocalImage {
             if ($exitCode -ne 0 -and (Test-Path $logFile)) {
                 $buildText = Get-Content $logFile -Raw -ErrorAction SilentlyContinue
             }
-        } finally {
+        }
+        finally {
             if (Test-Path $logFile) {
                 Remove-Item $logFile -Force -ErrorAction SilentlyContinue
             }
@@ -226,7 +235,7 @@ Build-LocalImage "api-gateways-kong-logger:latest" "kong-logger"
 # the shebang in the Linux container on first copy from a Windows checkout).
 $wafScript = "waf\99-exclusions.sh"
 $raw = Get-Content $wafScript -Raw
-$lf  = $raw -replace "`r`n", "`n" -replace "`r", "`n"
+$lf = $raw -replace "`r`n", "`n" -replace "`r", "`n"
 [System.IO.File]::WriteAllText("$PSScriptRoot\$wafScript", $lf)
 Build-LocalImage "api-gateways-waf:latest" "waf"
 
@@ -272,7 +281,8 @@ Write-Host "[3/5] Checking Kong mTLS certificates..." -ForegroundColor Yellow
 $certExists = kubectl get secret kong-cluster-certs -n ai-gateway 2>$null
 if ($certExists) {
     Write-Host "  kong-cluster-certs secret already exists, skipping." -ForegroundColor Green
-} else {
+}
+else {
     Write-Host "  Generating new mTLS certificates..." -ForegroundColor Gray
     docker run --rm -v "${PWD}\k8s\secrets:/certs" alpine/openssl req -new -x509 -nodes -newkey rsa:2048 -keyout /certs/cluster.key -out /certs/cluster.crt -days 1095 -subj "/CN=kong_clustering"
     kubectl create secret tls kong-cluster-certs --cert=k8s/secrets/cluster.crt --key=k8s/secrets/cluster.key -n ai-gateway
@@ -350,7 +360,8 @@ if ($LASTEXITCODE -ne 0) {
     $wafPhase = kubectl get pod -l app=waf -n ai-gateway -o jsonpath="{.items[0].status.phase}" 2>$null
     if ($wafPhase -eq "Running") {
         Write-Host "  WAF pod is Running (from prior deployment). Proceeding." -ForegroundColor Green
-    } else {
+    }
+    else {
         Write-Host "  WAF pod did not become ready. Dumping pod info..." -ForegroundColor Red
         kubectl describe pod -l app=waf -n ai-gateway
         kubectl logs -l app=waf -n ai-gateway --all-containers=true --tail=50

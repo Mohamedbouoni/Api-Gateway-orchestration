@@ -256,6 +256,81 @@ echo -e "${YELLOW}[1/5] Creating namespaces...${NC}"
 kubectl apply -f k8s/namespaces.yaml
 
 # ─────────────────────────────────────────────────────────────────────────────
+# [1.5] Create all Kubernetes Secrets
+# ─────────────────────────────────────────────────────────────────────────────
+echo ""
+echo -e "${YELLOW}[1.5] Creating Kubernetes Secrets...${NC}"
+
+create_k8s_secret() {
+    local name=$1
+    local namespace=$2
+    shift 2
+    local args=("create" "secret" "generic" "$name" "--namespace=$namespace")
+    for kv in "$@"; do
+        args+=("--from-literal=$kv")
+    done
+    args+=("--dry-run=client" "-o" "yaml")
+    kubectl "${args[@]}" | kubectl apply -f -
+}
+
+# Platform DB secrets
+create_k8s_secret "platform-db-secret" "ai-data" \
+    "POSTGRES_USER=platform_admin" \
+    "POSTGRES_PASSWORD=platform_pass" \
+    "POSTGRES_DB=platform_permissions"
+
+create_k8s_secret "platform-db-secret" "ai-application" \
+    "POSTGRES_USER=platform_admin" \
+    "POSTGRES_PASSWORD=platform_pass" \
+    "POSTGRES_DB=platform_permissions" \
+    "DATABASE_URL=postgresql+asyncpg://platform_admin:platform_pass@platform-db.ai-data.svc.cluster.local:5432/platform_permissions"
+
+# Kong DB secrets
+create_k8s_secret "kong-db-secret" "ai-data" \
+    "POSTGRES_USER=kong" \
+    "POSTGRES_PASSWORD=kong" \
+    "POSTGRES_DB=kong" \
+    "KONG_PG_PASSWORD=kong"
+
+create_k8s_secret "kong-db-secret" "ai-gateway" \
+    "POSTGRES_USER=kong" \
+    "POSTGRES_PASSWORD=kong" \
+    "POSTGRES_DB=kong" \
+    "KONG_PG_PASSWORD=kong"
+
+# Keycloak DB secrets
+create_k8s_secret "keycloak-db-secret" "ai-data" \
+    "POSTGRES_USER=keycloak" \
+    "POSTGRES_PASSWORD=password" \
+    "POSTGRES_DB=keycloak"
+
+# Keycloak Application secrets
+create_k8s_secret "keycloak-secret" "ai-application" \
+    "KC_DB_URL=jdbc:postgresql://postgres-keycloak.ai-data.svc.cluster.local:5432/keycloak" \
+    "KC_DB_PASSWORD=password" \
+    "KEYCLOAK_ADMIN=admin" \
+    "KEYCLOAK_ADMIN_PASSWORD=admin"
+
+# Redis secrets
+create_k8s_secret "redis-secret" "ai-data" \
+    "REDIS_PASSWORD=redispass"
+
+create_k8s_secret "redis-secret" "ai-application" \
+    "REDIS_PASSWORD=redispass" \
+    "REDIS_URL=redis://:redispass@redis.ai-data.svc.cluster.local:6379/0" \
+    "REDIS_URL_DB1=redis://:redispass@redis.ai-data.svc.cluster.local:6379/1"
+
+# Grafana admin secret
+create_k8s_secret "grafana-admin-secret" "ai-monitoring" \
+    "GF_SECURITY_ADMIN_PASSWORD=admin"
+
+# HuggingFace token secret (optional/dummy)
+create_k8s_secret "huggingface-secret" "ai-application" \
+    "HF_TOKEN=dummy-hf-token"
+
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ─────────────────────────────────────────────────────────────────────────────
 # [2/5] Create ConfigMaps (DB init scripts, Kong plugins, Configuration)
 # ─────────────────────────────────────────────────────────────────────────────
 echo ""
