@@ -2,18 +2,41 @@
 # ─────────────────────────────────────────────────────────────────────────────
 # deploy.sh  -  Enterprise AI Gateway Kubernetes Deployment Script (Linux)
 #
-# Usage:  ./deploy.sh
+# Usage:  ./deploy.sh [env vars below]
 #
-# This is the Bash equivalent of deploy.ps1 for Linux servers.
-# Images are built as local :latest tags (imagePullPolicy Never in manifests).
-# That matches single-node dev clusters (Docker Desktop, Minikube, kind). For
-# multi-node production, push images to your registry, point manifests at those
-# references, and use imagePullPolicy: IfNotPresent or Always as appropriate.
+# Environment variables (all optional):
+#   REGISTRY_HOST          Registry host for custom images (default: localhost)
+#   REGISTRY_PORT          Registry port                    (default: 5000)
+#   VAULT_ADDR_LOCAL       Vault port-forward address       (default: http://localhost:8200)
+#   VAULT_TOKEN_LOCAL      Vault root token                 (default: dev-root-token)
+#   USE_STATIC_SECRETS     Set "true" to skip Vault and use hardcoded dev secrets
+#
+# Image strategy:
+#   Custom images (api-gateways-*) are built with docker build, pushed to a
+#   local registry (default localhost:5000), and pulled by the cluster via
+#   imagePullPolicy: IfNotPresent.  This works on real multi-node clusters and
+#   Docker Desktop alike — the node fetches from the local registry rather than
+#   relying on a shared Docker daemon socket.
+#
+# Secrets strategy:
+#   By default, Vault (dev mode) is deployed first, secrets are seeded via
+#   scripts/vault-seed.sh, then synced to K8s Secrets via
+#   scripts/vault-sync-k8s-secrets.sh.  Set USE_STATIC_SECRETS=true to bypass
+#   Vault and apply hardcoded dev values instead (useful for quick local tests).
 # ─────────────────────────────────────────────────────────────────────────────
 
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Image distribution strategy (Linux servers / real clusters)
+# Build images locally, push to a local registry, then let K8s pull them.
+# ─────────────────────────────────────────────────────────────────────────────
+
+REGISTRY_HOST="${REGISTRY_HOST:-localhost}"
+REGISTRY_PORT="${REGISTRY_PORT:-5000}"
+REGISTRY="${REGISTRY_HOST}:${REGISTRY_PORT}"
 
 # Colors
 CYAN='\033[0;36m'
@@ -121,6 +144,33 @@ ensure_command() {
     fi
 }
 
+ensure_local_registry() {
+    echo -e "${YELLOW}Ensuring local image registry is running at ${REGISTRY}...${NC}"
+    if docker ps --format '{{.Names}}' | grep -qx "local-registry"; then
+        echo -e "${GREEN}  local-registry container is already running.${NC}"
+        return 0
+    fi
+
+    if docker ps -a --format '{{.Names}}' | grep -qx "local-registry"; then
+        echo -e "${GRAY}  Starting existing local-registry container...${NC}"
+        docker start local-registry >/dev/null
+    else
+        echo -e "${GRAY}  Creating local-registry container...${NC}"
+        docker run -d --restart=always -p "${REGISTRY_PORT}:5000" --name local-registry registry:2 >/dev/null
+    fi
+
+    for i in $(seq 1 30); do
+        if curl -s --max-time 2 "http://${REGISTRY}/v2/" >/dev/null 2>&1; then
+            echo -e "${GREEN}  Registry is reachable.${NC}"
+            return 0
+        fi
+        sleep 1
+    done
+
+    echo -e "${RED}Error: local registry not reachable at http://${REGISTRY}/v2/.${NC}"
+    exit 1
+}
+
 ensure_path() {
     local path_to_check=$1
     if [ ! -e "$path_to_check" ]; then
@@ -199,12 +249,63 @@ build_local_image() {
     done
 }
 
+tag_and_push_image() {
+    local local_tag="$1"
+    local remote_tag="${REGISTRY}/${local_tag}"
+    echo -e "${GRAY}  Tagging ${local_tag} -> ${remote_tag}${NC}"
+    docker tag "${local_tag}" "${remote_tag}"
+    echo -e "${GRAY}  Pushing ${remote_tag}${NC}"
+    docker push "${remote_tag}" >/dev/null
+}
+
+patch_manifests_for_registry() {
+    echo -e "${YELLOW}Patching k8s manifests to use registry images...${NC}"
+    REGISTRY="${REGISTRY}" python3 - <<'PY'
+import os, re, glob
+
+registry = os.environ.get("REGISTRY", "localhost:5000")
+
+def patch_file(path: str) -> bool:
+    with open(path, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    new = content
+    new = re.sub(r'(^\s*image:\s*)(api-gateways-[\w\-]+:latest)\s*$',
+                 r'\1' + registry + r'/\2',
+                 new, flags=re.M)
+    new = re.sub(r'(^\s*imagePullPolicy:\s*)Never\s*$',
+                 r'\1IfNotPresent',
+                 new, flags=re.M)
+
+    if new != content:
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(new)
+        return True
+    return False
+
+paths = glob.glob("k8s/**/*.yaml", recursive=True) + glob.glob("k8s/**/*.yml", recursive=True)
+patched = []
+for p in paths:
+    if patch_file(p):
+        patched.append(p)
+
+if patched:
+    print("  [OK] Patched:")
+    for p in patched:
+        print("   -", p)
+else:
+    print("  [OK] No manifest patches needed.")
+PY
+}
+
 # ─────────────────────────────────────────────────────────────────────────────
 # [0/8] Preflight checks
 # ─────────────────────────────────────────────────────────────────────────────
 echo -e "${YELLOW}[0/8] Running preflight checks...${NC}"
 ensure_command "kubectl"
 ensure_command "docker"
+ensure_command "python3"
+ensure_command "curl"
 
 if ! kubectl cluster-info &>/dev/null; then
     echo -e "${RED}Error: kubectl cannot reach the active cluster context.${NC}"
@@ -229,11 +330,20 @@ ensure_path "waf/Dockerfile"
 ensure_path "waf/99-exclusions.sh"
 ensure_path "k8s/application/keycloak-master-config-job.yaml"
 
-echo -e "${GRAY}  Checking local images required by imagePullPolicy=Never...${NC}"
+ensure_local_registry
+
+echo -e "${GRAY}  Building and pushing custom images to ${REGISTRY}...${NC}"
 build_local_image "api-gateways-backend:latest" "fastapi_backend"
+tag_and_push_image "api-gateways-backend:latest"
+
 build_local_image "api-gateways-intent-classifier:latest" "." "intent_classifier_service/Dockerfile"
+tag_and_push_image "api-gateways-intent-classifier:latest"
+
 build_local_image "api-gateways-frontend:latest" "frontend"
+tag_and_push_image "api-gateways-frontend:latest"
+
 build_local_image "api-gateways-kong-logger:latest" "kong-logger"
+tag_and_push_image "api-gateways-kong-logger:latest"
 
 # Convert WAF entrypoint script to LF line endings (CRLF breaks the shebang
 # in the Linux container on first copy from a Windows/git checkout).
@@ -242,6 +352,9 @@ if [ -f "$waf_script" ]; then
     sed -i 's/\r$//' "$waf_script"
 fi
 build_local_image "api-gateways-waf:latest" "waf"
+tag_and_push_image "api-gateways-waf:latest"
+
+patch_manifests_for_registry
 
 metrics_api=$(kubectl api-versions 2>/dev/null | grep "metrics.k8s.io" || true)
 if [ -z "$metrics_api" ]; then
@@ -259,74 +372,118 @@ kubectl apply -f k8s/namespaces.yaml
 # [1.5] Create all Kubernetes Secrets
 # ─────────────────────────────────────────────────────────────────────────────
 echo ""
-echo -e "${YELLOW}[1.5] Creating Kubernetes Secrets...${NC}"
+echo -e "${YELLOW}[1.5] Syncing Kubernetes Secrets from Vault...${NC}"
 
-create_k8s_secret() {
-    local name=$1
-    local namespace=$2
-    shift 2
-    local args=("create" "secret" "generic" "$name" "--namespace=$namespace")
-    for kv in "$@"; do
-        args+=("--from-literal=$kv")
+USE_STATIC_SECRETS="${USE_STATIC_SECRETS:-false}"
+VAULT_ADDR_LOCAL="${VAULT_ADDR_LOCAL:-http://localhost:8200}"
+VAULT_TOKEN_LOCAL="${VAULT_TOKEN_LOCAL:-dev-root-token}"
+
+if [ "${USE_STATIC_SECRETS}" = "true" ]; then
+    echo -e "${DARKYELLOW}  USE_STATIC_SECRETS=true — using hardcoded dev secrets (Vault disabled).${NC}"
+
+    create_k8s_secret() {
+        local name=$1
+        local namespace=$2
+        shift 2
+        local args=("create" "secret" "generic" "$name" "--namespace=$namespace")
+        for kv in "$@"; do
+            args+=("--from-literal=$kv")
+        done
+        args+=("--dry-run=client" "-o" "yaml")
+        kubectl "${args[@]}" | kubectl apply -f -
+    }
+
+    # Platform DB secrets
+    create_k8s_secret "platform-db-secret" "ai-data" \
+        "POSTGRES_USER=platform_admin" \
+        "POSTGRES_PASSWORD=platform_pass" \
+        "POSTGRES_DB=platform_permissions"
+
+    create_k8s_secret "platform-db-secret" "ai-application" \
+        "POSTGRES_USER=platform_admin" \
+        "POSTGRES_PASSWORD=platform_pass" \
+        "POSTGRES_DB=platform_permissions" \
+        "DATABASE_URL=postgresql+asyncpg://platform_admin:platform_pass@platform-db.ai-data.svc.cluster.local:5432/platform_permissions"
+
+    # Kong DB secrets
+    create_k8s_secret "kong-db-secret" "ai-data" \
+        "POSTGRES_USER=kong" \
+        "POSTGRES_PASSWORD=kong" \
+        "POSTGRES_DB=kong" \
+        "KONG_PG_PASSWORD=kong"
+
+    create_k8s_secret "kong-db-secret" "ai-gateway" \
+        "POSTGRES_USER=kong" \
+        "POSTGRES_PASSWORD=kong" \
+        "POSTGRES_DB=kong" \
+        "KONG_PG_PASSWORD=kong"
+
+    # Keycloak DB secrets
+    create_k8s_secret "keycloak-db-secret" "ai-data" \
+        "POSTGRES_USER=keycloak" \
+        "POSTGRES_PASSWORD=password" \
+        "POSTGRES_DB=keycloak"
+
+    # Keycloak Application secrets
+    create_k8s_secret "keycloak-secret" "ai-application" \
+        "KC_DB_URL=jdbc:postgresql://postgres-keycloak.ai-data.svc.cluster.local:5432/keycloak" \
+        "KC_DB_PASSWORD=password" \
+        "KEYCLOAK_ADMIN=admin" \
+        "KEYCLOAK_ADMIN_PASSWORD=admin"
+
+    # Redis secrets
+    create_k8s_secret "redis-secret" "ai-data" \
+        "REDIS_PASSWORD=redispass"
+
+    create_k8s_secret "redis-secret" "ai-application" \
+        "REDIS_PASSWORD=redispass" \
+        "REDIS_URL=redis://:redispass@redis.ai-data.svc.cluster.local:6379/0" \
+        "REDIS_URL_DB1=redis://:redispass@redis.ai-data.svc.cluster.local:6379/1"
+
+    # Grafana admin secret
+    create_k8s_secret "grafana-admin-secret" "ai-monitoring" \
+        "GF_SECURITY_ADMIN_PASSWORD=admin"
+
+    # HuggingFace token secret (optional/dummy)
+    create_k8s_secret "huggingface-secret" "ai-application" \
+        "HF_TOKEN=dummy-hf-token"
+else
+    ensure_path "k8s/data/vault.yaml"
+    ensure_path "scripts/vault-seed.sh"
+    ensure_path "scripts/vault-sync-k8s-secrets.sh"
+
+    echo -e "${GRAY}  Deploying Vault (dev mode)...${NC}"
+    kubectl apply -f k8s/data/vault.yaml
+    kubectl rollout status deployment/vault -n ai-data --timeout=180s
+
+    echo -e "${GRAY}  Port-forwarding Vault to ${VAULT_ADDR_LOCAL}...${NC}"
+    kubectl -n ai-data port-forward svc/vault 8200:8200 >/tmp/vault-portforward.log 2>&1 &
+    vault_pf_pid=$!
+    cleanup_vault_pf() {
+        if [ -n "${vault_pf_pid:-}" ] && kill -0 "${vault_pf_pid}" 2>/dev/null; then
+            kill "${vault_pf_pid}" 2>/dev/null || true
+            wait "${vault_pf_pid}" 2>/dev/null || true
+        fi
+    }
+    trap cleanup_vault_pf EXIT
+
+    # Wait for port-forward socket
+    for i in $(seq 1 30); do
+        if curl -s --max-time 2 "${VAULT_ADDR_LOCAL}/v1/sys/health" >/dev/null 2>&1; then
+            break
+        fi
+        sleep 1
     done
-    args+=("--dry-run=client" "-o" "yaml")
-    kubectl "${args[@]}" | kubectl apply -f -
-}
 
-# Platform DB secrets
-create_k8s_secret "platform-db-secret" "ai-data" \
-    "POSTGRES_USER=platform_admin" \
-    "POSTGRES_PASSWORD=platform_pass" \
-    "POSTGRES_DB=platform_permissions"
+    echo -e "${GRAY}  Seeding Vault secrets...${NC}"
+    bash scripts/vault-seed.sh "${VAULT_ADDR_LOCAL}" "${VAULT_TOKEN_LOCAL}"
 
-create_k8s_secret "platform-db-secret" "ai-application" \
-    "POSTGRES_USER=platform_admin" \
-    "POSTGRES_PASSWORD=platform_pass" \
-    "POSTGRES_DB=platform_permissions" \
-    "DATABASE_URL=postgresql+asyncpg://platform_admin:platform_pass@platform-db.ai-data.svc.cluster.local:5432/platform_permissions"
+    echo -e "${GRAY}  Syncing Vault -> Kubernetes secrets...${NC}"
+    bash scripts/vault-sync-k8s-secrets.sh "${VAULT_ADDR_LOCAL}" "${VAULT_TOKEN_LOCAL}"
 
-# Kong DB secrets
-create_k8s_secret "kong-db-secret" "ai-data" \
-    "POSTGRES_USER=kong" \
-    "POSTGRES_PASSWORD=kong" \
-    "POSTGRES_DB=kong" \
-    "KONG_PG_PASSWORD=kong"
-
-create_k8s_secret "kong-db-secret" "ai-gateway" \
-    "POSTGRES_USER=kong" \
-    "POSTGRES_PASSWORD=kong" \
-    "POSTGRES_DB=kong" \
-    "KONG_PG_PASSWORD=kong"
-
-# Keycloak DB secrets
-create_k8s_secret "keycloak-db-secret" "ai-data" \
-    "POSTGRES_USER=keycloak" \
-    "POSTGRES_PASSWORD=password" \
-    "POSTGRES_DB=keycloak"
-
-# Keycloak Application secrets
-create_k8s_secret "keycloak-secret" "ai-application" \
-    "KC_DB_URL=jdbc:postgresql://postgres-keycloak.ai-data.svc.cluster.local:5432/keycloak" \
-    "KC_DB_PASSWORD=password" \
-    "KEYCLOAK_ADMIN=admin" \
-    "KEYCLOAK_ADMIN_PASSWORD=admin"
-
-# Redis secrets
-create_k8s_secret "redis-secret" "ai-data" \
-    "REDIS_PASSWORD=redispass"
-
-create_k8s_secret "redis-secret" "ai-application" \
-    "REDIS_PASSWORD=redispass" \
-    "REDIS_URL=redis://:redispass@redis.ai-data.svc.cluster.local:6379/0" \
-    "REDIS_URL_DB1=redis://:redispass@redis.ai-data.svc.cluster.local:6379/1"
-
-# Grafana admin secret
-create_k8s_secret "grafana-admin-secret" "ai-monitoring" \
-    "GF_SECURITY_ADMIN_PASSWORD=admin"
-
-# HuggingFace token secret (optional/dummy)
-create_k8s_secret "huggingface-secret" "ai-application" \
-    "HF_TOKEN=dummy-hf-token"
+    cleanup_vault_pf
+    trap - EXIT
+fi
 
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -498,3 +655,15 @@ echo ""
 echo -e "${CYAN}Public edge (WAF LoadBalancer): http://localhost${NC}"
 echo -e "${CYAN}Next step: access the UI at http://localhost${NC}"
 echo ""
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Post-deploy verification
+# ─────────────────────────────────────────────────────────────────────────────
+if [ -x "${SCRIPT_DIR}/scripts/verify-deployment.sh" ]; then
+    echo -e "${YELLOW}Running post-deploy health checks...${NC}"
+    bash "${SCRIPT_DIR}/scripts/verify-deployment.sh" || {
+        echo -e "${YELLOW}One or more verification checks failed. Review the output above.${NC}"
+        echo -e "${YELLOW}The deployment itself completed; individual services may still be starting up.${NC}"
+        echo -e "${YELLOW}Re-run: ./scripts/verify-deployment.sh${NC}"
+    }
+fi

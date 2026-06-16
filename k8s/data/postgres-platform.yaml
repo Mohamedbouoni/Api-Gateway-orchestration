@@ -74,24 +74,14 @@ spec:
           # Health checks: Kubernetes restarts the pod if the DB stops responding
           livenessProbe:
             exec:
-              command:
-                - pg_isready
-                - -U
-                - platform_admin
-                - -d
-                - platform_permissions
+              command: ["sh", "-ec", "pg_isready -U \"$POSTGRES_USER\" -d \"$POSTGRES_DB\""]
             initialDelaySeconds: 30
             periodSeconds: 10
             timeoutSeconds: 5
             failureThreshold: 5
           readinessProbe:
             exec:
-              command:
-                - pg_isready
-                - -U
-                - platform_admin
-                - -d
-                - platform_permissions
+              command: ["sh", "-ec", "pg_isready -U \"$POSTGRES_USER\" -d \"$POSTGRES_DB\""]
             initialDelaySeconds: 10
             periodSeconds: 5
             timeoutSeconds: 5

@@ -67,14 +67,14 @@ spec:
               cpu: "250m"
           livenessProbe:
             exec:
-              command: ["pg_isready", "-U", "kong", "-d", "kong"]
+              command: ["sh", "-ec", "pg_isready -U \"$POSTGRES_USER\" -d \"$POSTGRES_DB\""]
             initialDelaySeconds: 30
             periodSeconds: 10
             timeoutSeconds: 5
             failureThreshold: 5
           readinessProbe:
             exec:
-              command: ["pg_isready", "-U", "kong", "-d", "kong"]
+              command: ["sh", "-ec", "pg_isready -U \"$POSTGRES_USER\" -d \"$POSTGRES_DB\""]
             initialDelaySeconds: 10
             periodSeconds: 5
             timeoutSeconds: 5
@@ -172,14 +172,14 @@ spec:
               cpu: "250m"
           livenessProbe:
             exec:
-              command: ["pg_isready", "-U", "keycloak", "-d", "keycloak"]
+              command: ["sh", "-ec", "pg_isready -U \"$POSTGRES_USER\" -d \"$POSTGRES_DB\""]
             initialDelaySeconds: 30
             periodSeconds: 10
             timeoutSeconds: 5
             failureThreshold: 5
           readinessProbe:
             exec:
-              command: ["pg_isready", "-U", "keycloak", "-d", "keycloak"]
+              command: ["sh", "-ec", "pg_isready -U \"$POSTGRES_USER\" -d \"$POSTGRES_DB\""]
             initialDelaySeconds: 10
             periodSeconds: 5
             timeoutSeconds: 5

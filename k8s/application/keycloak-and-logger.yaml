@@ -24,7 +24,7 @@ spec:
       containers:
         - name: keycloak
           image: quay.io/keycloak/keycloak:latest
-          imagePullPolicy: Never
+          imagePullPolicy: IfNotPresent
           args: ["start-dev", "--import-realm"]
           ports:
             - containerPort: 8080
@@ -149,8 +149,8 @@ spec:
     spec:
       containers:
         - name: kong-logger
-          image: api-gateways-kong-logger:latest
-          imagePullPolicy: Never
+          image: localhost:5000/api-gateways-kong-logger:latest
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 9999
           env:

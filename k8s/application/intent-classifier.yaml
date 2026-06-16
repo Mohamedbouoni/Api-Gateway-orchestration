@@ -72,8 +72,8 @@ spec:
     spec:
       containers:
         - name: intent-classifier
-          image: api-gateways-intent-classifier:latest
-          imagePullPolicy: Never
+          image: localhost:5000/api-gateways-intent-classifier:latest
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3010
           env:

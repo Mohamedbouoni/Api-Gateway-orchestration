@@ -74,8 +74,8 @@ spec:
     spec:
       containers:
         - name: fastapi
-          image: api-gateways-backend:latest
-          imagePullPolicy: Never # use local Docker image (dev mode)
+          image: localhost:5000/api-gateways-backend:latest
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3000
           envFrom:

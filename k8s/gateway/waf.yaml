@@ -79,8 +79,8 @@ spec:
       containers:
         # ── Main WAF container (owasp/modsecurity-crs:nginx) ─────────────────
         - name: waf
-          image: api-gateways-waf:latest
-          imagePullPolicy: Never
+          image: localhost:5000/api-gateways-waf:latest
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
               name: http
